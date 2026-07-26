@@ -37,7 +37,9 @@ public final class BatchBreakingCommand implements CommandExecutor, TabCompleter
                 "Batch breaking is set to "
                     + parser.format(settings.batchBreakingSetting())
                     + " with " + settings.batchBlockAction()
-                    + " and " + settings.toolDurabilityMode() + " durability."
+                    + ", " + settings.toolDurabilityMode() + " durability, "
+                    + settings.batchExecutionMode() + " batching, and animals "
+                    + (settings.includeAnimals() ? "included." : "excluded.")
             );
             return true;
         }

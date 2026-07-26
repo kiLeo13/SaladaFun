@@ -26,6 +26,7 @@ batch-breaking:
   # - PLAYER_TOOL: use the player's tool, drops, experience, and break event.
   # - NATURAL_DROPS: use natural no-tool drops without a player break event.
   # - NO_DROPS: use a player break event but suppress items and experience.
+  # Generated player breaks never change food, saturation, or exhaustion.
   additional-block-action: PLAYER_TOOL
 
   # Applies to PLAYER_TOOL and NO_DROPS; NATURAL_DROPS uses no tool.
@@ -34,14 +35,14 @@ batch-breaking:
   # - PER_BLOCK: every successful additional break may consume durability.
   tool-durability: SINGLE_USE
 
-  # Maximum chunk snapshots captured per tick. Must be a positive integer.
-  # Lower values reduce per-tick work but make large searches start more slowly.
-  snapshot-chunks-per-tick: 2
+  # Controls how batches are executed.
+  # Values:
+  # - ASYNC: search off-thread and apply changes in responsive main-thread batches.
+  # - SYNC: finish in one main-thread operation; large jobs will freeze the server.
+  sync-batching: ASYNC
 
-  # Maximum additional blocks processed per tick. Must be a positive integer.
-  # Lower values reduce per-tick work but make jobs take longer.
-  blocks-per-tick: 64
-
-  # Maximum matches waiting for main-thread processing. Must be a positive integer.
-  # Lower values use less memory and pause background scanning sooner.
-  max-queued-matches: 8192
+  # Applies the configured range to same-species animals killed by a player.
+  # Values:
+  # - true: include matching animals; "all" uses chunks sent to the player.
+  # - false: batch only blocks and bucket-filled water.
+  include-animals: false

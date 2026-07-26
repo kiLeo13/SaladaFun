@@ -2,6 +2,7 @@ package sld.saladafun.platform.purpur.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import sld.saladafun.batchbreaking.BatchBlockAction;
+import sld.saladafun.batchbreaking.BatchExecutionMode;
 import sld.saladafun.batchbreaking.BatchBreakingSetting;
 import sld.saladafun.batchbreaking.BatchBreakingSettingParser;
 import sld.saladafun.batchbreaking.ToolDurabilityMode;
@@ -13,11 +14,27 @@ import java.util.Objects;
  * Validated view of administrator-controlled plugin configuration.
  */
 public final class PluginSettings {
-    private final FileConfiguration configuration;
+    private FileConfiguration configuration;
     private final BatchBreakingSettingParser batchParser = new BatchBreakingSettingParser();
 
     public PluginSettings(FileConfiguration configuration) {
         this.configuration = Objects.requireNonNull(configuration, "configuration");
+    }
+
+    public void validate() {
+        deathBehavior();
+        respectItemsToKeep();
+        batchBreakingSetting();
+        batchBlockAction();
+        toolDurabilityMode();
+        batchExecutionMode();
+        includeAnimals();
+    }
+
+    public void replace(FileConfiguration candidate) {
+        PluginSettings validated = new PluginSettings(candidate);
+        validated.validate();
+        configuration = Objects.requireNonNull(candidate, "candidate");
     }
 
     public DeathBehavior deathBehavior() {
@@ -59,28 +76,19 @@ public final class PluginSettings {
         );
     }
 
+    public BatchExecutionMode batchExecutionMode() {
+        return enumSetting(
+            "batch-breaking.sync-batching",
+            BatchExecutionMode.ASYNC
+        );
+    }
+
+    public boolean includeAnimals() {
+        return configuration.getBoolean("batch-breaking.include-animals", false);
+    }
+
     public void batchBreakingSetting(BatchBreakingSetting setting) {
         configuration.set("batch-breaking.setting", batchParser.format(setting));
-    }
-
-    public int snapshotChunksPerTick() {
-        return positive("batch-breaking.snapshot-chunks-per-tick", 2);
-    }
-
-    public int blocksPerTick() {
-        return positive("batch-breaking.blocks-per-tick", 64);
-    }
-
-    public int maxQueuedMatches() {
-        return positive("batch-breaking.max-queued-matches", 8192);
-    }
-
-    private int positive(String path, int defaultValue) {
-        int value = configuration.getInt(path, defaultValue);
-        if (value < 1) {
-            throw new IllegalArgumentException(path + " must be positive");
-        }
-        return value;
     }
 
     private <E extends Enum<E>> E enumSetting(String path, E defaultValue) {

@@ -3,19 +3,23 @@ package sld.saladafun.platform.purpur.config;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import sld.saladafun.batchbreaking.BatchBlockAction;
+import sld.saladafun.batchbreaking.BatchExecutionMode;
 import sld.saladafun.batchbreaking.ToolDurabilityMode;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PluginSettingsTest {
 
     @Test
-    void defaultsToPlayerToolAndOneOriginalToolUse() {
+    void defaultsToSafeBatchPolicies() {
         PluginSettings settings = new PluginSettings(new YamlConfiguration());
 
         assertEquals(BatchBlockAction.PLAYER_TOOL, settings.batchBlockAction());
         assertEquals(ToolDurabilityMode.SINGLE_USE, settings.toolDurabilityMode());
+        assertEquals(BatchExecutionMode.ASYNC, settings.batchExecutionMode());
+        assertFalse(settings.includeAnimals());
     }
 
     @Test
@@ -23,11 +27,15 @@ class PluginSettingsTest {
         YamlConfiguration configuration = new YamlConfiguration();
         configuration.set("batch-breaking.additional-block-action", "natural_drops");
         configuration.set("batch-breaking.tool-durability", "per_block");
+        configuration.set("batch-breaking.sync-batching", "sync");
+        configuration.set("batch-breaking.include-animals", true);
 
         PluginSettings settings = new PluginSettings(configuration);
 
         assertEquals(BatchBlockAction.NATURAL_DROPS, settings.batchBlockAction());
         assertEquals(ToolDurabilityMode.PER_BLOCK, settings.toolDurabilityMode());
+        assertEquals(BatchExecutionMode.SYNC, settings.batchExecutionMode());
+        assertEquals(true, settings.includeAnimals());
     }
 
     @Test
@@ -42,5 +50,10 @@ class PluginSettingsTest {
         configuration.set("batch-breaking.tool-durability", "forever");
 
         assertThrows(IllegalArgumentException.class, settings::toolDurabilityMode);
+
+        configuration.set("batch-breaking.tool-durability", "SINGLE_USE");
+        configuration.set("batch-breaking.sync-batching", "sometimes");
+
+        assertThrows(IllegalArgumentException.class, settings::batchExecutionMode);
     }
 }
