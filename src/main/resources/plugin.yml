@@ -1,6 +1,0 @@
-name: SaladaFun
-version: '1.0'
-main: sld.saladaFun.SaladaFun
-api-version: '26.2'
-authors: [ Leo13 ]
-description: Some fun and utilities to my server.
