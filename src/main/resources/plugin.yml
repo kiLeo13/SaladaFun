@@ -14,6 +14,10 @@ commands:
     description: Configure batch breaking.
     usage: /batchbreaking <get|set>
     permission: saladafun.batchbreaking.manage
+  saladafun:
+    description: Manage the SaladaFun plugin.
+    usage: /saladafun reloadconfig
+    permission: saladafun.reloadconfig
 
 permissions:
   saladafun.shared.inventory.manage:
@@ -25,3 +29,6 @@ permissions:
   saladafun.batchbreaking.use:
     description: Enables batch-breaking behavior for a player.
     default: true
+  saladafun.reloadconfig:
+    description: Enables validated runtime configuration reloads.
+    default: op

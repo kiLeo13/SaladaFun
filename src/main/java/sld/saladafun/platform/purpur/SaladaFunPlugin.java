@@ -6,6 +6,7 @@ import sld.saladafun.persistence.sqlite.SqliteSharedInventoryStore;
 import sld.saladafun.platform.purpur.batch.BatchBreakingCommand;
 import sld.saladafun.platform.purpur.batch.BatchBreakingHandler;
 import sld.saladafun.platform.purpur.config.PluginSettings;
+import sld.saladafun.platform.purpur.config.SaladaFunCommand;
 import sld.saladafun.platform.purpur.shared.PlayerInventorySynchronizer;
 import sld.saladafun.platform.purpur.shared.PurpurInventoryMapper;
 import sld.saladafun.platform.purpur.shared.SharedInventoryCommand;
@@ -33,13 +34,7 @@ public final class SaladaFunPlugin extends JavaPlugin {
             Files.createDirectories(getDataFolder().toPath());
             PluginSettings settings = new PluginSettings(getConfig());
             // Validate configuration before registering any event listeners.
-            settings.deathBehavior();
-            settings.batchBreakingSetting();
-            settings.batchBlockAction();
-            settings.toolDurabilityMode();
-            settings.snapshotChunksPerTick();
-            settings.blocksPerTick();
-            settings.maxQueuedMatches();
+            settings.validate();
 
             var store = new SqliteSharedInventoryStore(
                 getDataFolder().toPath().resolve("shared-inventory.db")
@@ -100,5 +95,10 @@ public final class SaladaFunPlugin extends JavaPlugin {
         );
         batchCommand.setExecutor(batch);
         batchCommand.setTabCompleter(batch);
+
+        PluginCommand saladaFunCommand = Objects.requireNonNull(
+            getCommand("saladafun"), "saladafun command missing from plugin.yml"
+        );
+        saladaFunCommand.setExecutor(new SaladaFunCommand(this, settings));
     }
 }
