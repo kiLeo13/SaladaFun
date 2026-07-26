@@ -1,16 +1,47 @@
 shared-inventory:
-  # FOLLOW_GAMERULE, DROPS_ON_DEATH, FADES_ON_DEATH, or KEEPS_ON_DEATH
+  # Controls what happens to the shared inventory when a participant dies.
+  # Values:
+  # - FOLLOW_GAMERULE: follow the world's effective keep-inventory result.
+  # - DROPS_ON_DEATH: clear it globally and produce one normal set of drops.
+  # - FADES_ON_DEATH: clear it globally without dropping the items.
+  # - KEEPS_ON_DEATH: retain it and suppress shared-inventory drops.
   death-behavior: FOLLOW_GAMERULE
+
+  # Controls whether Paper's items-to-keep list is restored after a death clear.
+  # Values:
+  # - true: reinsert retained items into the shared inventory.
+  # - false: ignore retained items and apply the cleared shared inventory.
   respect-items-to-keep: true
 
 batch-breaking:
-  # disabled, all, or a positive integer cubic radius
+  # Controls which matching blocks are included after the original break.
+  # Values:
+  # - disabled: do not break additional blocks.
+  # - all: search all chunks currently sent to the player.
+  # - Positive integer: search within that inclusive cubic radius in blocks.
   setting: disabled
-  # PLAYER_TOOL, NATURAL_DROPS, or NO_DROPS
+
+  # Controls how each additional matching block is broken.
+  # Values:
+  # - PLAYER_TOOL: use the player's tool, drops, experience, and break event.
+  # - NATURAL_DROPS: use natural no-tool drops without a player break event.
+  # - NO_DROPS: use a player break event but suppress items and experience.
   additional-block-action: PLAYER_TOOL
-  # SINGLE_USE charges only the original break; PER_BLOCK charges generated breaks too.
-  # NATURAL_DROPS does not use a player tool, so this setting does not apply to it.
+
+  # Applies to PLAYER_TOOL and NO_DROPS; NATURAL_DROPS uses no tool.
+  # Values:
+  # - SINGLE_USE: only the original block break consumes durability.
+  # - PER_BLOCK: every successful additional break may consume durability.
   tool-durability: SINGLE_USE
+
+  # Maximum chunk snapshots captured per tick. Must be a positive integer.
+  # Lower values reduce per-tick work but make large searches start more slowly.
   snapshot-chunks-per-tick: 2
+
+  # Maximum additional blocks processed per tick. Must be a positive integer.
+  # Lower values reduce per-tick work but make jobs take longer.
   blocks-per-tick: 64
+
+  # Maximum matches waiting for main-thread processing. Must be a positive integer.
+  # Lower values use less memory and pause background scanning sooner.
   max-queued-matches: 8192
