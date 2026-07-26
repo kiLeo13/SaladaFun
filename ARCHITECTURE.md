@@ -6,18 +6,27 @@ SaladaFun is a Java 25 Purpur 26.2 plugin providing a revisioned shared inventor
 and player-scoped batch breaking. Domain rules are isolated from Bukkit so they can
 be reused by another Minecraft server adapter.
 
-## Modules
+## Source layout
 
-The Maven reactor has three modules:
+SaladaFun is one Maven JAR project using the standard root source layout:
 
-- `core` contains pure Java domain models, synchronized inventory mutations,
-  repository ports, join reconciliation, session lifecycle, and cubic range logic.
-  It has no Bukkit, jOOQ, JDBC, or SQLite dependency.
-- `persistence/sqlite` implements the core persistence port with SQLite JDBC and
-  jOOQ. Versioned SQL lives under `db/migration`.
-- `platform/purpur` is the plugin artifact. It maps Bukkit objects into core
-  snapshots, listens to Purpur events, executes commands, schedules batch work,
-  and shades runtime dependencies. Purpur remains a `provided` dependency.
+- `src/main/java/sld/saladafun/shared` and
+  `src/main/java/sld/saladafun/batchbreaking` contain pure Java domain models,
+  synchronized inventory mutations, repository ports, join reconciliation,
+  session lifecycle, and cubic range logic. These packages have no Bukkit, jOOQ,
+  JDBC, or SQLite dependency.
+- `src/main/java/sld/saladafun/persistence/sqlite` implements the persistence
+  port with SQLite JDBC and jOOQ.
+- `src/main/java/sld/saladafun/platform/purpur` maps Bukkit objects into domain
+  snapshots, listens to Purpur events, executes commands, and schedules batch
+  work. Purpur remains a `provided` dependency.
+- `src/main/resources` contains `plugin.yml`, `config.yml`, and versioned SQL
+  under `db/migration`.
+- `src/test/java` mirrors the production package hierarchy.
+
+Maven compiles these packages together and shades required runtime dependencies
+into one deployable plugin JAR. Package boundaries keep responsibilities clear
+without introducing separate Maven modules.
 
 Java packages retain the collision-safe `sld.saladafun` root but are feature-first,
 for example `sld.saladafun.shared.inventory` and
@@ -156,7 +165,7 @@ Use JDK 25:
 mvn clean package
 ```
 
-The distributable JAR is `platform/purpur/target/saladafun-purpur-1.0.jar`.
-Core concurrency/range tests, real SQLite integration tests, and adapter mapping
-tests run in the reactor. Live multi-player Purpur validation remains required
-before production rollout because mocks cannot reproduce server event ordering.
+The distributable JAR is `target/saladafun-1.0.jar`. Domain concurrency/range
+tests, real SQLite integration tests, and adapter mapping tests run in the same
+Maven build. Live multi-player Purpur validation remains required before
+production rollout because mocks cannot reproduce server event ordering.
