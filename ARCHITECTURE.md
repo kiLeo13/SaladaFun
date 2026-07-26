@@ -134,18 +134,26 @@ player, never every generated or globally loaded chunk.
 The Purpur adapter:
 
 1. Observes the original final `BlockBreakEvent`.
-2. Captures only sent and still-loaded chunk snapshots under a per-tick budget.
-3. Scans immutable snapshots on one background worker.
-4. Applies bounded queue backpressure.
-5. Revalidates world, player, sent chunk, and exact material on the main thread.
-6. Applies one of `PLAYER_TOOL`, `NATURAL_DROPS`, or `NO_DROPS` through a
+2. Treats accepted water bucket fills as water-removal triggers.
+3. Optionally treats final player-caused animal damage as a same-species trigger.
+4. Restricts finite jobs to intersecting sent chunks and exact cubic coordinates.
+5. In `ASYNC`, scans immutable snapshots on one worker and applies internal,
+   bounded main-thread batches. In `SYNC`, completes the job in one deliberately
+   blocking main-thread operation.
+6. Revalidates world, player, sent chunk, and exact material on the main thread.
+7. Applies one of `PLAYER_TOOL`, `NATURAL_DROPS`, or `NO_DROPS` through a
    dedicated platform executor.
 
 Player-aware generated breaks use a per-player context map as both a recursion
 guard and the source for cooperative `LOWEST` event policy. `NO_DROPS` suppresses
-item and experience drops there; protection plugins may still cancel or alter the
-event later. `NATURAL_DROPS` deliberately uses `Block.breakNaturally` and therefore
-does not provide a player event to protection plugins.
+item and experience drops at `HIGHEST` and cancels the final generated
+`BlockDropItemEvent`; protection plugins may still cancel the break.
+`NATURAL_DROPS` deliberately uses `Block.breakNaturally` and therefore does not
+provide a player event to protection plugins.
+
+Generated player-aware breaks restore the player's pre-break food level,
+saturation, and exhaustion in a `finally` block, including when another plugin
+cancels the break or an exception occurs.
 
 Tool durability is independently configured as `SINGLE_USE` or `PER_BLOCK`.
 `SINGLE_USE` leaves the original vanilla durability outcome intact and snapshots
@@ -155,7 +163,14 @@ only its previous damage (or the tool itself when that use would destroy it).
 ignore this setting.
 
 Jobs cancel on logout/world change, plugin shutdown, or invalid state. Only one job
-may run per player.
+may run per player. Water removals emit cancellable generated block-break events,
+and generated animal damage is recursion-guarded. Automatic completion is silent
+in player chat; diagnostic completion counts are logged only at `FINE`.
+
+`/saladafun reloadconfig` parses and validates the on-disk YAML before calling the
+platform reload API. The shared mutable `PluginSettings` view is replaced only
+after successful validation, so registered listeners and commands observe new
+settings without reconstruction.
 
 ## Build and verification
 
