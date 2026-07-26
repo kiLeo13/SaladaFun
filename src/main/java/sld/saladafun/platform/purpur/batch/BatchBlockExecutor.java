@@ -40,11 +40,33 @@ final class BatchBlockExecutor {
         ToolDamageSnapshot damage = durabilityMode == ToolDurabilityMode.SINGLE_USE
             ? ToolDamageSnapshot.capture(player.getInventory())
             : null;
-        boolean broken = player.breakBlock(block);
-        if (broken && damage != null) {
-            damage.restore(player.getInventory());
+        FoodStateSnapshot food = FoodStateSnapshot.capture(player);
+        try {
+            boolean broken = player.breakBlock(block);
+            if (broken && damage != null) {
+                damage.restore(player.getInventory());
+            }
+            return broken;
+        } finally {
+            food.restore(player);
         }
-        return broken;
+    }
+
+    private record FoodStateSnapshot(int foodLevel, float saturation, float exhaustion) {
+
+        private static FoodStateSnapshot capture(Player player) {
+            return new FoodStateSnapshot(
+                player.getFoodLevel(),
+                player.getSaturation(),
+                player.getExhaustion()
+            );
+        }
+
+        private void restore(Player player) {
+            player.setFoodLevel(foodLevel);
+            player.setSaturation(saturation);
+            player.setExhaustion(exhaustion);
+        }
     }
 
     private record ToolDamageSnapshot(ItemStack item, int damage) {

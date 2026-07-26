@@ -148,4 +148,26 @@ class BatchBlockExecutorTest {
         assertFalse(broken);
         verify(inventory, never()).setItemInMainHand(snapshot);
     }
+
+    @Test
+    void generatedPlayerBreakRestoresFoodSaturationAndExhaustion() {
+        Player player = mock(Player.class);
+        Block block = mock(Block.class);
+        when(player.getFoodLevel()).thenReturn(17);
+        when(player.getSaturation()).thenReturn(3.5F);
+        when(player.getExhaustion()).thenReturn(2.25F);
+        when(player.breakBlock(block)).thenReturn(true);
+
+        boolean broken = executor.breakBlock(
+            player,
+            block,
+            BatchBlockAction.NO_DROPS,
+            ToolDurabilityMode.PER_BLOCK
+        );
+
+        assertTrue(broken);
+        verify(player).setFoodLevel(17);
+        verify(player).setSaturation(3.5F);
+        verify(player).setExhaustion(2.25F);
+    }
 }
