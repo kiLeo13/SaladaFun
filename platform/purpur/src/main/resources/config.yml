@@ -1,0 +1,16 @@
+shared-inventory:
+  # FOLLOW_GAMERULE, DROPS_ON_DEATH, FADES_ON_DEATH, or KEEPS_ON_DEATH
+  death-behavior: FOLLOW_GAMERULE
+  respect-items-to-keep: true
+
+batch-breaking:
+  # disabled, all, or a positive integer cubic radius
+  setting: disabled
+  # PLAYER_TOOL, NATURAL_DROPS, or NO_DROPS
+  additional-block-action: PLAYER_TOOL
+  # SINGLE_USE charges only the original break; PER_BLOCK charges generated breaks too.
+  # NATURAL_DROPS does not use a player tool, so this setting does not apply to it.
+  tool-durability: SINGLE_USE
+  snapshot-chunks-per-tick: 2
+  blocks-per-tick: 64
+  max-queued-matches: 8192

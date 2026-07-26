@@ -1,0 +1,27 @@
+name: SaladaFun
+version: '${project.version}'
+main: sld.saladafun.platform.purpur.SaladaFunPlugin
+api-version: '26.2'
+authors: [Leo13]
+description: Shared inventory and batch-breaking features for Purpur.
+
+commands:
+  shared:
+    description: Manage shared modules.
+    usage: /shared inventory <enable|disable|status|resume>
+    permission: saladafun.shared.inventory.manage
+  batchbreaking:
+    description: Configure batch breaking.
+    usage: /batchbreaking <get|set>
+    permission: saladafun.batchbreaking.manage
+
+permissions:
+  saladafun.shared.inventory.manage:
+    description: Enables management of the shared inventory.
+    default: op
+  saladafun.batchbreaking.manage:
+    description: Enables management of the batch-breaking range.
+    default: op
+  saladafun.batchbreaking.use:
+    description: Enables batch-breaking behavior for a player.
+    default: true
