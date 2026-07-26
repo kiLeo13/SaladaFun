@@ -1,6 +1,7 @@
 package sld.saladafun.platform.purpur.batch;
 
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.junit.jupiter.api.Test;
 import sld.saladafun.batchbreaking.BatchBlockAction;
 
@@ -27,5 +28,14 @@ class BatchBreakEventPolicyTest {
         BatchBreakEventPolicy.apply(BatchBlockAction.PLAYER_TOOL, event);
 
         verifyNoInteractions(event);
+    }
+
+    @Test
+    void noDropsCancelsTheFinalItemDropEvent() {
+        BlockDropItemEvent event = mock(BlockDropItemEvent.class);
+
+        BatchBreakEventPolicy.apply(BatchBlockAction.NO_DROPS, event);
+
+        verify(event).setCancelled(true);
     }
 }

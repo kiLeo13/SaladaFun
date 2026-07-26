@@ -1,6 +1,7 @@
 package sld.saladafun.platform.purpur.batch;
 
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import sld.saladafun.batchbreaking.BatchBlockAction;
 
 import java.util.Objects;
@@ -19,6 +20,15 @@ final class BatchBreakEventPolicy {
         if (action == BatchBlockAction.NO_DROPS) {
             event.setDropItems(false);
             event.setExpToDrop(0);
+        }
+    }
+
+    static void apply(BatchBlockAction action, BlockDropItemEvent event) {
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(event, "event");
+
+        if (action == BatchBlockAction.NO_DROPS) {
+            event.setCancelled(true);
         }
     }
 }
