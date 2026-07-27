@@ -1,6 +1,7 @@
 package sld.saladafun.platform.purpur.discord;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Server;
@@ -17,17 +18,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class DiscordMinecraftBroadcasterTest {
+    private static final TextColor EXPECTED_DISCORD_PREFIX_COLOR =
+        TextColor.color(0x5865F2);
 
     @Test
-    void rendersMediaCountersOnTheNextLineWithCorrectPluralsAndColor() {
+    void rendersDiscordStyleHeaderAndMediaCounters() {
         Component rendered = DiscordMinecraftBroadcaster.render(
             new DiscordInboundMessage("Alex", "hello", 2, 1)
         );
 
         assertEquals(
-            "[Discord] <Alex> hello\n[+2 images] [+1 sticker]",
+            "[Discord] Alex hello\n[+2 images] [+1 sticker]",
             PlainTextComponentSerializer.plainText().serialize(rendered)
         );
+        assertEquals(EXPECTED_DISCORD_PREFIX_COLOR, rendered.color());
         String legacy = LegacyComponentSerializer.legacySection().serialize(rendered);
         assertTrue(legacy.contains("§d[+2 images]"));
         assertTrue(legacy.contains("§d[+1 sticker]"));
@@ -40,7 +44,7 @@ class DiscordMinecraftBroadcasterTest {
         );
 
         assertEquals(
-            "[Discord] <Steve>\n[+1 image] [+2 stickers]",
+            "[Discord] Steve\n[+1 image] [+2 stickers]",
             PlainTextComponentSerializer.plainText().serialize(rendered)
         );
     }

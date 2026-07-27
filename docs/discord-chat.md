@@ -9,7 +9,8 @@ one Discord guild message channel.
   is the Minecraft username and the avatar is the player's current head rendered
   by `https://api.mcheads.org/head/{uuid}/128`.
 - Discord to Minecraft uses JDA gateway events. Messages render as
-  `[Discord] <effective name> message`.
+  `[Discord] effective name message`, using the Discord user's effective name
+  rather than a server-specific member nickname. The prefix uses Discord blurple.
 - Uploaded image attachments and stickers add a magenta counter on the next line,
   for example `[+2 images] [+1 sticker]`. Non-image files, link-preview embeds,
   reactions, edits, and deletions are not mirrored.
@@ -87,8 +88,9 @@ these checks on a non-production Purpur server:
    reports that the bridge connected.
 3. Send Minecraft chat containing `@everyone`; verify the webhook uses the
    player's username and head while producing no Discord ping.
-4. Send Discord text containing user/channel mentions; verify Minecraft shows
-   JDA's display form.
+4. Send Discord text from an account with a server nickname and include
+   user/channel mentions; verify Minecraft shows the user's effective name
+   without angle brackets and JDA's display form for the mentions.
 5. Upload two images and one sticker; verify the next Minecraft line is magenta
    and reads `[+2 images] [+1 sticker]`.
 6. Verify bot and webhook messages do not return to Minecraft.

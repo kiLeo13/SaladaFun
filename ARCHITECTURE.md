@@ -190,9 +190,9 @@ Discord-to-Minecraft traffic uses a `createLight` JDA session with only
 cache, and guild chunking remain disabled. The listener accepts only the
 configured channel, rejects bot and webhook authors to prevent bridge loops, and
 copies `getContentDisplay()`, image-attachment count, sticker count, and effective
-author name into a JDA-free record. The resulting Adventure broadcast is scheduled
-on the Minecraft thread. Image/sticker counters appear in light purple on the
-line after message text.
+Discord user name into a JDA-free record. The resulting Adventure broadcast is
+scheduled on the Minecraft thread. Image/sticker counters appear in light purple
+on the line after message text.
 
 `DiscordChatBridge` owns at most one active and one inactive candidate session.
 Configuration reloads stage the candidate until Discord READY confirms that the

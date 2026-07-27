@@ -1,6 +1,5 @@
 package sld.saladafun.platform.purpur.discord;
 
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -43,7 +42,7 @@ public final class DiscordMessageListener extends ListenerAdapter {
         );
         int stickerCount = message.getStickers().size();
         DiscordInboundMessage inbound = new DiscordInboundMessage(
-            authorName(event),
+            event.getAuthor().getEffectiveName(),
             content,
             imageCount,
             stickerCount
@@ -51,12 +50,5 @@ public final class DiscordMessageListener extends ListenerAdapter {
         if (inbound.hasVisibleContent()) {
             destination.accept(inbound);
         }
-    }
-
-    private String authorName(MessageReceivedEvent event) {
-        Member member = event.getMember();
-        return member == null
-            ? event.getAuthor().getEffectiveName()
-            : member.getEffectiveName();
     }
 }

@@ -1,6 +1,5 @@
 package sld.saladafun.platform.purpur.discord;
 
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
@@ -22,13 +21,11 @@ class DiscordMessageListenerTest {
     private static final String CHANNEL_ID = "987654321098765432";
 
     @Test
-    void forwardsDisplayContentAndCountsImagesAndStickers() {
+    void forwardsUserEffectiveNameDisplayContentAndMediaCounts() {
         AtomicReference<DiscordInboundMessage> delivered = new AtomicReference<>();
         MessageReceivedEvent event = textEvent(CHANNEL_ID, false, false);
         Message message = event.getMessage();
-        Member member = mock(Member.class);
-        when(member.getEffectiveName()).thenReturn("Server Nickname");
-        when(event.getMember()).thenReturn(member);
+        when(event.getAuthor().getEffectiveName()).thenReturn("Account Display Name");
         when(message.getContentDisplay()).thenReturn("hello @VisibleName");
 
         Message.Attachment firstImage = attachment(true);
@@ -45,18 +42,23 @@ class DiscordMessageListenerTest {
             .onMessageReceived(event);
 
         assertEquals(
-            new DiscordInboundMessage("Server Nickname", "hello @VisibleName", 2, 1),
+            new DiscordInboundMessage(
+                "Account Display Name",
+                "hello @VisibleName",
+                2,
+                1
+            ),
             delivered.get()
         );
+        verify(event, never()).getMember();
         verify(message).getContentDisplay();
         verify(message, never()).getContentRaw();
     }
 
     @Test
-    void forwardsMediaOnlyMessagesUsingTheUserNameFallback() {
+    void forwardsMediaOnlyMessagesUsingTheUserEffectiveName() {
         AtomicReference<DiscordInboundMessage> delivered = new AtomicReference<>();
         MessageReceivedEvent event = textEvent(CHANNEL_ID, false, false);
-        when(event.getMember()).thenReturn(null);
         when(event.getAuthor().getEffectiveName()).thenReturn("Discord User");
         when(event.getMessage().getContentDisplay()).thenReturn("");
         Message.Attachment image = attachment(true);
