@@ -3,6 +3,7 @@ package sld.saladafun.platform.purpur.discord;
 import org.junit.jupiter.api.Test;
 import sld.saladafun.platform.purpur.config.DiscordChatSettings;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DiscordChatBridgeTest {
+    private static final Duration EXPECTED_TERMINATION_TIMEOUT =
+        Duration.ofSeconds(10);
 
     @Test
     void keepsTheActiveSessionUntilAReplacementIsReady() {
@@ -51,6 +54,7 @@ class DiscordChatBridgeTest {
 
         bridge.close();
         assertTrue(candidate.closed);
+        assertEquals(EXPECTED_TERMINATION_TIMEOUT, candidate.terminationTimeout);
     }
 
     @Test
@@ -99,6 +103,30 @@ class DiscordChatBridgeTest {
         assertTrue(candidate.closed);
     }
 
+    @Test
+    void finalShutdownClosesAndAwaitsActiveAndCandidateSessions() {
+        FakeSessionFactory factory = new FakeSessionFactory();
+        DiscordChatBridge bridge = new DiscordChatBridge(
+            factory,
+            ignored -> {
+            },
+            Logger.getAnonymousLogger()
+        );
+
+        bridge.reconfigure(settings("111111111111111111"));
+        FakeSession active = factory.latest();
+        factory.ready(active);
+        bridge.reconfigure(settings("222222222222222222"));
+        FakeSession candidate = factory.latest();
+
+        bridge.close();
+
+        assertTrue(active.closed);
+        assertTrue(candidate.closed);
+        assertEquals(EXPECTED_TERMINATION_TIMEOUT, active.terminationTimeout);
+        assertEquals(EXPECTED_TERMINATION_TIMEOUT, candidate.terminationTimeout);
+    }
+
     private DiscordChatSettings settings(String channelId) {
         return new DiscordChatSettings(
             true,
@@ -142,6 +170,7 @@ class DiscordChatBridgeTest {
         private final List<String> published = new ArrayList<>();
         private boolean active;
         private boolean closed;
+        private Duration terminationTimeout;
 
         private FakeSession(DiscordChatSettings settings) {
             this.settings = settings;
@@ -162,6 +191,12 @@ class DiscordChatBridgeTest {
             if (active && !closed) {
                 published.add(content);
             }
+        }
+
+        @Override
+        public boolean awaitTermination(Duration timeout) {
+            terminationTimeout = timeout;
+            return true;
         }
 
         @Override

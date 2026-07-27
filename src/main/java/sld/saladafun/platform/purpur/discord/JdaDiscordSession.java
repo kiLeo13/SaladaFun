@@ -11,6 +11,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import sld.saladafun.platform.purpur.config.DiscordChatSettings;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +19,9 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 final class JdaDiscordSession implements DiscordSession {
+    private static final Duration ABANDONED_SESSION_TERMINATION_TIMEOUT =
+        Duration.ofSeconds(10);
+
     private final DiscordChatSettings settings;
     private final AtomicBoolean active = new AtomicBoolean();
     private final AtomicBoolean ready = new AtomicBoolean();
@@ -79,6 +83,7 @@ final class JdaDiscordSession implements DiscordSession {
                 GatewayIntent.MESSAGE_CONTENT
             )
             .addEventListeners(messages, lifecycle)
+            .setEnableShutdownHook(false)
             .build();
         try {
             IncomingWebhookClient webhook = WebhookClient.createClient(
@@ -88,7 +93,7 @@ final class JdaDiscordSession implements DiscordSession {
             this.webhookSender = new DiscordWebhookSender(webhook, logger);
             this.jda = candidate;
         } catch (RuntimeException exception) {
-            candidate.shutdownNow();
+            closeAbandonedCandidate(candidate, logger);
             throw exception;
         }
     }
@@ -114,10 +119,33 @@ final class JdaDiscordSession implements DiscordSession {
     }
 
     @Override
+    public boolean awaitTermination(Duration timeout) throws InterruptedException {
+        return jda.awaitShutdown(timeout);
+    }
+
+    @Override
     public void close() {
         active.set(false);
         if (closed.compareAndSet(false, true)) {
             jda.shutdownNow();
+        }
+    }
+
+    private static void closeAbandonedCandidate(JDA candidate, Logger logger) {
+        candidate.shutdownNow();
+        try {
+            if (!candidate.awaitShutdown(ABANDONED_SESSION_TERMINATION_TIMEOUT)) {
+                logger.warning(
+                    "Abandoned Discord session did not stop within "
+                        + ABANDONED_SESSION_TERMINATION_TIMEOUT.toSeconds()
+                        + " seconds."
+                );
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            logger.warning(
+                "Interrupted while waiting for an abandoned Discord session to stop."
+            );
         }
     }
 }

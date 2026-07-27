@@ -2,6 +2,7 @@ package sld.saladafun.platform.purpur.discord;
 
 import sld.saladafun.platform.purpur.config.DiscordChatSettings;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -12,6 +13,8 @@ import java.util.logging.Logger;
  * a working session after the candidate reaches READY.
  */
 public final class DiscordChatBridge implements MinecraftChatPublisher, AutoCloseable {
+    private static final Duration SESSION_TERMINATION_TIMEOUT = Duration.ofSeconds(10);
+
     private final DiscordSessionFactory sessionFactory;
     private final Consumer<DiscordInboundMessage> inboundDestination;
     private final Logger logger;
@@ -97,14 +100,25 @@ public final class DiscordChatBridge implements MinecraftChatPublisher, AutoClos
     }
 
     @Override
-    public synchronized void close() {
-        if (closed) {
-            return;
+    public void close() {
+        DiscordSession candidate;
+        DiscordSession active;
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            configurationGeneration++;
+            candidate = candidateSession;
+            candidateSession = null;
+            active = activeSession;
+            activeSession = null;
         }
-        closed = true;
-        configurationGeneration++;
-        closeCandidate();
-        closeActive();
+
+        closeSession(candidate);
+        closeSession(active);
+        awaitTermination(candidate);
+        awaitTermination(active);
     }
 
     private synchronized void activateCandidate(long generation, DiscordSession session) {
@@ -151,6 +165,30 @@ public final class DiscordChatBridge implements MinecraftChatPublisher, AutoClos
         if (activeSession != null) {
             activeSession.close();
             activeSession = null;
+        }
+    }
+
+    private void closeSession(DiscordSession session) {
+        if (session != null) {
+            session.close();
+        }
+    }
+
+    private void awaitTermination(DiscordSession session) {
+        if (session == null) {
+            return;
+        }
+        try {
+            if (!session.awaitTermination(SESSION_TERMINATION_TIMEOUT)) {
+                logger.warning(
+                    "Discord session did not stop within "
+                        + SESSION_TERMINATION_TIMEOUT.toSeconds()
+                        + " seconds."
+                );
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            logger.warning("Interrupted while waiting for a Discord session to stop.");
         }
     }
 }
