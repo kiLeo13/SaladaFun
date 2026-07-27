@@ -46,3 +46,18 @@ batch-breaking:
   # - true: include matching animals; "all" uses chunks sent to the player.
   # - false: batch only blocks and bucket-filled water.
   include-animals: false
+
+discord-chat:
+  # Bridges accepted Minecraft player chat and one Discord text channel.
+  # Keep this disabled until all three values below are configured.
+  enabled: false
+
+  # The Discord bot token. Treat this as a secret and never commit a populated value.
+  token: ""
+
+  # Incoming webhook used for Minecraft -> Discord messages.
+  # Treat the webhook URL as a secret because it contains its own credential.
+  webhook-url: ""
+
+  # Text-channel snowflake from which the bot accepts Discord -> Minecraft messages.
+  channel-id: ""

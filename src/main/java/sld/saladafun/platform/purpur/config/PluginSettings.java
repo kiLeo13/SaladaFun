@@ -7,13 +7,25 @@ import sld.saladafun.batchbreaking.BatchBreakingSetting;
 import sld.saladafun.batchbreaking.BatchBreakingSettingParser;
 import sld.saladafun.batchbreaking.ToolDurabilityMode;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Validated view of administrator-controlled plugin configuration.
  */
 public final class PluginSettings {
+    private static final Set<String> DISCORD_WEBHOOK_HOSTS = Set.of(
+        "discord.com",
+        "ptb.discord.com",
+        "canary.discord.com",
+        "discordapp.com",
+        "ptb.discordapp.com",
+        "canary.discordapp.com"
+    );
+
     private FileConfiguration configuration;
     private final BatchBreakingSettingParser batchParser = new BatchBreakingSettingParser();
 
@@ -29,6 +41,7 @@ public final class PluginSettings {
         toolDurabilityMode();
         batchExecutionMode();
         includeAnimals();
+        discordChatSettings();
     }
 
     public void replace(FileConfiguration candidate) {
@@ -87,6 +100,19 @@ public final class PluginSettings {
         return configuration.getBoolean("batch-breaking.include-animals", false);
     }
 
+    public DiscordChatSettings discordChatSettings() {
+        if (!configuration.getBoolean("discord-chat.enabled", false)) {
+            return DiscordChatSettings.disabled();
+        }
+
+        String token = requiredString("discord-chat.token");
+        String webhookUrl = requiredString("discord-chat.webhook-url");
+        String channelId = requiredString("discord-chat.channel-id");
+        validateDiscordWebhookUrl(webhookUrl);
+        validateDiscordSnowflake(channelId);
+        return new DiscordChatSettings(true, token, webhookUrl, channelId);
+    }
+
     public void batchBreakingSetting(BatchBreakingSetting setting) {
         configuration.set("batch-breaking.setting", batchParser.format(setting));
     }
@@ -104,5 +130,49 @@ public final class PluginSettings {
                 exception
             );
         }
+    }
+
+    private String requiredString(String path) {
+        String configured = configuration.getString(path, "");
+        if (configured == null || configured.isBlank()) {
+            throw new IllegalArgumentException("Missing required " + path);
+        }
+        return configured.strip();
+    }
+
+    private void validateDiscordWebhookUrl(String configured) {
+        try {
+            URI uri = new URI(configured);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (!"https".equalsIgnoreCase(uri.getScheme())
+                || host == null
+                || !DISCORD_WEBHOOK_HOSTS.contains(host.toLowerCase(Locale.ROOT))
+                || path == null
+                || !path.matches("/api(?:/v\\d+)?/webhooks/\\d+/[^/]+/?")) {
+                throw invalidDiscordWebhookUrl();
+            }
+        } catch (URISyntaxException exception) {
+            throw invalidDiscordWebhookUrl();
+        }
+    }
+
+    private void validateDiscordSnowflake(String configured) {
+        try {
+            if (Long.parseUnsignedLong(configured) == 0L) {
+                throw new NumberFormatException("zero");
+            }
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(
+                "Invalid discord-chat.channel-id: expected a non-zero Discord snowflake",
+                exception
+            );
+        }
+    }
+
+    private IllegalArgumentException invalidDiscordWebhookUrl() {
+        return new IllegalArgumentException(
+            "Invalid discord-chat.webhook-url: expected an HTTPS Discord incoming webhook URL"
+        );
     }
 }
