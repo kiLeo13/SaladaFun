@@ -3,7 +3,7 @@ version: '${project.version}'
 main: sld.saladafun.platform.purpur.SaladaFunPlugin
 api-version: '26.2'
 authors: [Leo13]
-description: Shared inventory and batch-breaking features for Purpur.
+description: Shared inventory, batch-breaking, and Discord chat features for Purpur.
 
 commands:
   shared:

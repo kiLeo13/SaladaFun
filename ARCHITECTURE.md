@@ -18,8 +18,9 @@ SaladaFun is one Maven JAR project using the standard root source layout:
 - `src/main/java/sld/saladafun/persistence/sqlite` implements the persistence
   port with SQLite JDBC and jOOQ.
 - `src/main/java/sld/saladafun/platform/purpur` maps Bukkit objects into domain
-  snapshots, listens to Purpur events, executes commands, and schedules batch
-  work. Purpur remains a `provided` dependency.
+  snapshots, listens to Purpur events, executes commands, schedules batch work,
+  and adapts JDA events for the optional Discord chat bridge. Purpur remains a
+  `provided` dependency.
 - `src/main/resources` contains `plugin.yml`, `config.yml`, and versioned SQL
   under `db/migration`.
 - `src/test/java` mirrors the production package hierarchy.
@@ -171,6 +172,36 @@ in player chat; diagnostic completion counts are logged only at `FINE`.
 platform reload API. The shared mutable `PluginSettings` view is replaced only
 after successful validation, so registered listeners and commands observe new
 settings without reconstruction.
+
+## Discord chat bridge
+
+The optional bridge is entirely under `sld.saladafun.platform.purpur.discord`;
+JDA and Bukkit types do not enter the shared-inventory or batch-breaking domain
+packages.
+
+Minecraft-to-Discord traffic observes final uncancelled `AsyncChatEvent` messages
+at `MONITOR`, converts the Adventure component to plain text, and sends it through
+a JDA `IncomingWebhookClient`. Webhook messages use the player's username, a
+UUID-addressed MC Heads avatar, and an empty allowed-mentions set. JDA owns rate
+limiting and asynchronous HTTP execution.
+
+Discord-to-Minecraft traffic uses a `createLight` JDA session with only
+`GUILD_MESSAGES` and privileged `MESSAGE_CONTENT`. Optional cache flags, member
+cache, and guild chunking remain disabled. The listener accepts only the
+configured channel, rejects bot and webhook authors to prevent bridge loops, and
+copies `getContentDisplay()`, image-attachment count, sticker count, and effective
+author name into a JDA-free record. The resulting Adventure broadcast is scheduled
+on the Minecraft thread. Image/sticker counters appear in light purple on the
+line after message text.
+
+`DiscordChatBridge` owns at most one active and one inactive candidate session.
+Configuration reloads stage the candidate until Discord READY confirms that the
+configured guild message channel is visible. A successful candidate atomically
+replaces and closes the old session; a failed or superseded candidate is closed
+without interrupting active traffic. Plugin shutdown closes both.
+
+Operational setup, security requirements, supported message content, and live
+verification are documented in `docs/discord-chat.md`.
 
 ## Build and verification
 
