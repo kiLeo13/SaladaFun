@@ -1,6 +1,8 @@
 package sld.saladafun.platform.purpur.discord;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -8,6 +10,8 @@ import org.bukkit.Server;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.junit.jupiter.api.Test;
+
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,10 +32,13 @@ class DiscordMinecraftBroadcasterTest {
         );
 
         assertEquals(
-            "[Discord] Alex hello\n[+2 images] [+1 sticker]",
+            "[Discord] Alex: hello\n[+2 images] [+1 sticker]",
             PlainTextComponentSerializer.plainText().serialize(rendered)
         );
         assertEquals(EXPECTED_DISCORD_PREFIX_COLOR, rendered.color());
+        assertEquals(NamedTextColor.WHITE, colorOfText(rendered, "Alex"));
+        assertEquals(NamedTextColor.WHITE, colorOfText(rendered, ":"));
+        assertEquals(NamedTextColor.GRAY, colorOfText(rendered, "hello"));
         String legacy = LegacyComponentSerializer.legacySection().serialize(rendered);
         assertTrue(legacy.contains("§d[+2 images]"));
         assertTrue(legacy.contains("§d[+1 sticker]"));
@@ -44,7 +51,7 @@ class DiscordMinecraftBroadcasterTest {
         );
 
         assertEquals(
-            "[Discord] Steve\n[+1 image] [+2 stickers]",
+            "[Discord] Steve:\n[+1 image] [+2 stickers]",
             PlainTextComponentSerializer.plainText().serialize(rendered)
         );
     }
@@ -85,5 +92,17 @@ class DiscordMinecraftBroadcasterTest {
         );
 
         verify(server, never()).getScheduler();
+    }
+
+    private static TextColor colorOfText(Component component, String content) {
+        if (component instanceof TextComponent textComponent
+            && textComponent.content().equals(content)) {
+            return component.color();
+        }
+        return component.children().stream()
+            .map(child -> colorOfText(child, content))
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
     }
 }

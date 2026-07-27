@@ -17,7 +17,9 @@ public final class DiscordMinecraftBroadcaster implements Consumer<DiscordInboun
     private static final int DISCORD_BLURPLE_RGB = 0x5865F2;
     private static final TextColor DISCORD_PREFIX_COLOR =
         TextColor.color(DISCORD_BLURPLE_RGB);
-    private static final TextColor MESSAGE_COLOR = NamedTextColor.WHITE;
+    private static final String AUTHOR_SUFFIX = ":";
+    private static final TextColor AUTHOR_COLOR = NamedTextColor.WHITE;
+    private static final TextColor MESSAGE_CONTENT_COLOR = NamedTextColor.GRAY;
     private static final TextColor MEDIA_COUNTER_COLOR = NamedTextColor.LIGHT_PURPLE;
     private static final String IMAGE_LABEL = "image";
     private static final String STICKER_LABEL = "sticker";
@@ -43,10 +45,11 @@ public final class DiscordMinecraftBroadcaster implements Consumer<DiscordInboun
     static Component render(DiscordInboundMessage message) {
         Component rendered = Component.text(DISCORD_PREFIX, DISCORD_PREFIX_COLOR)
             .append(Component.space())
-            .append(Component.text(message.authorName(), MESSAGE_COLOR));
+            .append(Component.text(message.authorName(), AUTHOR_COLOR))
+            .append(Component.text(AUTHOR_SUFFIX, AUTHOR_COLOR));
         if (!message.content().isBlank()) {
             rendered = rendered.append(Component.space())
-                .append(Component.text(message.content(), MESSAGE_COLOR));
+                .append(Component.text(message.content(), MESSAGE_CONTENT_COLOR));
         }
         if (message.imageCount() > 0 || message.stickerCount() > 0) {
             rendered = rendered.append(Component.newline());
