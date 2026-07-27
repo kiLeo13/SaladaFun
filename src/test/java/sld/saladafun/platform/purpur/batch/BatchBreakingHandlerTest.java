@@ -70,12 +70,21 @@ class BatchBreakingHandlerTest {
 
     @Test
     void bucketFillRemovesAdjacentWaterAfterGeneratedBreakChecks() {
+        assertBucketFillRemovesAdjacentFluid(Material.WATER);
+    }
+
+    @Test
+    void bucketFillRemovesAdjacentLavaAfterGeneratedBreakChecks() {
+        assertBucketFillRemovesAdjacentFluid(Material.LAVA);
+    }
+
+    private void assertBucketFillRemovesAdjacentFluid(Material fluidMaterial) {
         Fixture fixture = new Fixture(false, "SYNC");
-        Block water = mock(Block.class);
-        when(water.getType()).thenReturn(Material.WATER);
-        when(fixture.origin.getType()).thenReturn(Material.WATER);
-        when(fixture.world.getBlockAt(9, 64, 8)).thenReturn(water);
-        when(fixture.snapshot.getBlockType(9, 64, 8)).thenReturn(Material.WATER);
+        Block fluid = mock(Block.class);
+        when(fluid.getType()).thenReturn(fluidMaterial);
+        when(fixture.origin.getType()).thenReturn(fluidMaterial);
+        when(fixture.world.getBlockAt(9, 64, 8)).thenReturn(fluid);
+        when(fixture.snapshot.getBlockType(9, 64, 8)).thenReturn(fluidMaterial);
 
         PlayerBucketFillEvent event = mock(PlayerBucketFillEvent.class);
         when(event.getPlayer()).thenReturn(fixture.player);
@@ -90,7 +99,7 @@ class BatchBreakingHandlerTest {
         }
 
         verify(pluginManager).callEvent(any(BlockBreakEvent.class));
-        verify(water).setType(Material.AIR, false);
+        verify(fluid).setType(Material.AIR, false);
         verify(fixture.player, never()).sendMessage(any(String.class));
     }
 

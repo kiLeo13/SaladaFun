@@ -120,10 +120,14 @@ public final class BatchBreakingHandler implements Listener, AutoCloseable {
     public void captureBucketTrigger(PlayerBucketFillEvent event) {
         Player player = event.getPlayer();
         Block fluid = event.getBlock();
-        if (!canStartFor(player) || fluid.getType() != Material.WATER) {
+        if (!canStartFor(player) || !isBatchFluid(fluid.getType())) {
             return;
         }
         pendingBucketTriggers.put(event, blockTrigger(player, fluid, true));
+    }
+
+    private static boolean isBatchFluid(Material material) {
+        return material == Material.WATER || material == Material.LAVA;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

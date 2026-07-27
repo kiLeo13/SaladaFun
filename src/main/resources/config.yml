@@ -44,7 +44,7 @@ batch-breaking:
   # Applies the configured range to same-species animals killed by a player.
   # Values:
   # - true: include matching animals; "all" uses chunks sent to the player.
-  # - false: batch only blocks and bucket-filled water.
+  # - false: batch only blocks and bucket-filled water or lava.
   include-animals: false
 
 discord-chat:

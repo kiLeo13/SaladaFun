@@ -41,8 +41,9 @@ inside it. They do not scan unrelated sent chunks or the rest of the world heigh
 An allowed player action starts a batch after its event survives cancellation:
 
 - Breaking a block finds blocks of the exact same material.
-- Filling a bucket from a water source finds other water blocks. Additional water
-  is removed without drops after a generated `BlockBreakEvent` is accepted.
+- Filling a bucket from a water or lava source finds other blocks of that same
+  fluid. Additional fluid is removed without drops after a generated
+  `BlockBreakEvent` is accepted.
 - With `include-animals: true`, fatally damaging an `Animals` entity directly or
   with a projectile finds the same entity type. For example, killing a pig targets
   pigs, not all animal types. Generated damage still uses the player as its source,
@@ -90,7 +91,7 @@ Internal queue and per-tick limits are intentionally not administrator settings.
   `BlockDropItemEvent`. It therefore produces neither item nor experience drops.
 
 The original block always follows the server's ordinary player-breaking behavior.
-The action applies only to additional matched solid blocks. Water and animal
+The action applies only to additional matched solid blocks. Fluid and animal
 batches use their trigger-specific behavior described above.
 
 ## Tool durability

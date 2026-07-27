@@ -135,7 +135,7 @@ player, never every generated or globally loaded chunk.
 The Purpur adapter:
 
 1. Observes the original final `BlockBreakEvent`.
-2. Treats accepted water bucket fills as water-removal triggers.
+2. Treats accepted water and lava bucket fills as same-fluid removal triggers.
 3. Optionally treats final player-caused animal damage as a same-species trigger.
 4. Restricts finite jobs to intersecting sent chunks and exact cubic coordinates.
 5. In `ASYNC`, scans immutable snapshots on one worker and applies internal,
@@ -164,7 +164,7 @@ only its previous damage (or the tool itself when that use would destroy it).
 ignore this setting.
 
 Jobs cancel on logout/world change, plugin shutdown, or invalid state. Only one job
-may run per player. Water removals emit cancellable generated block-break events,
+may run per player. Fluid removals emit cancellable generated block-break events,
 and generated animal damage is recursion-guarded. Automatic completion is silent
 in player chat; diagnostic completion counts are logged only at `FINE`.
 
