@@ -26,7 +26,7 @@ class DiscordWebhookSenderTest {
         when(webhook.sendMessage("hello @everyone")).thenReturn(action);
         when(action.setUsername("Alex")).thenReturn(action);
         UUID playerId = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef");
-        String avatar = "https://api.mcheads.org/head/" + playerId + "/128";
+        String avatar = "https://api.mcheads.org/head/" + playerId + "/128/hat";
         when(action.setAvatarUrl(avatar)).thenReturn(action);
         when(action.setAllowedMentions(EnumSet.noneOf(Message.MentionType.class)))
             .thenReturn(action);

@@ -10,6 +10,8 @@ import java.util.logging.Logger;
 
 final class DiscordWebhookSender {
     private static final String HEAD_AVATAR_BASE_URL = "https://api.mcheads.org/head/";
+    private static final int HEAD_AVATAR_SIZE_PIXELS = 128;
+    private static final String HEAD_OUTER_LAYER_PATH = "hat";
 
     private final IncomingWebhookClient webhook;
     private final Logger logger;
@@ -26,7 +28,7 @@ final class DiscordWebhookSender {
 
         webhook.sendMessage(limitToDiscordContent(content))
             .setUsername(playerName)
-            .setAvatarUrl(HEAD_AVATAR_BASE_URL + playerId + "/128")
+            .setAvatarUrl(headAvatarUrl(playerId))
             .setAllowedMentions(EnumSet.noneOf(Message.MentionType.class))
             .queue(
                 ignored -> {
@@ -37,6 +39,15 @@ final class DiscordWebhookSender {
                         + failure.getClass().getSimpleName() + ")"
                 )
             );
+    }
+
+    private static String headAvatarUrl(UUID playerId) {
+        return HEAD_AVATAR_BASE_URL
+            + playerId
+            + "/"
+            + HEAD_AVATAR_SIZE_PIXELS
+            + "/"
+            + HEAD_OUTER_LAYER_PATH;
     }
 
     private String limitToDiscordContent(String content) {
