@@ -10,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Administrative entry point for validated runtime configuration reloads.
@@ -17,10 +18,25 @@ import java.util.Objects;
 public final class SaladaFunCommand implements CommandExecutor {
     private final JavaPlugin plugin;
     private final PluginSettings settings;
+    private final Consumer<DiscordChatSettings> discordChatConfigurator;
 
     public SaladaFunCommand(JavaPlugin plugin, PluginSettings settings) {
+        this(plugin, settings, ignored -> {
+            // Compatibility constructor for contexts without a Discord bridge.
+        });
+    }
+
+    public SaladaFunCommand(
+        JavaPlugin plugin,
+        PluginSettings settings,
+        Consumer<DiscordChatSettings> discordChatConfigurator
+    ) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.settings = Objects.requireNonNull(settings, "settings");
+        this.discordChatConfigurator = Objects.requireNonNull(
+            discordChatConfigurator,
+            "discordChatConfigurator"
+        );
     }
 
     @Override
@@ -44,6 +60,7 @@ public final class SaladaFunCommand implements CommandExecutor {
 
             plugin.reloadConfig();
             settings.replace(plugin.getConfig());
+            discordChatConfigurator.accept(settings.discordChatSettings());
             sender.sendMessage("SaladaFun configuration reloaded.");
         } catch (IOException | InvalidConfigurationException | RuntimeException exception) {
             plugin.getLogger().warning(

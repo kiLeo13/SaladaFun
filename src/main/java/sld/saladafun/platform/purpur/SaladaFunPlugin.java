@@ -7,6 +7,9 @@ import sld.saladafun.platform.purpur.batch.BatchBreakingCommand;
 import sld.saladafun.platform.purpur.batch.BatchBreakingHandler;
 import sld.saladafun.platform.purpur.config.PluginSettings;
 import sld.saladafun.platform.purpur.config.SaladaFunCommand;
+import sld.saladafun.platform.purpur.discord.DiscordChatBridge;
+import sld.saladafun.platform.purpur.discord.DiscordMinecraftBroadcaster;
+import sld.saladafun.platform.purpur.discord.MinecraftChatListener;
 import sld.saladafun.platform.purpur.shared.PlayerInventorySynchronizer;
 import sld.saladafun.platform.purpur.shared.PurpurInventoryMapper;
 import sld.saladafun.platform.purpur.shared.SharedInventoryCommand;
@@ -26,6 +29,7 @@ import java.util.Objects;
 public final class SaladaFunPlugin extends JavaPlugin {
     private SharedInventoryManager sharedInventoryManager;
     private BatchBreakingHandler batchBreakingHandler;
+    private DiscordChatBridge discordChatBridge;
 
     @Override
     public void onEnable() {
@@ -52,10 +56,19 @@ public final class SaladaFunPlugin extends JavaPlugin {
                 this, sharedInventoryManager, mapper, synchronizer, settings
             );
             batchBreakingHandler = new BatchBreakingHandler(this, settings);
+            discordChatBridge = new DiscordChatBridge(
+                new DiscordMinecraftBroadcaster(this),
+                getLogger()
+            );
 
             getServer().getPluginManager().registerEvents(sharedHandler, this);
             getServer().getPluginManager().registerEvents(batchBreakingHandler, this);
-            registerCommands(mapper, synchronizer, settings);
+            getServer().getPluginManager().registerEvents(
+                new MinecraftChatListener(discordChatBridge),
+                this
+            );
+            discordChatBridge.reconfigure(settings.discordChatSettings());
+            registerCommands(mapper, synchronizer, settings, discordChatBridge);
 
             // Handles plugin reloads, where players may already be online.
             getServer().getOnlinePlayers().forEach(sharedHandler::reconcilePlayer);
@@ -67,6 +80,9 @@ public final class SaladaFunPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (discordChatBridge != null) {
+            discordChatBridge.close();
+        }
         if (batchBreakingHandler != null) {
             batchBreakingHandler.close();
         }
@@ -78,7 +94,8 @@ public final class SaladaFunPlugin extends JavaPlugin {
     private void registerCommands(
         PurpurInventoryMapper mapper,
         PlayerInventorySynchronizer synchronizer,
-        PluginSettings settings
+        PluginSettings settings,
+        DiscordChatBridge discordBridge
     ) {
         var shared = new SharedInventoryCommand(
             getServer(), sharedInventoryManager, mapper, synchronizer
@@ -99,6 +116,8 @@ public final class SaladaFunPlugin extends JavaPlugin {
         PluginCommand saladaFunCommand = Objects.requireNonNull(
             getCommand("saladafun"), "saladafun command missing from plugin.yml"
         );
-        saladaFunCommand.setExecutor(new SaladaFunCommand(this, settings));
+        saladaFunCommand.setExecutor(
+            new SaladaFunCommand(this, settings, discordBridge::reconfigure)
+        );
     }
 }

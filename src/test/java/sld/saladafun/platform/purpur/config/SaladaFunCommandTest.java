@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -49,6 +50,29 @@ class SaladaFunCommandTest {
             sld.saladafun.batchbreaking.BatchExecutionMode.SYNC,
             settings.batchExecutionMode()
         );
+    }
+
+    @Test
+    void reconfiguresDiscordAfterValidatedReload() throws IOException {
+        Files.writeString(
+            temporaryDirectory.resolve("config.yml"),
+            "discord-chat:%n  enabled: false%n".formatted()
+        );
+        JavaPlugin plugin = plugin();
+        YamlConfiguration reloaded = new YamlConfiguration();
+        reloaded.set("discord-chat.enabled", false);
+        when(plugin.getConfig()).thenReturn(reloaded);
+        PluginSettings settings = new PluginSettings(new YamlConfiguration());
+        AtomicReference<DiscordChatSettings> applied = new AtomicReference<>();
+
+        new SaladaFunCommand(plugin, settings, applied::set).onCommand(
+            mock(CommandSender.class),
+            mock(Command.class),
+            "saladafun",
+            new String[]{"reloadconfig"}
+        );
+
+        assertEquals(DiscordChatSettings.disabled(), applied.get());
     }
 
     @Test
