@@ -6,11 +6,13 @@ The optional Discord bridge connects accepted global Minecraft player chat with
 one Discord guild message channel.
 
 - Minecraft to Discord uses an incoming webhook. The apparent webhook username
-  is the Minecraft username and the avatar is the player's current head rendered
-  by `https://api.mcheads.org/head/{uuid}/128`.
+  is the Minecraft username and the avatar is the player's current head, including
+  its vanilla outer/hat layer, rendered by
+  `https://api.mcheads.org/head/{uuid}/128/hat`.
 - Discord to Minecraft uses JDA gateway events. Messages render as
-  `[Discord] effective name message`, using the Discord user's effective name
-  rather than a server-specific member nickname. The prefix uses Discord blurple.
+  `[Discord] effective name: message`, using the Discord user's effective name
+  rather than a server-specific member nickname. The prefix uses Discord blurple,
+  the author is white, and message content is gray.
 - Uploaded image attachments and stickers add a magenta counter on the next line,
   for example `[+2 images] [+1 sticker]`. Non-image files, link-preview embeds,
   reactions, edits, and deletions are not mirrored.
@@ -72,6 +74,8 @@ candidate becomes active only after Discord reports READY and the configured
 guild message channel is visible. Until then, the previous session remains
 active. A failed candidate is closed without interrupting the previous bridge.
 Disabling the feature closes both candidate and active sessions.
+Final plugin shutdown additionally waits up to ten seconds per JDA session for
+termination before Purpur can unload the plugin classes.
 
 Minecraft-originated webhook messages have all Discord mentions disabled. Text
 such as `@everyone` remains visible but cannot ping Discord users or roles.
@@ -87,10 +91,12 @@ these checks on a non-production Purpur server:
 2. Enable valid credentials, run `/saladafun reloadconfig`, and verify the log
    reports that the bridge connected.
 3. Send Minecraft chat containing `@everyone`; verify the webhook uses the
-   player's username and head while producing no Discord ping.
+   player's username and head with its vanilla outer layer while producing no
+   Discord ping.
 4. Send Discord text from an account with a server nickname and include
    user/channel mentions; verify Minecraft shows the user's effective name
-   without angle brackets and JDA's display form for the mentions.
+   followed by a colon without angle brackets, gray message content, and JDA's
+   display form for the mentions.
 5. Upload two images and one sticker; verify the next Minecraft line is magenta
    and reads `[+2 images] [+1 sticker]`.
 6. Verify bot and webhook messages do not return to Minecraft.

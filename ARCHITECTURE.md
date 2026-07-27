@@ -182,8 +182,8 @@ packages.
 Minecraft-to-Discord traffic observes final uncancelled `AsyncChatEvent` messages
 at `MONITOR`, converts the Adventure component to plain text, and sends it through
 a JDA `IncomingWebhookClient`. Webhook messages use the player's username, a
-UUID-addressed MC Heads avatar, and an empty allowed-mentions set. JDA owns rate
-limiting and asynchronous HTTP execution.
+UUID-addressed MC Heads avatar with the vanilla outer head layer, and an empty
+allowed-mentions set. JDA owns rate limiting and asynchronous HTTP execution.
 
 Discord-to-Minecraft traffic uses a `createLight` JDA session with only
 `GUILD_MESSAGES` and privileged `MESSAGE_CONTENT`. Optional cache flags, member
@@ -198,7 +198,8 @@ on the line after message text.
 Configuration reloads stage the candidate until Discord READY confirms that the
 configured guild message channel is visible. A successful candidate atomically
 replaces and closes the old session; a failed or superseded candidate is closed
-without interrupting active traffic. Plugin shutdown closes both.
+without interrupting active traffic. Plugin shutdown closes both and waits for
+JDA termination before Purpur unloads the plugin classes.
 
 Operational setup, security requirements, supported message content, and live
 verification are documented in `docs/discord-chat.md`.
