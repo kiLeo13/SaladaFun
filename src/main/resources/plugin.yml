@@ -6,6 +6,9 @@ authors: [Leo13]
 description: Shared vitals, batch-breaking, and Discord chat features for Purpur.
 
 commands:
+  shared:
+    description: Manage shared health and food.
+    usage: /shared <health|food> <enable|disable|status|resume>
   batchbreaking:
     description: Configure batch breaking.
     usage: /batchbreaking <get|set>
@@ -16,6 +19,12 @@ commands:
     permission: saladafun.reloadconfig
 
 permissions:
+  saladafun.shared.health.manage:
+    description: Enables management of shared health.
+    default: op
+  saladafun.shared.food.manage:
+    description: Enables management of shared food.
+    default: op
   saladafun.batchbreaking.manage:
     description: Enables management of the batch-breaking range.
     default: op
