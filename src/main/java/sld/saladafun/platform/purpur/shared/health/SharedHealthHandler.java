@@ -2,6 +2,7 @@ package sld.saladafun.platform.purpur.shared.health;
 
 import com.destroystokyo.paper.event.player.PlayerPostRespawnEvent;
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
+import org.bukkit.damage.DamageSource;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -26,8 +27,9 @@ public final class SharedHealthHandler implements Listener {
     private final PlayerHealthSynchronizer synchronizer;
     private final SharedDeathCoordinator deathCoordinator;
     private final List<HealthContribution> departingContributions = new ArrayList<>();
-    private boolean lethalTick;
-    private UUID primaryDeath;
+    private final List<PlayerDeathEvent> primaryDeaths = new ArrayList<>();
+    private UUID deathWavePrimary;
+    private DamageSource deathWaveSource;
 
     public SharedHealthHandler(
         SharedHealthManager manager,
@@ -80,9 +82,8 @@ public final class SharedHealthHandler implements Listener {
         }
         UUID playerId = event.getPlayer().getUniqueId();
         boolean generated = deathCoordinator.consumeGeneratedDeath(playerId);
-        lethalTick = true;
-        if (!generated && primaryDeath == null) {
-            primaryDeath = playerId;
+        if (!generated) {
+            primaryDeaths.add(event);
         }
     }
 
@@ -98,6 +99,8 @@ public final class SharedHealthHandler implements Listener {
         HealthState canonical = manager.current().orElseThrow();
         if (canonical.phase() == HealthPhase.DEAD) {
             canonical = manager.revive();
+            deathWavePrimary = null;
+            deathWaveSource = null;
         }
         synchronizer.applyToAll(canonical);
     }
@@ -106,34 +109,48 @@ public final class SharedHealthHandler implements Listener {
     public void onTickEnd(ServerTickEndEvent event) {
         if (!manager.isEnabled()) {
             departingContributions.clear();
-            lethalTick = false;
-            primaryDeath = null;
+            primaryDeaths.clear();
+            deathWavePrimary = null;
+            deathWaveSource = null;
             return;
         }
         var contributions = new ArrayList<>(departingContributions);
         contributions.addAll(synchronizer.observeOnline());
         departingContributions.clear();
+        PlayerDeathEvent primaryDeath = primaryDeaths.stream()
+            .filter(death -> !death.isCancelled())
+            .findFirst()
+            .orElse(null);
+        primaryDeaths.clear();
+        if (primaryDeath != null) {
+            deathWavePrimary = primaryDeath.getPlayer().getUniqueId();
+            deathWaveSource = primaryDeath.getDamageSource();
+        }
         HealthState canonical = manager.applyTick(
-            List.copyOf(contributions), lethalTick
+            List.copyOf(contributions), primaryDeath != null
         );
         if (canonical.phase() == HealthPhase.DEAD) {
-            UUID primary = primaryDeath;
-            if (primary == null && !manager.current().isEmpty()) {
-                primary = new UUID(0, 0);
+            if (deathWavePrimary != null && deathWaveSource != null) {
+                deathCoordinator.killOtherPlayers(
+                    deathWavePrimary,
+                    deathWaveSource
+                );
+            } else {
+                deathCoordinator.killOtherPlayersWithoutSource(new UUID(0, 0));
             }
-            deathCoordinator.killOtherPlayers(primary);
         } else {
+            deathWavePrimary = null;
+            deathWaveSource = null;
             synchronizer.applyToAll(canonical);
         }
-        lethalTick = false;
-        primaryDeath = null;
     }
 
     public void resetReplicas() {
         synchronizer.clear();
         deathCoordinator.clear();
         departingContributions.clear();
-        lethalTick = false;
-        primaryDeath = null;
+        primaryDeaths.clear();
+        deathWavePrimary = null;
+        deathWaveSource = null;
     }
 }
