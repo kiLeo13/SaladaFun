@@ -48,25 +48,6 @@ public final class PluginSettings {
         configuration = Objects.requireNonNull(candidate, "candidate");
     }
 
-    public DeathBehavior deathBehavior() {
-        String configured = configuration.getString(
-            "shared-inventory.death-behavior",
-            DeathBehavior.FOLLOW_GAMERULE.name()
-        );
-        try {
-            return DeathBehavior.valueOf(configured.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException(
-                "Invalid shared-inventory.death-behavior: " + configured,
-                exception
-            );
-        }
-    }
-
-    public boolean respectItemsToKeep() {
-        return configuration.getBoolean("shared-inventory.respect-items-to-keep", true);
-    }
-
     public BatchBreakingSetting batchBreakingSetting() {
         return batchParser.parse(
             configuration.getString("batch-breaking.setting", "disabled")
