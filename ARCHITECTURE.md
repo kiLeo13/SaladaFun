@@ -2,9 +2,9 @@
 
 ## Purpose
 
-SaladaFun is a Java 25 Purpur 26.2 plugin providing player-scoped batch breaking
-and a Discord chat bridge. Domain rules are isolated from Bukkit so they can be
-reused by another Minecraft server adapter.
+SaladaFun is a Java 25 Purpur 26.2 plugin providing shared player vitals,
+player-scoped batch breaking, and a Discord chat bridge. Domain rules are isolated
+from Bukkit so they can be reused by another Minecraft server adapter.
 
 ## Source layout
 
@@ -30,6 +30,44 @@ without introducing separate Maven modules.
 
 Java packages retain the collision-safe `sld.saladafun` root and are
 feature-first, for example `sld.saladafun.batchbreaking`.
+
+## Shared health and food
+
+Health and food are independent session modules under `sld.saladafun.shared`.
+Their aggregates, lifecycle managers, models, and repository interfaces have no
+Bukkit, Paper, Purpur, JDBC, jOOQ, or SQLite dependency.
+
+Players are replicas of one in-memory canonical state per enabled module. At
+`ServerTickEndEvent`, the Purpur adapters compare each actual player state with the
+last replica written by SaladaFun. Current health, absorption, food level,
+saturation, and exhaustion changes merge as additive deltas. Each aggregate sums
+the complete tick and clamps once, then emits at most one revision.
+
+Maximum health and maximum absorption are absolute ranges rather than deltas.
+Same-tick conflicts use deterministic UUID-ordered LWW. The Purpur adapter
+preserves existing attribute bases and modifiers and installs one namespaced,
+transient additive override that makes the effective range canonical. Personal
+restoration removes only that override. Status effects remain personal, while
+their resulting vital and range changes enter the delta merge.
+
+A definitive `PlayerDeathEvent` latches the tick as lethal. Lethality dominates
+same-tick healing, clears canonical health and absorption, and causes one guarded
+fan-out to other living online players. The first post-respawn event revives the
+pool at full canonical range. Dead players are not marked restored until a
+post-respawn or subsequent join makes their Bukkit state writable.
+
+`SharedHealthManager` and `SharedFoodManager` own session lifecycle and roll back
+an in-memory candidate if persistence rejects it. SQLite implementations use
+typed health and food tables in `shared-state.db`; no generic nullable state blob
+or inventory schema is retained. Personal backups, active controls, archived
+sessions, and module-scoped `yyyyMMdd_nn` labels are transactionally persisted.
+
+Commands are routed through `SharedCommand` to module-specific delegates. Health
+and food can be enabled, disabled, inspected, and resumed independently. Detailed
+gameplay and operational behavior is documented in `docs/shared-vitals.md`.
+Lifecycle listeners use `LOWEST` and the tick flush uses `LOW`, allowing later
+plugins to cancel or adjust ordinary gameplay without SaladaFun claiming final
+event authority.
 
 ## Batch breaking
 
@@ -82,7 +120,7 @@ settings without reconstruction.
 ## Discord chat bridge
 
 The optional bridge is entirely under `sld.saladafun.platform.purpur.discord`;
-JDA and Bukkit types do not enter the shared-inventory or batch-breaking domain
+JDA and Bukkit types do not enter the shared-vitals or batch-breaking domain
 packages.
 
 Minecraft-to-Discord traffic observes final uncancelled `AsyncChatEvent` messages
@@ -118,7 +156,7 @@ Use JDK 25:
 mvn clean package
 ```
 
-The distributable JAR is `target/saladafun-1.0.jar`. Domain concurrency/range
-tests, real SQLite integration tests, and adapter mapping tests run in the same
-Maven build. Live multi-player Purpur validation remains required before
-production rollout because mocks cannot reproduce server event ordering.
+The distributable JAR is `target/saladafun-1.0.jar`. Domain merge/range tests,
+real SQLite integration tests, and Purpur adapter tests run in the same Maven
+build. Live multi-player Purpur validation remains required before production
+rollout because mocks cannot reproduce server event ordering.
