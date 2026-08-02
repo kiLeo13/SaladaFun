@@ -34,8 +34,6 @@ public final class PluginSettings {
     }
 
     public void validate() {
-        deathBehavior();
-        respectItemsToKeep();
         batchBreakingSetting();
         batchBlockAction();
         toolDurabilityMode();

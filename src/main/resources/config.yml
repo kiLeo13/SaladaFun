@@ -1,18 +1,3 @@
-shared-inventory:
-  # Controls what happens to the shared inventory when a participant dies.
-  # Values:
-  # - FOLLOW_GAMERULE: follow the world's effective keep-inventory result.
-  # - DROPS_ON_DEATH: clear it globally and produce one normal set of drops.
-  # - FADES_ON_DEATH: clear it globally without dropping the items.
-  # - KEEPS_ON_DEATH: retain it and suppress shared-inventory drops.
-  death-behavior: FOLLOW_GAMERULE
-
-  # Controls whether Paper's items-to-keep list is restored after a death clear.
-  # Values:
-  # - true: reinsert retained items into the shared inventory.
-  # - false: ignore retained items and apply the cleared shared inventory.
-  respect-items-to-keep: true
-
 batch-breaking:
   # Controls which matching blocks are included after the original break.
   # Values:
