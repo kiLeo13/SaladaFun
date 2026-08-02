@@ -55,6 +55,8 @@ Lethality dominates same-tick healing, clears canonical health and absorption,
 and causes one guarded fan-out to other living online players. The adapter retains
 the primary Bukkit `DamageSource` and uses it for every generated secondary death;
 generated events cannot recursively replace that source or start another wave.
+If summed nonlethal deltas empty the pool without a primary death event, the last
+accepted player damage event in that tick supplies the shared source.
 The first post-respawn event revives the pool at full canonical range. Dead
 players are not marked restored until a post-respawn or subsequent join makes
 their Bukkit state writable.

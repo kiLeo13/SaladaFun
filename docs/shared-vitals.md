@@ -74,6 +74,11 @@ Generated secondary deaths are guarded against starting another wave. The source
 is retained while the pool remains dead so a temporarily surviving participant is
 retried with the same cause rather than a generic one.
 
+If additive damage makes the shared pool reach zero without any one player first
+emitting `PlayerDeathEvent`, the last accepted player `EntityDamageEvent` in that
+tick supplies the common source. A generic forced death is used only when the pool
+reaches zero without any Bukkit damage event, so no genuine source exists to copy.
+
 Because the listener runs at `LOWEST`, SaladaFun checks the event's final
 cancellation state at tick end. A later plugin that cancels the primary death also
 cancels the shared death wave.
