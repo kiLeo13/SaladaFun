@@ -2,19 +2,18 @@
 
 ## Purpose
 
-SaladaFun is a Java 25 Purpur 26.2 plugin providing a revisioned shared inventory
-and player-scoped batch breaking. Domain rules are isolated from Bukkit so they can
-be reused by another Minecraft server adapter.
+SaladaFun is a Java 25 Purpur 26.2 plugin providing player-scoped batch breaking
+and a Discord chat bridge. Domain rules are isolated from Bukkit so they can be
+reused by another Minecraft server adapter.
 
 ## Source layout
 
 SaladaFun is one Maven JAR project using the standard root source layout:
 
 - `src/main/java/sld/saladafun/shared` and
-  `src/main/java/sld/saladafun/batchbreaking` contain pure Java domain models,
-  synchronized inventory mutations, repository ports, join reconciliation,
-  session lifecycle, and cubic range logic. These packages have no Bukkit, jOOQ,
-  JDBC, or SQLite dependency.
+  `src/main/java/sld/saladafun/batchbreaking` contain pure Java domain models and
+  cubic range logic. These packages have no Bukkit, jOOQ, JDBC, or SQLite
+  dependency.
 - `src/main/java/sld/saladafun/persistence/sqlite` implements the persistence
   port with SQLite JDBC and jOOQ.
 - `src/main/java/sld/saladafun/platform/purpur` maps Bukkit objects into domain
@@ -29,101 +28,8 @@ Maven compiles these packages together and shades required runtime dependencies
 into one deployable plugin JAR. Package boundaries keep responsibilities clear
 without introducing separate Maven modules.
 
-Java packages retain the collision-safe `sld.saladafun` root but are feature-first,
-for example `sld.saladafun.shared.inventory` and
-`sld.saladafun.batchbreaking`.
-
-## Shared inventory
-
-### Slots
-
-The canonical inventory includes 36 storage/hotbar slots, four armor slots, and
-off-hand. It excludes the selected hotbar index, cursor, crafting grid, Ender
-Chest, experience, health, hunger, and effects.
-
-Items cross the core boundary as immutable snapshots containing a namespaced item
-key, stack-compatibility fingerprint, amount, maximum size, payload format, and
-opaque bytes. Purpur currently uses versioned `ItemStack` NBT bytes. Core logic is
-portable; persisted payloads require an adapter that understands their format.
-
-### Authority and revisions
-
-`SharedInventory` is the runtime authority and has synchronized, in-memory
-methods. It never calls Bukkit or persistence while holding its monitor.
-
-- Accepted ordinary changes use compare-and-set against the old canonical slot.
-- Accepted changes receive a monotonically increasing global revision.
-- Drops, pickups, and death clearing first reserve slots or capacity.
-- Reservations make quantities unavailable immediately and are committed or
-  rolled back after the final event outcome.
-- Operation UUIDs provide idempotency.
-- Online Bukkit inventories are replicas, not independent authorities.
-
-`SharedInventoryManager` owns zero or one aggregate. It is constructed once by the
-plugin composition root and injected; there is no static singleton or service
-locator. `current()` returns `Optional`, never `null`.
-
-### Join reconciliation
-
-There is intentionally no consistency configuration. Bukkit does not expose an
-offline inventory API, so reconciliation always occurs when an inventory becomes
-available on join (and for already-online players after a plugin reload).
-
-1. A player without a session backup is backed up and receives canonical state.
-2. Returning replicas are compared with their last applied revision and fingerprint.
-3. An older or unmarked replica receives database state.
-4. A content change whose applied revision is at least canonical is promoted as a
-   new LWW revision.
-
-This treats proven newer Bukkit state as authoritative without allowing an old
-offline copy to resurrect stale shared items.
-
-### Lifecycle
-
-`/shared inventory enable` creates an empty session. Supplying an online player
-creates a session from that player's inventory. Activation closes open inventories,
-persists all online personal backups and the session transactionally, then applies
-canonical state.
-
-Disabling persists and archives canonical state, marks backups pending, restores
-online players, and restores offline players on their next join. Resume uses an
-archived session's canonical items and resets replica markers.
-
-Session UUIDs are primary keys. Labels are generated transactionally in local
-server time as `yyyyMMdd_nn`; timestamps remain UTC.
-
-### Event cooperation
-
-Handlers that make decisions run at `LOWEST`. Cancellable operations use a
-read-only `MONITOR` handler to commit or roll back after other plugins have made
-their decisions. MONITOR handlers never mutate Bukkit events.
-
-### Death
-
-`FOLLOW_GAMERULE`, `DROPS_ON_DEATH`, `FADES_ON_DEATH`, and `KEEPS_ON_DEATH`
-are described in `docs/shared-inventory.md`. The core serializes global clearing
-so two deaths cannot drop the same canonical items. Optional
-`getItemsToKeep()` contents are reinserted after clearing.
-
-## Persistence
-
-`shared-inventory.db` uses foreign keys, WAL, a five-second busy timeout, and FULL
-synchronous durability. Migrations are checksum-protected.
-
-Main tables:
-
-- `shared_inventory_control`
-- `shared_inventory_session`
-- `shared_inventory_slot`
-- `player_inventory_backup`
-- `player_inventory_backup_slot`
-- `player_inventory_replica`
-- `schema_history`
-
-Lifecycle operations and canonical snapshots use jOOQ transactions. SQLite and
-Minecraft player/world files cannot share one atomic transaction; revisions,
-fail-closed startup, backup-first activation, and join reconciliation minimize that
-unavoidable crash boundary.
+Java packages retain the collision-safe `sld.saladafun` root and are
+feature-first, for example `sld.saladafun.batchbreaking`.
 
 ## Batch breaking
 
