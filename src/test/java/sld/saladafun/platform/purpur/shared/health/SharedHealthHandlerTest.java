@@ -3,6 +3,7 @@ package sld.saladafun.platform.purpur.shared.health;
 import com.destroystokyo.paper.event.server.ServerTickEndEvent;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.junit.jupiter.api.Test;
 import sld.saladafun.shared.health.HealthPhase;
@@ -10,6 +11,7 @@ import sld.saladafun.shared.health.HealthState;
 import sld.saladafun.shared.health.SharedHealthManager;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.anyList;
@@ -88,6 +90,49 @@ class SharedHealthHandlerTest {
         verify(deaths, never()).killOtherPlayers(
             org.mockito.ArgumentMatchers.any(UUID.class),
             org.mockito.ArgumentMatchers.any(DamageSource.class)
+        );
+    }
+
+    @Test
+    void aggregateDeathUsesTheLastAcceptedDamageSourceForEveryPlayer() {
+        SharedHealthManager manager = mock(SharedHealthManager.class);
+        PlayerHealthSynchronizer synchronizer = mock(PlayerHealthSynchronizer.class);
+        SharedDeathCoordinator deaths = mock(SharedDeathCoordinator.class);
+        Player player = mock(Player.class);
+        EntityDamageEvent firstDamage = mock(EntityDamageEvent.class);
+        EntityDamageEvent lastDamage = mock(EntityDamageEvent.class);
+        DamageSource firstSource = mock(DamageSource.class);
+        DamageSource lastSource = mock(DamageSource.class);
+        when(firstDamage.getEntity()).thenReturn(player);
+        when(firstDamage.getDamageSource()).thenReturn(firstSource);
+        when(lastDamage.getEntity()).thenReturn(player);
+        when(lastDamage.getDamageSource()).thenReturn(lastSource);
+        when(manager.isEnabled()).thenReturn(true);
+        HealthState alive = new HealthState(
+            2.0, 20.0, 0.0, 10.0, HealthPhase.ALIVE, 0
+        );
+        HealthState dead = new HealthState(
+            0.0, 20.0, 0.0, 10.0, HealthPhase.DEAD, 1
+        );
+        when(manager.current()).thenReturn(Optional.of(alive));
+        when(manager.applyTick(anyList(), org.mockito.ArgumentMatchers.eq(false)))
+            .thenReturn(dead);
+        when(synchronizer.observeOnline()).thenReturn(List.of());
+        var handler = new SharedHealthHandler(
+            manager,
+            mock(PurpurHealthMapper.class),
+            synchronizer,
+            deaths
+        );
+
+        handler.onDamage(firstDamage);
+        handler.onDamage(lastDamage);
+        handler.onTickEnd(mock(ServerTickEndEvent.class));
+
+        verify(deaths).killOtherPlayers(new UUID(0, 0), lastSource);
+        verify(deaths, never()).killOtherPlayers(
+            org.mockito.ArgumentMatchers.any(UUID.class),
+            org.mockito.ArgumentMatchers.same(firstSource)
         );
     }
 }

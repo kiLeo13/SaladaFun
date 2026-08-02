@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -28,6 +29,7 @@ public final class SharedHealthHandler implements Listener {
     private final SharedDeathCoordinator deathCoordinator;
     private final List<HealthContribution> departingContributions = new ArrayList<>();
     private final List<PlayerDeathEvent> primaryDeaths = new ArrayList<>();
+    private final List<EntityDamageEvent> playerDamageEvents = new ArrayList<>();
     private UUID deathWavePrimary;
     private DamageSource deathWaveSource;
 
@@ -76,6 +78,19 @@ public final class SharedHealthHandler implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
+    public void onDamage(EntityDamageEvent event) {
+        if (!manager.isEnabled() || !(event.getEntity() instanceof Player)) {
+            return;
+        }
+        if (manager.current()
+            .map(state -> state.phase() == HealthPhase.DEAD)
+            .orElse(false)) {
+            return;
+        }
+        playerDamageEvents.add(event);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onDeath(PlayerDeathEvent event) {
         if (!manager.isEnabled()) {
             return;
@@ -110,6 +125,7 @@ public final class SharedHealthHandler implements Listener {
         if (!manager.isEnabled()) {
             departingContributions.clear();
             primaryDeaths.clear();
+            playerDamageEvents.clear();
             deathWavePrimary = null;
             deathWaveSource = null;
             return;
@@ -130,6 +146,15 @@ public final class SharedHealthHandler implements Listener {
             List.copyOf(contributions), primaryDeath != null
         );
         if (canonical.phase() == HealthPhase.DEAD) {
+            if (deathWaveSource == null) {
+                playerDamageEvents.stream()
+                    .filter(damage -> !damage.isCancelled())
+                    .reduce((first, second) -> second)
+                    .ifPresent(damage -> {
+                        deathWavePrimary = new UUID(0, 0);
+                        deathWaveSource = damage.getDamageSource();
+                    });
+            }
             if (deathWavePrimary != null && deathWaveSource != null) {
                 deathCoordinator.killOtherPlayers(
                     deathWavePrimary,
@@ -143,6 +168,7 @@ public final class SharedHealthHandler implements Listener {
             deathWaveSource = null;
             synchronizer.applyToAll(canonical);
         }
+        playerDamageEvents.clear();
     }
 
     public void resetReplicas() {
@@ -150,6 +176,7 @@ public final class SharedHealthHandler implements Listener {
         deathCoordinator.clear();
         departingContributions.clear();
         primaryDeaths.clear();
+        playerDamageEvents.clear();
         deathWavePrimary = null;
         deathWaveSource = null;
     }
