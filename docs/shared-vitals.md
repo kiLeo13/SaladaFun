@@ -64,10 +64,19 @@ players while still sharing the vital outcome.
 
 ## Death and respawn
 
-A real `PlayerDeathEvent` makes the entire tick lethal. Same-tick healing cannot
-rescue the pool after that definitive death. At tick end, SaladaFun sets canonical
-health and absorption to zero and kills every other online living participant.
-Generated secondary deaths are guarded against starting another wave.
+A non-cancelled `PlayerDeathEvent` makes the entire tick lethal. Same-tick healing
+cannot rescue the pool after that definitive death. SaladaFun retains the first
+accepted death's Bukkit `DamageSource` and applies lethal damage with that same
+source to every other online living participant. Damage type, direct entity,
+causing entity, and source location therefore remain available to vanilla death
+messages and other plugins, while each message still names its actual victim.
+Generated secondary deaths are guarded against starting another wave. The source
+is retained while the pool remains dead so a temporarily surviving participant is
+retried with the same cause rather than a generic one.
+
+Because the listener runs at `LOWEST`, SaladaFun checks the event's final
+cancellation state at tick end. A later plugin that cancels the primary death also
+cancels the shared death wave.
 
 The first post-respawn event revives the canonical pool at its full current maximum
 health and zero absorption. Later respawning players receive the latest canonical

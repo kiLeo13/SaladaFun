@@ -50,11 +50,14 @@ transient additive override that makes the effective range canonical. Personal
 restoration removes only that override. Status effects remain personal, while
 their resulting vital and range changes enter the delta merge.
 
-A definitive `PlayerDeathEvent` latches the tick as lethal. Lethality dominates
-same-tick healing, clears canonical health and absorption, and causes one guarded
-fan-out to other living online players. The first post-respawn event revives the
-pool at full canonical range. Dead players are not marked restored until a
-post-respawn or subsequent join makes their Bukkit state writable.
+A definitive, non-cancelled `PlayerDeathEvent` latches the tick as lethal.
+Lethality dominates same-tick healing, clears canonical health and absorption,
+and causes one guarded fan-out to other living online players. The adapter retains
+the primary Bukkit `DamageSource` and uses it for every generated secondary death;
+generated events cannot recursively replace that source or start another wave.
+The first post-respawn event revives the pool at full canonical range. Dead
+players are not marked restored until a post-respawn or subsequent join makes
+their Bukkit state writable.
 
 `SharedHealthManager` and `SharedFoodManager` own session lifecycle and roll back
 an in-memory candidate if persistence rejects it. SQLite implementations use
