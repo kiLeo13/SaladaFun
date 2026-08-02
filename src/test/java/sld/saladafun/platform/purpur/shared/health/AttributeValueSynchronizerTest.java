@@ -62,6 +62,28 @@ class AttributeValueSynchronizerTest {
         );
     }
 
+    @Test
+    void naturalValueExcludesOnlyTheSaladaFunOverride() {
+        AttributeInstance attribute = mock(AttributeInstance.class);
+        AttributeModifier external = modifier(
+            4.0, AttributeModifier.Operation.ADD_NUMBER
+        );
+        AttributeModifier override = modifier(
+            -4.0, AttributeModifier.Operation.ADD_NUMBER
+        );
+        when(override.getKey()).thenReturn(new org.bukkit.NamespacedKey(
+            "saladafun", "shared_range_override"
+        ));
+        when(attribute.getBaseValue()).thenReturn(20.0);
+        when(attribute.getModifiers()).thenReturn(List.of(external, override));
+
+        assertEquals(
+            24.0,
+            new AttributeValueSynchronizer().naturalValue(attribute),
+            1.0E-9
+        );
+    }
+
     private AttributeModifier modifier(
         double amount,
         AttributeModifier.Operation operation

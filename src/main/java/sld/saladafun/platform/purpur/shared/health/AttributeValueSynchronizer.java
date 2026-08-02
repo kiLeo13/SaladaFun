@@ -4,7 +4,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 
-/** Solves an attribute base value while preserving every installed modifier. */
+/** Applies a transient effective-value override while preserving external modifiers. */
 final class AttributeValueSynchronizer {
     private static final double EPSILON = 1.0E-6;
     private static final NamespacedKey OVERRIDE_KEY = new NamespacedKey(
@@ -44,5 +44,22 @@ final class AttributeValueSynchronizer {
 
     void clear(AttributeInstance attribute) {
         attribute.removeModifier(OVERRIDE_KEY);
+    }
+
+    double naturalValue(AttributeInstance attribute) {
+        double additive = 0.0;
+        double scalar = 0.0;
+        double multiplier = 1.0;
+        for (AttributeModifier modifier : attribute.getModifiers()) {
+            if (OVERRIDE_KEY.equals(modifier.getKey())) {
+                continue;
+            }
+            switch (modifier.getOperation()) {
+                case ADD_NUMBER -> additive += modifier.getAmount();
+                case ADD_SCALAR -> scalar += modifier.getAmount();
+                case MULTIPLY_SCALAR_1 -> multiplier *= 1.0 + modifier.getAmount();
+            }
+        }
+        return (attribute.getBaseValue() + additive) * (1.0 + scalar) * multiplier;
     }
 }

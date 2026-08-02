@@ -20,7 +20,7 @@ public final class PlayerHealthSynchronizer {
 
     private final Server server;
     private final PurpurHealthMapper mapper;
-    private final Map<UUID, HealthState> replicas = new HashMap<>();
+    private final Map<UUID, HealthReplica> replicas = new HashMap<>();
     private final Set<UUID> synchronizing = new HashSet<>();
 
     public PlayerHealthSynchronizer(Server server, PurpurHealthMapper mapper) {
@@ -33,7 +33,11 @@ public final class PlayerHealthSynchronizer {
         synchronizing.add(playerId);
         try {
             mapper.apply(player, canonical);
-            replicas.put(playerId, mapper.snapshot(player, canonical.revision()));
+            replicas.put(playerId, new HealthReplica(
+                mapper.snapshot(player, canonical.revision()),
+                mapper.naturalMaximumHealth(player),
+                mapper.naturalMaximumAbsorption(player)
+            ));
         } finally {
             synchronizing.remove(playerId);
         }
@@ -69,23 +73,30 @@ public final class PlayerHealthSynchronizer {
         if (synchronizing.contains(playerId)) {
             return java.util.Optional.empty();
         }
-        HealthState replica = replicas.get(playerId);
+        HealthReplica replica = replicas.get(playerId);
         if (replica == null) {
             return java.util.Optional.empty();
         }
-        HealthState observed = mapper.snapshot(player, replica.revision());
+        HealthState applied = replica.applied();
+        HealthState observed = mapper.snapshot(player, applied.revision());
+        double naturalMaximumHealth = mapper.naturalMaximumHealth(player);
+        double naturalMaximumAbsorption = mapper.naturalMaximumAbsorption(player);
         boolean rangeChanged = differs(
-            observed.maximumHealth(), replica.maximumHealth()
-        ) || differs(observed.maximumAbsorption(), replica.maximumAbsorption());
+            naturalMaximumHealth, replica.naturalMaximumHealth()
+        ) || differs(naturalMaximumAbsorption, replica.naturalMaximumAbsorption());
         HealthContribution contribution = new HealthContribution(
             playerId,
-            observed.health() - replica.health(),
-            observed.absorption() - replica.absorption(),
+            observed.health() - applied.health(),
+            observed.absorption() - applied.absorption(),
             rangeChanged,
-            observed.maximumHealth(),
-            observed.maximumAbsorption()
+            naturalMaximumHealth,
+            naturalMaximumAbsorption
         );
-        replicas.put(playerId, observed);
+        replicas.put(playerId, new HealthReplica(
+            observed,
+            naturalMaximumHealth,
+            naturalMaximumAbsorption
+        ));
         return java.util.Optional.of(contribution);
     }
 
@@ -101,5 +112,12 @@ public final class PlayerHealthSynchronizer {
 
     private boolean differs(double left, double right) {
         return Math.abs(left - right) > EPSILON;
+    }
+
+    private record HealthReplica(
+        HealthState applied,
+        double naturalMaximumHealth,
+        double naturalMaximumAbsorption
+    ) {
     }
 }

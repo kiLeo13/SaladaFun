@@ -71,6 +71,18 @@ public final class PurpurHealthMapper {
         player.setHealth(Math.min(personalState.health(), health.getValue()));
     }
 
+    public double naturalMaximumHealth(Player player) {
+        return attributeSynchronizer.naturalValue(
+            attribute(player, Attribute.MAX_HEALTH)
+        );
+    }
+
+    public double naturalMaximumAbsorption(Player player) {
+        return attributeSynchronizer.naturalValue(
+            attribute(player, Attribute.MAX_ABSORPTION)
+        );
+    }
+
     private AttributeInstance attribute(Player player, Attribute attribute) {
         AttributeInstance instance = player.getAttribute(attribute);
         if (instance == null) {
