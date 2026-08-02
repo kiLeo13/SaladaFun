@@ -27,21 +27,24 @@ class AttributeValueSynchronizerTest {
         AttributeModifier multiplier = modifier(
             0.25, AttributeModifier.Operation.MULTIPLY_SCALAR_1
         );
-        AtomicReference<Double> base = new AtomicReference<>(10.0);
+        AtomicReference<AttributeModifier> override = new AtomicReference<>();
         when(attribute.getModifiers()).thenReturn(List.of(
             additive, scalar, multiplier
         ));
+        when(attribute.getBaseValue()).thenReturn(10.0);
         doAnswer(invocation -> {
-            base.set(invocation.getArgument(0));
+            override.set(invocation.getArgument(0));
             return null;
-        }).when(attribute).setBaseValue(org.mockito.ArgumentMatchers.anyDouble());
+        }).when(attribute).addTransientModifier(
+            org.mockito.ArgumentMatchers.any(AttributeModifier.class)
+        );
         when(attribute.getValue()).thenAnswer(invocation ->
-            (base.get() + 2.0) * 1.5 * 1.25
+            (10.0 + 2.0 + override.get().getAmount()) * 1.5 * 1.25
         );
 
         new AttributeValueSynchronizer().setEffectiveValue(attribute, 30.0);
 
-        assertEquals(14.0, base.get(), 1.0E-9);
+        assertEquals(4.0, override.get().getAmount(), 1.0E-9);
         assertEquals(30.0, attribute.getValue(), 1.0E-9);
     }
 

@@ -50,7 +50,7 @@ public final class SharedHealthHandler implements Listener {
 
     public void reconcilePlayer(Player player) {
         manager.pendingRestore(player.getUniqueId()).ifPresent(backup -> {
-            synchronizer.apply(player, backup.state());
+            synchronizer.restore(player, backup.state());
             manager.markRestored(backup);
         });
         if (!manager.isEnabled()) {
@@ -89,7 +89,7 @@ public final class SharedHealthHandler implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPostRespawn(PlayerPostRespawnEvent event) {
         manager.pendingRestore(event.getPlayer().getUniqueId()).ifPresent(backup -> {
-            synchronizer.apply(event.getPlayer(), backup.state());
+            synchronizer.restore(event.getPlayer(), backup.state());
             manager.markRestored(backup);
         });
         if (!manager.isEnabled()) {

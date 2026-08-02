@@ -103,7 +103,7 @@ public final class SharedHealthCommand implements SharedModuleCommand {
                 continue;
             }
             manager.pendingRestore(player.getUniqueId()).ifPresent(backup -> {
-                synchronizer.apply(player, backup.state());
+                synchronizer.restore(player, backup.state());
                 manager.markRestored(backup);
             });
         }

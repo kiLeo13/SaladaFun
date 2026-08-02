@@ -45,6 +45,17 @@ public final class PlayerHealthSynchronizer {
         }
     }
 
+    public void restore(Player player, HealthState personalState) {
+        UUID playerId = player.getUniqueId();
+        synchronizing.add(playerId);
+        try {
+            mapper.restore(player, personalState);
+            replicas.remove(playerId);
+        } finally {
+            synchronizing.remove(playerId);
+        }
+    }
+
     public List<HealthContribution> observeOnline() {
         var contributions = new ArrayList<HealthContribution>();
         for (Player player : server.getOnlinePlayers()) {

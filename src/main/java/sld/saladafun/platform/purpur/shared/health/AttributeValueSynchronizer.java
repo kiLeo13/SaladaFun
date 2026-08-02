@@ -1,13 +1,18 @@
 package sld.saladafun.platform.purpur.shared.health;
 
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 
 /** Solves an attribute base value while preserving every installed modifier. */
 final class AttributeValueSynchronizer {
     private static final double EPSILON = 1.0E-6;
+    private static final NamespacedKey OVERRIDE_KEY = new NamespacedKey(
+        "saladafun", "shared_range_override"
+    );
 
     void setEffectiveValue(AttributeInstance attribute, double target) {
+        attribute.removeModifier(OVERRIDE_KEY);
         double additive = 0.0;
         double scalar = 0.0;
         double multiplier = 1.0;
@@ -24,12 +29,20 @@ final class AttributeValueSynchronizer {
                 "Cannot synchronize an attribute whose modifiers collapse its range"
             );
         }
-        double base = target / factor - additive;
-        attribute.setBaseValue(base);
+        double override = target / factor - attribute.getBaseValue() - additive;
+        attribute.addTransientModifier(new AttributeModifier(
+            OVERRIDE_KEY,
+            override,
+            AttributeModifier.Operation.ADD_NUMBER
+        ));
         if (Math.abs(attribute.getValue() - target) > EPSILON) {
             throw new IllegalStateException(
                 "The platform clamped an attempted shared attribute range of " + target
             );
         }
+    }
+
+    void clear(AttributeInstance attribute) {
+        attribute.removeModifier(OVERRIDE_KEY);
     }
 }

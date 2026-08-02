@@ -54,6 +54,23 @@ public final class PurpurHealthMapper {
         player.setHealth(state.health());
     }
 
+    /** Removes SaladaFun range overrides and restores personal current values. */
+    public void restore(Player player, HealthState personalState) {
+        Objects.requireNonNull(player, "player");
+        Objects.requireNonNull(personalState, "personalState");
+        AttributeInstance health = attribute(player, Attribute.MAX_HEALTH);
+        AttributeInstance absorption = attribute(player, Attribute.MAX_ABSORPTION);
+        attributeSynchronizer.clear(health);
+        attributeSynchronizer.clear(absorption);
+        if (player.isDead()) {
+            return;
+        }
+        player.setAbsorptionAmount(Math.min(
+            personalState.absorption(), absorption.getValue()
+        ));
+        player.setHealth(Math.min(personalState.health(), health.getValue()));
+    }
+
     private AttributeInstance attribute(Player player, Attribute attribute) {
         AttributeInstance instance = player.getAttribute(attribute);
         if (instance == null) {
