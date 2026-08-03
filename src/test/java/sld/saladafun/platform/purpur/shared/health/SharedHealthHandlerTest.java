@@ -7,6 +7,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.junit.jupiter.api.Test;
 import sld.saladafun.shared.health.HealthPhase;
+import sld.saladafun.shared.health.HealthContribution;
 import sld.saladafun.shared.health.HealthState;
 import sld.saladafun.shared.health.SharedHealthManager;
 
@@ -24,6 +25,33 @@ import static org.mockito.Mockito.when;
 class SharedHealthHandlerTest {
 
     @Test
+    void idleTickDoesNotPollPlayersOrTouchTheAggregate() {
+        SharedHealthManager manager = mock(SharedHealthManager.class);
+        PlayerHealthSynchronizer synchronizer = mock(PlayerHealthSynchronizer.class);
+        when(manager.isEnabled()).thenReturn(true);
+        when(manager.current()).thenReturn(Optional.of(new HealthState(
+            20.0, 20.0, 0.0, 0.0, HealthPhase.ALIVE, 0
+        )));
+        var handler = new SharedHealthHandler(
+            manager,
+            mock(PurpurHealthMapper.class),
+            synchronizer,
+            mock(SharedDeathCoordinator.class),
+            20
+        );
+
+        handler.onTickEnd(mock(ServerTickEndEvent.class));
+
+        verify(synchronizer, never()).observePlayers(
+            org.mockito.ArgumentMatchers.anyCollection()
+        );
+        verify(manager, never()).applyTick(
+            anyList(),
+            org.mockito.ArgumentMatchers.anyBoolean()
+        );
+    }
+
+    @Test
     void genuineDeathMakesTheTickLethalAndStartsOneWave() {
         SharedHealthManager manager = mock(SharedHealthManager.class);
         PurpurHealthMapper mapper = mock(PurpurHealthMapper.class);
@@ -37,17 +65,25 @@ class SharedHealthHandlerTest {
         when(deathEvent.getPlayer()).thenReturn(player);
         when(deathEvent.getDamageSource()).thenReturn(damageSource);
         when(manager.isEnabled()).thenReturn(true);
+        HealthState alive = new HealthState(
+            20.0, 20.0, 0.0, 10.0, HealthPhase.ALIVE, 0
+        );
         when(deaths.consumeGeneratedDeath(playerId)).thenReturn(false);
         when(synchronizer.observeOnline()).thenReturn(List.of());
         HealthState dead = new HealthState(
             0.0, 20.0, 0.0, 10.0, HealthPhase.DEAD, 1
+        );
+        when(manager.current()).thenReturn(
+            Optional.of(alive),
+            Optional.of(dead),
+            Optional.of(dead)
         );
         when(manager.applyTick(anyList(), org.mockito.ArgumentMatchers.eq(true)))
             .thenReturn(dead);
         when(manager.applyTick(anyList(), org.mockito.ArgumentMatchers.eq(false)))
             .thenReturn(dead);
         var handler = new SharedHealthHandler(
-            manager, mapper, synchronizer, deaths
+            manager, mapper, synchronizer, deaths, 20
         );
 
         handler.onDeath(deathEvent);
@@ -74,19 +110,24 @@ class SharedHealthHandlerTest {
         HealthState alive = new HealthState(
             20.0, 20.0, 0.0, 10.0, HealthPhase.ALIVE, 0
         );
+        when(manager.current()).thenReturn(Optional.of(alive));
         when(manager.applyTick(anyList(), org.mockito.ArgumentMatchers.eq(false)))
             .thenReturn(alive);
         var handler = new SharedHealthHandler(
             manager,
             mock(PurpurHealthMapper.class),
             synchronizer,
-            deaths
+            deaths,
+            20
         );
 
         handler.onDeath(deathEvent);
         handler.onTickEnd(mock(ServerTickEndEvent.class));
 
-        verify(manager).applyTick(List.of(), false);
+        verify(manager, never()).applyTick(
+            anyList(),
+            org.mockito.ArgumentMatchers.anyBoolean()
+        );
         verify(deaths, never()).killOtherPlayers(
             org.mockito.ArgumentMatchers.any(UUID.class),
             org.mockito.ArgumentMatchers.any(DamageSource.class)
@@ -103,6 +144,7 @@ class SharedHealthHandlerTest {
         EntityDamageEvent lastDamage = mock(EntityDamageEvent.class);
         DamageSource firstSource = mock(DamageSource.class);
         DamageSource lastSource = mock(DamageSource.class);
+        when(player.getUniqueId()).thenReturn(UUID.randomUUID());
         when(firstDamage.getEntity()).thenReturn(player);
         when(firstDamage.getDamageSource()).thenReturn(firstSource);
         when(lastDamage.getEntity()).thenReturn(player);
@@ -115,6 +157,13 @@ class SharedHealthHandlerTest {
             0.0, 20.0, 0.0, 10.0, HealthPhase.DEAD, 1
         );
         when(manager.current()).thenReturn(Optional.of(alive));
+        UUID actorId = player.getUniqueId();
+        HealthContribution contribution = new HealthContribution(
+            actorId, -2.0, 0.0, false, 20.0, 10.0
+        );
+        when(synchronizer.observePlayers(
+            org.mockito.ArgumentMatchers.anyCollection()
+        )).thenReturn(List.of(contribution));
         when(manager.applyTick(anyList(), org.mockito.ArgumentMatchers.eq(false)))
             .thenReturn(dead);
         when(synchronizer.observeOnline()).thenReturn(List.of());
@@ -122,7 +171,8 @@ class SharedHealthHandlerTest {
             manager,
             mock(PurpurHealthMapper.class),
             synchronizer,
-            deaths
+            deaths,
+            20
         );
 
         handler.onDamage(firstDamage);

@@ -6,6 +6,7 @@ import sld.saladafun.shared.health.HealthContribution;
 import sld.saladafun.shared.health.HealthState;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +50,19 @@ public final class PlayerHealthSynchronizer {
         }
     }
 
+    public List<UUID> onlinePlayerIds() {
+        return server.getOnlinePlayers().stream().map(Player::getUniqueId).toList();
+    }
+
+    public void applyToPlayers(Collection<UUID> playerIds, HealthState canonical) {
+        for (UUID playerId : playerIds) {
+            Player player = server.getPlayer(playerId);
+            if (player != null) {
+                apply(player, canonical);
+            }
+        }
+    }
+
     public void restore(Player player, HealthState personalState) {
         UUID playerId = player.getUniqueId();
         synchronizing.add(playerId);
@@ -64,6 +78,17 @@ public final class PlayerHealthSynchronizer {
         var contributions = new ArrayList<HealthContribution>();
         for (Player player : server.getOnlinePlayers()) {
             observe(player).ifPresent(contributions::add);
+        }
+        return List.copyOf(contributions);
+    }
+
+    public List<HealthContribution> observePlayers(Collection<UUID> playerIds) {
+        var contributions = new ArrayList<HealthContribution>();
+        for (UUID playerId : playerIds) {
+            Player player = server.getPlayer(playerId);
+            if (player != null) {
+                observe(player).ifPresent(contributions::add);
+            }
         }
         return List.copyOf(contributions);
     }

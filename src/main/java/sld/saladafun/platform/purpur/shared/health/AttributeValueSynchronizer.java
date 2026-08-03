@@ -12,6 +12,9 @@ final class AttributeValueSynchronizer {
     );
 
     void setEffectiveValue(AttributeInstance attribute, double target) {
+        if (Math.abs(attribute.getValue() - target) <= EPSILON) {
+            return;
+        }
         attribute.removeModifier(OVERRIDE_KEY);
         double additive = 0.0;
         double scalar = 0.0;

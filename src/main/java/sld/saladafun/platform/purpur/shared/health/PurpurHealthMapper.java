@@ -10,6 +10,8 @@ import java.util.Objects;
 
 /** Maps Purpur player health and attribute ranges into portable domain state. */
 public final class PurpurHealthMapper {
+    private static final double EPSILON = 1.0E-6;
+
     private final AttributeValueSynchronizer attributeSynchronizer =
         new AttributeValueSynchronizer();
 
@@ -50,8 +52,12 @@ public final class PurpurHealthMapper {
         if (player.isDead()) {
             return;
         }
-        player.setAbsorptionAmount(state.absorption());
-        player.setHealth(state.health());
+        if (Math.abs(player.getAbsorptionAmount() - state.absorption()) > EPSILON) {
+            player.setAbsorptionAmount(state.absorption());
+        }
+        if (Math.abs(player.getHealth() - state.health()) > EPSILON) {
+            player.setHealth(state.health());
+        }
     }
 
     /** Removes SaladaFun range overrides and restores personal current values. */

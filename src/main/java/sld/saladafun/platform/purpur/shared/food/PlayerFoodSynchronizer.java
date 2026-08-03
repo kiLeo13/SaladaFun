@@ -6,6 +6,7 @@ import sld.saladafun.shared.food.FoodContribution;
 import sld.saladafun.shared.food.FoodState;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -44,10 +45,34 @@ public final class PlayerFoodSynchronizer {
         }
     }
 
+    public List<UUID> onlinePlayerIds() {
+        return server.getOnlinePlayers().stream().map(Player::getUniqueId).toList();
+    }
+
+    public void applyToPlayers(Collection<UUID> playerIds, FoodState canonical) {
+        for (UUID playerId : playerIds) {
+            Player player = server.getPlayer(playerId);
+            if (player != null) {
+                apply(player, canonical);
+            }
+        }
+    }
+
     public List<FoodContribution> observeOnline() {
         var contributions = new ArrayList<FoodContribution>();
         for (Player player : server.getOnlinePlayers()) {
             observe(player).ifPresent(contributions::add);
+        }
+        return List.copyOf(contributions);
+    }
+
+    public List<FoodContribution> observePlayers(Collection<UUID> playerIds) {
+        var contributions = new ArrayList<FoodContribution>();
+        for (UUID playerId : playerIds) {
+            Player player = server.getPlayer(playerId);
+            if (player != null) {
+                observe(player).ifPresent(contributions::add);
+            }
         }
         return List.copyOf(contributions);
     }

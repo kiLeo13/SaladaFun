@@ -21,8 +21,14 @@ public final class PurpurFoodMapper {
     public void apply(Player player, FoodState state) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(state, "state");
-        player.setFoodLevel(state.foodLevel());
-        player.setSaturation(state.saturation());
-        player.setExhaustion(state.exhaustion());
+        if (player.getFoodLevel() != state.foodLevel()) {
+            player.setFoodLevel(state.foodLevel());
+        }
+        if (Float.compare(player.getSaturation(), state.saturation()) != 0) {
+            player.setSaturation(state.saturation());
+        }
+        if (Float.compare(player.getExhaustion(), state.exhaustion()) != 0) {
+            player.setExhaustion(state.exhaustion());
+        }
     }
 }

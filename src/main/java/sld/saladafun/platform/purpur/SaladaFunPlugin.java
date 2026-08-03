@@ -49,6 +49,7 @@ public final class SaladaFunPlugin extends JavaPlugin {
             PluginSettings settings = new PluginSettings(getConfig());
             // Validate configuration before registering any event listeners.
             settings.validate();
+            var sharedVitalsSettings = settings.sharedVitalsSettings();
 
             Clock clock = Clock.systemUTC();
             sharedStateDatabase = new SqliteDatabase(
@@ -75,12 +76,16 @@ public final class SaladaFunPlugin extends JavaPlugin {
                 healthManager,
                 healthMapper,
                 healthSynchronizer,
-                new SharedDeathCoordinator(getServer())
+                new SharedDeathCoordinator(getServer()),
+                sharedVitalsSettings.safetyAuditIntervalTicks()
             );
             var foodMapper = new PurpurFoodMapper();
             var foodSynchronizer = new PlayerFoodSynchronizer(getServer(), foodMapper);
             var foodHandler = new SharedFoodHandler(
-                foodManager, foodMapper, foodSynchronizer
+                foodManager,
+                foodMapper,
+                foodSynchronizer,
+                sharedVitalsSettings.safetyAuditIntervalTicks()
             );
 
             batchBreakingHandler = new BatchBreakingHandler(this, settings);

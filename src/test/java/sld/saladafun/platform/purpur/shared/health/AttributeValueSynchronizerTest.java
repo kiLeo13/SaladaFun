@@ -39,7 +39,8 @@ class AttributeValueSynchronizerTest {
             org.mockito.ArgumentMatchers.any(AttributeModifier.class)
         );
         when(attribute.getValue()).thenAnswer(invocation ->
-            (10.0 + 2.0 + override.get().getAmount()) * 1.5 * 1.25
+            (10.0 + 2.0 + (override.get() == null ? 0.0 : override.get().getAmount()))
+                * 1.5 * 1.25
         );
 
         new AttributeValueSynchronizer().setEffectiveValue(attribute, 30.0);
