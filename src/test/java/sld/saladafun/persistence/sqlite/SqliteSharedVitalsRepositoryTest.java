@@ -8,6 +8,10 @@ import sld.saladafun.shared.health.HealthContribution;
 import sld.saladafun.shared.health.HealthPhase;
 import sld.saladafun.shared.health.HealthState;
 import sld.saladafun.shared.health.SharedHealthManager;
+import sld.saladafun.shared.effects.EffectChange;
+import sld.saladafun.shared.effects.EffectState;
+import sld.saladafun.shared.effects.EffectsState;
+import sld.saladafun.shared.effects.SharedEffectsManager;
 import sld.saladafun.shared.model.RestoreStatus;
 import sld.saladafun.shared.model.SessionLabel;
 
@@ -170,6 +174,48 @@ class SqliteSharedVitalsRepositoryTest {
             writer.flush();
 
             assertEquals(latest, synchronous.loadActive().orElseThrow().state());
+        }
+    }
+
+    @Test
+    void persistsEffectsLifecycleAgainstRealSQLite() {
+        Path databaseFile = temporaryDirectory.resolve("effects.db");
+        UUID playerId = UUID.randomUUID();
+        EffectState speed = new EffectState(
+            "minecraft:speed", 1, 240, false, true, true
+        );
+        EffectsState personal = new EffectsState(
+            Map.of(speed.typeKey(), speed), 0
+        );
+
+        try (SqliteDatabase database = new SqliteDatabase(databaseFile);
+             CoalescingPersistenceWriter writer =
+                 new CoalescingPersistenceWriter(Duration.ofDays(1))) {
+            var synchronous = new SqliteSharedEffectsRepository(
+                database.context(), CLOCK
+            );
+            var repository = new AsyncSharedEffectsRepository(
+                synchronous, writer
+            );
+            var manager = new SharedEffectsManager(
+                repository, CLOCK, LABEL_ZONE
+            );
+
+            var session = manager.enableFresh(Map.of(playerId, personal));
+            assertEquals("20260802_01", session.label().value());
+            EffectsState changed = manager.applyTick(List.of(
+                EffectChange.replace(playerId, speed)
+            ));
+            writer.flush();
+            assertEquals(changed, synchronous.loadActive().orElseThrow().state());
+
+            manager.disable();
+            EffectsState backup = manager.pendingRestore(playerId)
+                .orElseThrow()
+                .state();
+            assertEquals(personal, backup);
+            manager.resume(new SessionLabel("20260802_01"), Map.of());
+            assertEquals(changed, manager.current().orElseThrow());
         }
     }
 }
