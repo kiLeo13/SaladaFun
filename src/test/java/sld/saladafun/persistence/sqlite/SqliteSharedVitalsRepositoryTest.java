@@ -182,7 +182,15 @@ class SqliteSharedVitalsRepositoryTest {
         Path databaseFile = temporaryDirectory.resolve("effects.db");
         UUID playerId = UUID.randomUUID();
         EffectState speed = new EffectState(
-            "minecraft:speed", 1, 240, false, true, true
+            "minecraft:speed",
+            1,
+            240,
+            false,
+            true,
+            true,
+            new EffectState(
+                "minecraft:speed", 0, 600, true, false, false
+            )
         );
         EffectsState personal = new EffectsState(
             Map.of(speed.typeKey(), speed), 0

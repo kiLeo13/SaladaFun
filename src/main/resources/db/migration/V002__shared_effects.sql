@@ -19,6 +19,7 @@ CREATE TABLE shared_effect_value (
     session_id TEXT NOT NULL REFERENCES shared_effect_session(session_id)
         ON DELETE CASCADE,
     effect_type TEXT NOT NULL,
+    layer_index INTEGER NOT NULL CHECK (layer_index >= 0),
     amplifier INTEGER NOT NULL CHECK (amplifier >= 0),
     duration_ticks INTEGER NOT NULL CHECK (
         duration_ticks = -1 OR duration_ticks > 0
@@ -26,7 +27,7 @@ CREATE TABLE shared_effect_value (
     ambient INTEGER NOT NULL CHECK (ambient IN (0, 1)),
     particles INTEGER NOT NULL CHECK (particles IN (0, 1)),
     icon INTEGER NOT NULL CHECK (icon IN (0, 1)),
-    PRIMARY KEY (session_id, effect_type)
+    PRIMARY KEY (session_id, effect_type, layer_index)
 );
 
 CREATE TABLE shared_effect_control (
@@ -54,6 +55,7 @@ CREATE TABLE player_effect_backup_value (
     session_id TEXT NOT NULL,
     player_uuid TEXT NOT NULL,
     effect_type TEXT NOT NULL,
+    layer_index INTEGER NOT NULL CHECK (layer_index >= 0),
     amplifier INTEGER NOT NULL CHECK (amplifier >= 0),
     duration_ticks INTEGER NOT NULL CHECK (
         duration_ticks = -1 OR duration_ticks > 0
@@ -61,7 +63,7 @@ CREATE TABLE player_effect_backup_value (
     ambient INTEGER NOT NULL CHECK (ambient IN (0, 1)),
     particles INTEGER NOT NULL CHECK (particles IN (0, 1)),
     icon INTEGER NOT NULL CHECK (icon IN (0, 1)),
-    PRIMARY KEY (session_id, player_uuid, effect_type),
+    PRIMARY KEY (session_id, player_uuid, effect_type, layer_index),
     FOREIGN KEY (session_id, player_uuid)
         REFERENCES player_effect_backup(session_id, player_uuid)
         ON DELETE CASCADE

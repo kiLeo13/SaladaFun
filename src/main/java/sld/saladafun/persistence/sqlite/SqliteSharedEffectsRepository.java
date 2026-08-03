@@ -17,6 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -246,18 +247,27 @@ public final class SqliteSharedEffectsRepository implements SharedEffectsReposit
             "DELETE FROM shared_effect_value WHERE session_id = ?",
             sessionId.value().toString()
         );
-        effects.values().forEach(effect -> transaction.execute(
-            "INSERT INTO shared_effect_value("
-                + "session_id, effect_type, amplifier, duration_ticks, ambient, "
-                + "particles, icon) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            sessionId.value().toString(),
-            effect.typeKey(),
-            effect.amplifier(),
-            effect.durationTicks(),
-            flag(effect.ambient()),
-            flag(effect.particles()),
-            flag(effect.icon())
-        ));
+        effects.values().forEach(effect -> {
+            int layer = 0;
+            EffectState current = effect;
+            while (current != null) {
+                transaction.execute(
+                    "INSERT INTO shared_effect_value("
+                        + "session_id, effect_type, layer_index, amplifier, "
+                        + "duration_ticks, ambient, particles, icon) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    sessionId.value().toString(),
+                    current.typeKey(),
+                    layer++,
+                    current.amplifier(),
+                    current.durationTicks(),
+                    flag(current.ambient()),
+                    flag(current.particles()),
+                    flag(current.icon())
+                );
+                current = current.hiddenEffect();
+            }
+        });
     }
 
     private void insertBackup(
@@ -290,19 +300,28 @@ public final class SqliteSharedEffectsRepository implements SharedEffectsReposit
             sessionId.value().toString(),
             playerId.toString()
         );
-        state.effects().values().forEach(effect -> transaction.execute(
-            "INSERT INTO player_effect_backup_value("
-                + "session_id, player_uuid, effect_type, amplifier, duration_ticks, "
-                + "ambient, particles, icon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            sessionId.value().toString(),
-            playerId.toString(),
-            effect.typeKey(),
-            effect.amplifier(),
-            effect.durationTicks(),
-            flag(effect.ambient()),
-            flag(effect.particles()),
-            flag(effect.icon())
-        ));
+        state.effects().values().forEach(effect -> {
+            int layer = 0;
+            EffectState current = effect;
+            while (current != null) {
+                transaction.execute(
+                    "INSERT INTO player_effect_backup_value("
+                        + "session_id, player_uuid, effect_type, layer_index, "
+                        + "amplifier, duration_ticks, ambient, particles, icon) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    sessionId.value().toString(),
+                    playerId.toString(),
+                    current.typeKey(),
+                    layer++,
+                    current.amplifier(),
+                    current.durationTicks(),
+                    flag(current.ambient()),
+                    flag(current.particles()),
+                    flag(current.icon())
+                );
+                current = current.hiddenEffect();
+            }
+        });
     }
 
     private EffectsSession effectsSession(DSLContext query, Record row) {
@@ -356,26 +375,63 @@ public final class SqliteSharedEffectsRepository implements SharedEffectsReposit
         SessionId sessionId,
         UUID playerId
     ) {
-        String sql = "SELECT effect_type, amplifier, duration_ticks, ambient, "
-            + "particles, icon FROM " + table + " WHERE session_id = ?";
+        String sql = "SELECT effect_type, layer_index, amplifier, duration_ticks, "
+            + "ambient, particles, icon FROM " + table + " WHERE session_id = ?";
         Object[] parameters = {sessionId.value().toString()};
         if (playerId != null) {
             sql += " AND player_uuid = ?";
             parameters = new Object[]{sessionId.value().toString(), playerId.toString()};
         }
-        Map<String, EffectState> effects = new LinkedHashMap<>();
+        sql += " ORDER BY effect_type, layer_index";
+        Map<String, List<EffectLayer>> layers = new LinkedHashMap<>();
         for (Record effect : query.fetch(sql, parameters)) {
-            EffectState state = new EffectState(
-                effect.get("effect_type", String.class),
-                effect.get("amplifier", Integer.class),
-                effect.get("duration_ticks", Integer.class),
-                effect.get("ambient", Integer.class) == 1,
-                effect.get("particles", Integer.class) == 1,
-                effect.get("icon", Integer.class) == 1
+            String type = effect.get("effect_type", String.class);
+            layers.computeIfAbsent(type, ignored -> new ArrayList<>()).add(
+                new EffectLayer(
+                    effect.get("layer_index", Integer.class),
+                    effect.get("amplifier", Integer.class),
+                    effect.get("duration_ticks", Integer.class),
+                    effect.get("ambient", Integer.class) == 1,
+                    effect.get("particles", Integer.class) == 1,
+                    effect.get("icon", Integer.class) == 1
+                )
             );
-            effects.put(state.typeKey(), state);
         }
+        Map<String, EffectState> effects = new LinkedHashMap<>();
+        layers.forEach((type, values) -> {
+            for (int index = 0; index < values.size(); index++) {
+                if (values.get(index).index() != index) {
+                    throw new PersistenceException(
+                        "Effect layer indexes must be contiguous for " + type
+                    );
+                }
+            }
+            EffectState hidden = null;
+            for (int index = values.size() - 1; index >= 0; index--) {
+                EffectLayer layer = values.get(index);
+                hidden = new EffectState(
+                    type,
+                    layer.amplifier(),
+                    layer.durationTicks(),
+                    layer.ambient(),
+                    layer.particles(),
+                    layer.icon(),
+                    hidden
+                );
+            }
+            effects.put(type, hidden);
+        });
         return Map.copyOf(effects);
+    }
+
+    private record EffectLayer(
+        int index,
+        int amplifier,
+        int durationTicks,
+        boolean ambient,
+        boolean particles,
+        boolean icon
+    ) {
     }
 
     private void requireDisabled(DSLContext transaction) {

@@ -9,7 +9,8 @@ public record EffectState(
     int durationTicks,
     boolean ambient,
     boolean particles,
-    boolean icon
+    boolean icon,
+    EffectState hiddenEffect
 ) {
     public static final int INFINITE_DURATION = -1;
 
@@ -26,6 +27,30 @@ public record EffectState(
                 "durationTicks must be positive or INFINITE_DURATION"
             );
         }
+        if (hiddenEffect != null && !typeKey.equals(hiddenEffect.typeKey())) {
+            throw new IllegalArgumentException(
+                "hidden effect layers must have the same type"
+            );
+        }
+    }
+
+    public EffectState(
+        String typeKey,
+        int amplifier,
+        int durationTicks,
+        boolean ambient,
+        boolean particles,
+        boolean icon
+    ) {
+        this(
+            typeKey,
+            amplifier,
+            durationTicks,
+            ambient,
+            particles,
+            icon,
+            null
+        );
     }
 
     public boolean sameDefinition(EffectState other) {
@@ -34,6 +59,9 @@ public record EffectState(
             && amplifier == other.amplifier
             && ambient == other.ambient
             && particles == other.particles
-            && icon == other.icon;
+            && icon == other.icon
+            && ((hiddenEffect == null && other.hiddenEffect == null)
+                || (hiddenEffect != null
+                    && hiddenEffect.sameDefinition(other.hiddenEffect)));
     }
 }
