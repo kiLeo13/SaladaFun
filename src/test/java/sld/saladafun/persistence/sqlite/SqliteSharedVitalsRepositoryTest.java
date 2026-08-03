@@ -13,6 +13,7 @@ import sld.saladafun.shared.model.SessionLabel;
 
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -138,6 +139,37 @@ class SqliteSharedVitalsRepositoryTest {
             assertTrue(loadedFood.isEnabled());
             assertFalse(loadedHealth.archivedSessions().stream().findAny().isPresent());
             assertEquals(FoodState.fresh(), loadedFood.current().orElseThrow());
+        }
+    }
+
+    @Test
+    void coalescesCanonicalRevisionsAgainstRealSQLite() {
+        Path databaseFile = temporaryDirectory.resolve("async.db");
+        UUID playerId = UUID.randomUUID();
+
+        try (SqliteDatabase database = new SqliteDatabase(databaseFile);
+             CoalescingPersistenceWriter writer =
+                 new CoalescingPersistenceWriter(Duration.ofDays(1))) {
+            var synchronous = new SqliteSharedHealthRepository(
+                database.context(), CLOCK
+            );
+            var asynchronous = new AsyncSharedHealthRepository(
+                synchronous, writer
+            );
+            var manager = new SharedHealthManager(
+                asynchronous, CLOCK, LABEL_ZONE
+            );
+            manager.enableFresh(Map.of());
+
+            manager.applyTick(List.of(new HealthContribution(
+                playerId, -1.0, 0.0, false, 20.0, 0.0
+            )), false);
+            HealthState latest = manager.applyTick(List.of(new HealthContribution(
+                playerId, -2.0, 0.0, false, 20.0, 0.0
+            )), false);
+            writer.flush();
+
+            assertEquals(latest, synchronous.loadActive().orElseThrow().state());
         }
     }
 }

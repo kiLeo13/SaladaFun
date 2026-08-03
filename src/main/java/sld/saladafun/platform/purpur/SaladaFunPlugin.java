@@ -3,6 +3,9 @@ package sld.saladafun.platform.purpur;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import sld.saladafun.persistence.sqlite.SqliteDatabase;
+import sld.saladafun.persistence.sqlite.AsyncSharedFoodRepository;
+import sld.saladafun.persistence.sqlite.AsyncSharedHealthRepository;
+import sld.saladafun.persistence.sqlite.CoalescingPersistenceWriter;
 import sld.saladafun.persistence.sqlite.SqliteSharedFoodRepository;
 import sld.saladafun.persistence.sqlite.SqliteSharedHealthRepository;
 import sld.saladafun.platform.purpur.batch.BatchBreakingCommand;
@@ -28,6 +31,7 @@ import sld.saladafun.shared.health.SharedHealthManager;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +44,7 @@ public final class SaladaFunPlugin extends JavaPlugin {
     private BatchBreakingHandler batchBreakingHandler;
     private DiscordChatBridge discordChatBridge;
     private SqliteDatabase sharedStateDatabase;
+    private CoalescingPersistenceWriter persistenceWriter;
 
     @Override
     public void onEnable() {
@@ -55,13 +60,29 @@ public final class SaladaFunPlugin extends JavaPlugin {
             sharedStateDatabase = new SqliteDatabase(
                 getDataFolder().toPath().resolve("shared-state.db")
             );
+            persistenceWriter = new CoalescingPersistenceWriter(Duration.ofMillis(
+                Math.multiplyExact(
+                    sharedVitalsSettings.persistenceFlushIntervalTicks(),
+                    50L
+                )
+            ));
             var healthManager = new SharedHealthManager(
-                new SqliteSharedHealthRepository(sharedStateDatabase.context(), clock),
+                new AsyncSharedHealthRepository(
+                    new SqliteSharedHealthRepository(
+                        sharedStateDatabase.context(), clock
+                    ),
+                    persistenceWriter
+                ),
                 clock,
                 ZoneId.systemDefault()
             );
             var foodManager = new SharedFoodManager(
-                new SqliteSharedFoodRepository(sharedStateDatabase.context(), clock),
+                new AsyncSharedFoodRepository(
+                    new SqliteSharedFoodRepository(
+                        sharedStateDatabase.context(), clock
+                    ),
+                    persistenceWriter
+                ),
                 clock,
                 ZoneId.systemDefault()
             );
@@ -138,8 +159,19 @@ public final class SaladaFunPlugin extends JavaPlugin {
         if (batchBreakingHandler != null) {
             batchBreakingHandler.close();
         }
-        if (sharedStateDatabase != null) {
-            sharedStateDatabase.close();
+        try {
+            if (persistenceWriter != null) {
+                persistenceWriter.close();
+            }
+        } catch (RuntimeException exception) {
+            getLogger().severe(
+                "Could not flush shared state during shutdown: "
+                    + exception.getMessage()
+            );
+        } finally {
+            if (sharedStateDatabase != null) {
+                sharedStateDatabase.close();
+            }
         }
     }
 
