@@ -40,7 +40,7 @@ public final class SharedCommand implements CommandExecutor, TabCompleter {
     ) {
         if (arguments.length < 2) {
             sender.sendMessage(
-                "Usage: /shared <health|food> <enable|disable|status|resume>"
+                "Usage: /shared <health|food|effects> <enable|disable|status|resume>"
             );
             return true;
         }

@@ -5,9 +5,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import sld.saladafun.persistence.sqlite.SqliteDatabase;
 import sld.saladafun.persistence.sqlite.AsyncSharedFoodRepository;
 import sld.saladafun.persistence.sqlite.AsyncSharedHealthRepository;
+import sld.saladafun.persistence.sqlite.AsyncSharedEffectsRepository;
 import sld.saladafun.persistence.sqlite.CoalescingPersistenceWriter;
 import sld.saladafun.persistence.sqlite.SqliteSharedFoodRepository;
 import sld.saladafun.persistence.sqlite.SqliteSharedHealthRepository;
+import sld.saladafun.persistence.sqlite.SqliteSharedEffectsRepository;
 import sld.saladafun.platform.purpur.batch.BatchBreakingCommand;
 import sld.saladafun.platform.purpur.batch.BatchBreakingHandler;
 import sld.saladafun.platform.purpur.config.PluginSettings;
@@ -20,12 +22,17 @@ import sld.saladafun.platform.purpur.shared.food.PlayerFoodSynchronizer;
 import sld.saladafun.platform.purpur.shared.food.PurpurFoodMapper;
 import sld.saladafun.platform.purpur.shared.food.SharedFoodCommand;
 import sld.saladafun.platform.purpur.shared.food.SharedFoodHandler;
+import sld.saladafun.platform.purpur.shared.effects.PlayerEffectsSynchronizer;
+import sld.saladafun.platform.purpur.shared.effects.PurpurEffectsMapper;
+import sld.saladafun.platform.purpur.shared.effects.SharedEffectsCommand;
+import sld.saladafun.platform.purpur.shared.effects.SharedEffectsHandler;
 import sld.saladafun.platform.purpur.shared.health.PlayerHealthSynchronizer;
 import sld.saladafun.platform.purpur.shared.health.PurpurHealthMapper;
 import sld.saladafun.platform.purpur.shared.health.SharedDeathCoordinator;
 import sld.saladafun.platform.purpur.shared.health.SharedHealthCommand;
 import sld.saladafun.platform.purpur.shared.health.SharedHealthHandler;
 import sld.saladafun.shared.food.SharedFoodManager;
+import sld.saladafun.shared.effects.SharedEffectsManager;
 import sld.saladafun.shared.health.SharedHealthManager;
 
 import java.io.IOException;
@@ -86,8 +93,19 @@ public final class SaladaFunPlugin extends JavaPlugin {
                 clock,
                 ZoneId.systemDefault()
             );
+            var effectsManager = new SharedEffectsManager(
+                new AsyncSharedEffectsRepository(
+                    new SqliteSharedEffectsRepository(
+                        sharedStateDatabase.context(), clock
+                    ),
+                    persistenceWriter
+                ),
+                clock,
+                ZoneId.systemDefault()
+            );
             healthManager.load();
             foodManager.load();
+            effectsManager.load();
 
             var healthMapper = new PurpurHealthMapper();
             var healthSynchronizer = new PlayerHealthSynchronizer(
@@ -108,6 +126,16 @@ public final class SaladaFunPlugin extends JavaPlugin {
                 foodSynchronizer,
                 sharedVitalsSettings.safetyAuditIntervalTicks()
             );
+            var effectsMapper = new PurpurEffectsMapper();
+            var effectsSynchronizer = new PlayerEffectsSynchronizer(
+                getServer(), effectsMapper
+            );
+            var effectsHandler = new SharedEffectsHandler(
+                effectsManager,
+                effectsMapper,
+                effectsSynchronizer,
+                sharedVitalsSettings.safetyAuditIntervalTicks()
+            );
 
             batchBreakingHandler = new BatchBreakingHandler(this, settings);
             discordChatBridge = new DiscordChatBridge(
@@ -117,6 +145,7 @@ public final class SaladaFunPlugin extends JavaPlugin {
 
             getServer().getPluginManager().registerEvents(healthHandler, this);
             getServer().getPluginManager().registerEvents(foodHandler, this);
+            getServer().getPluginManager().registerEvents(effectsHandler, this);
             getServer().getPluginManager().registerEvents(batchBreakingHandler, this);
             getServer().getPluginManager().registerEvents(
                 new MinecraftChatListener(discordChatBridge),
@@ -139,11 +168,19 @@ public final class SaladaFunPlugin extends JavaPlugin {
                     foodMapper,
                     foodSynchronizer,
                     foodHandler
+                ),
+                new SharedEffectsCommand(
+                    getServer(),
+                    effectsManager,
+                    effectsMapper,
+                    effectsSynchronizer,
+                    effectsHandler
                 )
             );
             getServer().getOnlinePlayers().forEach(player -> {
                 healthHandler.reconcilePlayer(player);
                 foodHandler.reconcilePlayer(player);
+                effectsHandler.reconcilePlayer(player);
             });
         } catch (IOException | RuntimeException exception) {
             getLogger().severe("SaladaFun could not start safely: " + exception.getMessage());
@@ -179,9 +216,14 @@ public final class SaladaFunPlugin extends JavaPlugin {
         PluginSettings settings,
         DiscordChatBridge discordBridge,
         SharedHealthCommand healthCommand,
-        SharedFoodCommand foodCommand
+        SharedFoodCommand foodCommand,
+        SharedEffectsCommand effectsCommand
     ) {
-        var shared = new SharedCommand(List.of(healthCommand, foodCommand));
+        var shared = new SharedCommand(List.of(
+            healthCommand,
+            foodCommand,
+            effectsCommand
+        ));
         PluginCommand sharedCommand = Objects.requireNonNull(
             getCommand("shared"), "shared command missing from plugin.yml"
         );
