@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CoalescingPersistenceWriterTest {
 
@@ -49,5 +50,16 @@ class CoalescingPersistenceWriterTest {
         }
 
         assertEquals(2, writes.get());
+    }
+
+    @Test
+    void surfacesBackgroundWriteFailureAtFlushAndStillCloses() {
+        var writer = new CoalescingPersistenceWriter(Duration.ofDays(1));
+        writer.submitLatest("effects", () -> {
+            throw new IllegalStateException("database unavailable");
+        });
+
+        assertThrows(PersistenceException.class, writer::flush);
+        assertThrows(PersistenceException.class, writer::close);
     }
 }
