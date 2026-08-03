@@ -82,9 +82,7 @@ public final class SharedEffectsHandler implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         if (manager.isEnabled()) {
-            Set<String> types = new HashSet<>(
-                mapper.snapshot(player, 0).effects().keySet()
-            );
+            Set<String> types = new HashSet<>();
             pendingEvents.stream()
                 .filter(candidate -> !candidate.isCancelled())
                 .filter(candidate -> candidate.getEntity().getUniqueId()
@@ -108,7 +106,7 @@ public final class SharedEffectsHandler implements Listener {
         reconcilePlayer(event.getPlayer());
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onTickEnd(ServerTickEndEvent event) {
         if (!manager.isEnabled()) {
             resetTransientState();
