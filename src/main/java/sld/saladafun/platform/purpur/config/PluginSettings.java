@@ -39,6 +39,7 @@ public final class PluginSettings {
         toolDurabilityMode();
         batchExecutionMode();
         includeAnimals();
+        sharedVitalsSettings();
         discordChatSettings();
     }
 
@@ -77,6 +78,15 @@ public final class PluginSettings {
 
     public boolean includeAnimals() {
         return configuration.getBoolean("batch-breaking.include-animals", false);
+    }
+
+    public SharedVitalsSettings sharedVitalsSettings() {
+        return new SharedVitalsSettings(
+            configuration.getInt("shared-vitals.safety-audit-interval-ticks", 20),
+            configuration.getInt(
+                "shared-vitals.persistence.flush-interval-ticks", 10
+            )
+        );
     }
 
     public DiscordChatSettings discordChatSettings() {

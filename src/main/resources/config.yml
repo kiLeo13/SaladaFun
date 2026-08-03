@@ -32,6 +32,14 @@ batch-breaking:
   # - false: batch only blocks and bucket-filled water or lava.
   include-animals: false
 
+shared-vitals:
+  # Full-player polling is a safety net for direct API mutations that emit no event.
+  safety-audit-interval-ticks: 20
+
+  persistence:
+    # Canonical snapshots are coalesced and written asynchronously at this cadence.
+    flush-interval-ticks: 10
+
 discord-chat:
   # Bridges accepted Minecraft player chat and one Discord text channel.
   # Keep this disabled until all three values below are configured.

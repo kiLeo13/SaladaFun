@@ -21,6 +21,22 @@ class PluginSettingsTest {
         assertEquals(ToolDurabilityMode.SINGLE_USE, settings.toolDurabilityMode());
         assertEquals(BatchExecutionMode.ASYNC, settings.batchExecutionMode());
         assertFalse(settings.includeAnimals());
+        assertEquals(20, settings.sharedVitalsSettings().safetyAuditIntervalTicks());
+        assertEquals(10, settings.sharedVitalsSettings().persistenceFlushIntervalTicks());
+    }
+
+    @Test
+    void validatesSharedVitalsPerformanceIntervals() {
+        YamlConfiguration configuration = new YamlConfiguration();
+        configuration.set("shared-vitals.safety-audit-interval-ticks", 40);
+        configuration.set("shared-vitals.persistence.flush-interval-ticks", 5);
+        PluginSettings settings = new PluginSettings(configuration);
+
+        assertEquals(40, settings.sharedVitalsSettings().safetyAuditIntervalTicks());
+        assertEquals(5, settings.sharedVitalsSettings().persistenceFlushIntervalTicks());
+
+        configuration.set("shared-vitals.persistence.flush-interval-ticks", 0);
+        assertThrows(IllegalArgumentException.class, settings::sharedVitalsSettings);
     }
 
     @Test
