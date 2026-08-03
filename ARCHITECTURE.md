@@ -31,24 +31,35 @@ without introducing separate Maven modules.
 Java packages retain the collision-safe `sld.saladafun` root and are
 feature-first, for example `sld.saladafun.batchbreaking`.
 
-## Shared health and food
+## Shared health, food, and effects
 
-Health and food are independent session modules under `sld.saladafun.shared`.
+Health, food, and effects are independent session modules under
+`sld.saladafun.shared`.
 Their aggregates, lifecycle managers, models, and repository interfaces have no
 Bukkit, Paper, Purpur, JDBC, jOOQ, or SQLite dependency.
 
 Players are replicas of one in-memory canonical state per enabled module. At
-`ServerTickEndEvent`, the Purpur adapters compare each actual player state with the
-last replica written by SaladaFun. Current health, absorption, food level,
-saturation, and exhaustion changes merge as additive deltas. Each aggregate sums
-the complete tick and clamps once, then emits at most one revision.
+`ServerTickEndEvent`, the Purpur adapters reconcile only players marked dirty by
+accepted gameplay events. Idle ticks do no polling or aggregate work. A periodic
+full safety audit catches direct API changes for which Bukkit exposes no event.
+Current health, absorption, food level, saturation, and exhaustion changes merge
+as additive deltas. Each aggregate sums the complete tick and clamps once, then
+emits at most one revision.
 
 Maximum health and maximum absorption are absolute ranges rather than deltas.
 Same-tick conflicts use deterministic UUID-ordered LWW. The Purpur adapter
 preserves existing attribute bases and modifiers and installs one namespaced,
 transient additive override that makes the effective range canonical. Personal
-restoration removes only that override. Status effects remain personal, while
-their resulting vital and range changes enter the delta merge.
+restoration removes only that override. Effect reconciliation precedes health
+reconciliation, so canonical potion attribute modifiers are visible to the health
+range mapper in the same tick.
+
+Effects are canonical per namespaced type. Different types merge, while
+same-type conflicts use UUID-ordered LWW. The domain model preserves amplifier,
+remaining duration, ambient/particle/icon flags, and recursive hidden-effect
+chains without exposing Bukkit types. Natural duration countdown does not create
+a gameplay revision every tick; the safety audit refreshes the durable remaining
+duration. The platform adapter guards generated events against feedback.
 
 A definitive, non-cancelled `PlayerDeathEvent` latches the tick as lethal.
 Lethality dominates same-tick healing, clears canonical health and absorption,
@@ -61,16 +72,24 @@ The first post-respawn event revives the pool at full canonical range. Dead
 players are not marked restored until a post-respawn or subsequent join makes
 their Bukkit state writable.
 
-`SharedHealthManager` and `SharedFoodManager` own session lifecycle and roll back
-an in-memory candidate if persistence rejects it. SQLite implementations use
-typed health and food tables in `shared-state.db`; no generic nullable state blob
-or inventory schema is retained. Personal backups, active controls, archived
-sessions, and module-scoped `yyyyMMdd_nn` labels are transactionally persisted.
+`SharedHealthManager`, `SharedFoodManager`, and `SharedEffectsManager` own session
+lifecycle. SQLite implementations use normalized typed health, food, and effect
+tables in `shared-state.db`; no generic nullable state blob or inventory schema is
+retained. Personal backups, active controls, archived sessions, and module-scoped
+`yyyyMMdd_nn` labels are transactionally persisted.
 
-Commands are routed through `SharedCommand` to module-specific delegates. Health
-and food can be enabled, disabled, inspected, and resumed independently. Detailed
+Canonical hot-path saves pass through one coalescing single-writer queue. The
+queue keeps SQLite transactions and FULL-synchronous disk flushes off the server
+thread and retains only the latest pending save per module. Lifecycle operations
+and clean shutdown use synchronous flush barriers for ordering. Bukkit and Purpur
+objects never cross the asynchronous boundary; only immutable domain snapshots
+do. Audit and flush intervals come from `shared-vitals` configuration at startup.
+
+Commands are routed through `SharedCommand` to module-specific delegates. Health,
+food, and effects can be enabled, disabled, inspected, and resumed independently. Detailed
 gameplay and operational behavior is documented in `docs/shared-vitals.md`.
-Lifecycle listeners use `LOWEST` and the tick flush uses `LOW`, allowing later
+Lifecycle listeners use `LOWEST`; effects reconcile at `LOWEST` and health/food
+reconcile at `LOW`, allowing later
 plugins to cancel or adjust ordinary gameplay without SaladaFun claiming final
 event authority.
 
