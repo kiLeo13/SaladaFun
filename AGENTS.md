@@ -1,22 +1,21 @@
-# Project contribution guidance
+# SaladaFun ecosystem contribution guidance
 
-- Keep the Maven build configured for Java 25 and Purpur 26.2.
-- Keep the project as one Maven JAR module using the standard root `src/main`
-  and `src/test` layout.
-- Keep the Purpur API dependency scoped as `provided`; the server supplies it at runtime.
-- Keep the domain packages under `sld.saladafun.shared` and
-  `sld.saladafun.batchbreaking` free of Bukkit, Paper, Purpur, JDBC, jOOQ, and
-  SQLite types.
-- Keep SQLite/jOOQ implementations under
-  `sld.saladafun.persistence.sqlite` and server adapters under
-  `sld.saladafun.platform.purpur`.
-- Keep `plugin.yml`, `config.yml`, and database migrations under
-  `src/main/resources`.
-- Treat `shared-inventory.db`, its WAL/SHM companions, and generated `target/`
-  directories as runtime/build output; never commit them.
-- Run `mvn clean package` after build or plugin changes.
-- Deploy only `target/saladafun-1.0.jar`; the `original-` JAR is an unshaded
-  intermediate artifact.
-- Add or update tests for behavior changes and update `ARCHITECTURE.md` when the
-  build or runtime structure changes.
-- Do not commit IDE user settings or generated `target/` output.
+This file applies to the entire repository. More specific `AGENTS.md` files
+under platform and project directories add rules for their scope.
+
+- Keep deployable applications grouped first by platform and then by project,
+  for example `minecraft/salada`.
+- Keep each project independently buildable, testable, deployable, and
+  documented. Do not couple unrelated projects through implicit working-directory
+  assumptions.
+- Keep only repository-wide configuration, governance, architecture, licensing,
+  and navigation files at the root alongside the platform directories.
+- Put implementation documentation beside the project it describes. Update the
+  root `ARCHITECTURE.md` when the ecosystem structure or project boundaries
+  change.
+- Add or update tests for every behavior change and run the complete build for
+  each affected project before considering work complete.
+- Never commit generated build output, runtime state, secrets, or IDE user
+  settings.
+- Do not perform Git operations that affect a remote unless explicitly asked.
+- Do not perform destructive operations.
