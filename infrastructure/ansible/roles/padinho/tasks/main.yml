@@ -1,0 +1,111 @@
+---
+- name: Assert required Vault secret identifiers are provided
+  ansible.builtin.assert:
+    that:
+      - runtime_secret_ocid | length > 0
+      - registry_secret_ocid | length > 0
+    fail_msg: >-
+      Set runtime_secret_ocid and registry_secret_ocid from Terraform outputs.
+
+- name: Install OCI CLI prerequisites
+  ansible.builtin.apt:
+    name:
+      - python3-pip
+      - python3-venv
+    state: present
+
+- name: Install the pinned OCI CLI in an isolated environment
+  ansible.builtin.pip:
+    name: "oci-cli=={{ oci_cli_version }}"
+    virtualenv: "{{ oci_cli_virtualenv }}"
+    virtualenv_command: python3 -m venv
+
+- name: Create Padinho configuration directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ padinho_directory }}"
+      mode: "0755"
+    - path: "{{ padinho_environment_directory }}"
+      mode: "0700"
+
+- name: Fetch Padinho's environment from OCI Vault
+  ansible.builtin.command:
+    argv:
+      - "{{ oci_cli_virtualenv }}/bin/oci"
+      - secrets
+      - secret-bundle
+      - get
+      - --secret-id
+      - "{{ runtime_secret_ocid }}"
+      - --auth
+      - instance_principal
+      - --query
+      - 'data."secret-bundle-content".content'
+      - --raw-output
+  register: padinho_environment_secret
+  changed_when: false
+  no_log: true
+
+- name: Write Padinho's environment file
+  ansible.builtin.copy:
+    dest: "{{ padinho_environment_file }}"
+    content: "{{ padinho_environment_secret.stdout | b64decode }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Fetch GHCR credentials from OCI Vault
+  ansible.builtin.command:
+    argv:
+      - "{{ oci_cli_virtualenv }}/bin/oci"
+      - secrets
+      - secret-bundle
+      - get
+      - --secret-id
+      - "{{ registry_secret_ocid }}"
+      - --auth
+      - instance_principal
+      - --query
+      - 'data."secret-bundle-content".content'
+      - --raw-output
+  register: registry_credentials_secret
+  changed_when: false
+  no_log: true
+
+- name: Decode GHCR credentials
+  ansible.builtin.set_fact:
+    registry_credentials: >-
+      {{ registry_credentials_secret.stdout | b64decode | from_json }}
+  no_log: true
+
+- name: Authenticate Docker to GHCR with read-only credentials
+  community.docker.docker_login:
+    registry_url: ghcr.io
+    username: "{{ registry_credentials.username }}"
+    password: "{{ registry_credentials.token }}"
+    reauthorize: true
+  no_log: true
+
+- name: Install the Compose declaration
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../padinho/compose.yaml"
+    dest: "{{ padinho_directory }}/compose.yaml"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reconcile Padinho and Watchtower
+  community.docker.docker_compose_v2:
+    project_src: "{{ padinho_directory }}"
+    pull: always
+    remove_orphans: true
+    state: present
+  environment:
+    PADINHO_ENV_FILE: "{{ padinho_environment_file }}"
+    PADINHO_IMAGE: "{{ padinho_image }}"
