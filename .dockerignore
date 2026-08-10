@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+.agents
+**/.gradle
+**/build
+**/coverage.out
+**/.env
+infrastructure
+minecraft
