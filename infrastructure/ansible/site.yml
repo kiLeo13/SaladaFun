@@ -1,8 +1,8 @@
 ---
-- name: Configure the Padinho host
-  hosts: padinho
+- name: Configure the Salada host
+  hosts: salada
   become: true
   gather_facts: true
   roles:
     - docker
-    - padinho
+    - salada
