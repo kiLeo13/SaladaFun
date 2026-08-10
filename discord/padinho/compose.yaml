@@ -1,12 +1,12 @@
-name: padinho
+name: salada
 
 services:
   bot:
-    image: ${PADINHO_IMAGE:-ghcr.io/kileo13/saladafun/padinho:stable}
+    image: ${SALADA_IMAGE:-ghcr.io/kileo13/salada:stable}
     pull_policy: always
     restart: unless-stopped
     env_file:
-      - ${PADINHO_ENV_FILE:-/etc/padinho/padinho.env}
+      - ${SALADA_ENV_FILE:-/etc/salada/salada.env}
     mem_limit: 384m
     read_only: true
     security_opt:
@@ -15,7 +15,7 @@ services:
       - /tmp:size=16m,mode=1777
     labels:
       com.centurylinklabs.watchtower.enable: "true"
-      com.centurylinklabs.watchtower.scope: padinho
+      com.centurylinklabs.watchtower.scope: salada
 
   watchtower:
     image: containrrr/watchtower:1.7.1@sha256:6dd50763bbd632a83cb154d5451700530d1e44200b268a4e9488fefdfcf2b038
@@ -24,9 +24,9 @@ services:
       WATCHTOWER_CLEANUP: "true"
       WATCHTOWER_LABEL_ENABLE: "true"
       WATCHTOWER_POLL_INTERVAL: "300"
-      WATCHTOWER_SCOPE: padinho
+      WATCHTOWER_SCOPE: salada
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${DOCKER_CONFIG_DIR:-/root/.docker}:/config:ro
     labels:
-      com.centurylinklabs.watchtower.scope: padinho
+      com.centurylinklabs.watchtower.scope: salada
