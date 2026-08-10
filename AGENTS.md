@@ -4,8 +4,7 @@ This file applies to the entire repository. More specific `AGENTS.md` files
 under platform and project directories add rules for their scope.
 
 - Keep platform-specific applications grouped by platform and project, for
-  example `minecraft/salada`. Ecosystem services with an established root-level
-  boundary, such as `padinho`, remain direct root projects.
+  example `minecraft/salada` and `discord/padinho`.
 - Keep each project independently buildable, testable, deployable, and
   documented. Do not couple unrelated projects through implicit working-directory
   assumptions.
