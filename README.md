@@ -1,39 +1,48 @@
 # SaladaFun
 
 SaladaFun is a monorepo for the applications and integrations used by a private
-Discord guild and its game servers. Projects share repository-wide standards and
-documentation while remaining independently buildable and deployable.
+Discord guild and its game servers. Projects share repository-wide standards
+while remaining independently buildable and deployable.
 
 ## Repository layout
 
 ```text
 .
-├── minecraft/
-│   └── salada/       Java 25/Purpur 26.2 Minecraft plugin
-├── AGENTS.md         Repository-wide contribution guidance
-└── ARCHITECTURE.md   Ecosystem structure and project index
+|-- database/          Shared SQL migrations
+|-- infrastructure/    OCI Terraform and host Ansible
+|-- minecraft/
+|   `-- salada/        Java 25/Purpur 26.2 Minecraft plugin
+|-- padinho/           Go Discord bot
+|-- AGENTS.md          Repository-wide contribution guidance
+`-- ARCHITECTURE.md    Ecosystem structure and project index
 ```
-
-Platform-wide guidance lives inside each platform directory. Project-specific
-source code, tests, build files, operational documentation, and architecture stay
-inside the corresponding project directory.
 
 ## Projects
 
 | Project | Description | Documentation |
 | --- | --- | --- |
 | Salada | Minecraft gameplay features and an optional Discord chat bridge | [`minecraft/salada`](minecraft/salada/README.md) |
+| Padinho | Typed Discord bot foundation for the guild | [`padinho`](padinho/README.md) |
 
-## Build the Minecraft plugin
+Infrastructure and migrations are shared operational concerns. Their runbooks
+live in [`infrastructure/terraform`](infrastructure/terraform/README.md),
+[`infrastructure/ansible`](infrastructure/ansible/README.md), and
+[`database`](database/README.md).
 
-JDK 25 and Maven are required.
+## Verification
+
+Build Salada with JDK 25 and Maven:
 
 ```text
 mvn -f minecraft/salada/pom.xml clean package
 ```
 
-The deployable plugin is
-`minecraft/salada/target/saladafun-1.0.jar`.
+Verify Padinho with Go 1.26:
+
+```text
+cd padinho
+go test -race ./...
+```
 
 ## License
 
