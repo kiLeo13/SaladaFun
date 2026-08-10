@@ -1,7 +1,0 @@
----
-oci_cli_version: 3.90.1
-oci_cli_virtualenv: /opt/oci-cli
-padinho_directory: /opt/padinho
-padinho_environment_directory: /etc/padinho
-padinho_environment_file: /etc/padinho/padinho.env
-padinho_image: ghcr.io/kileo13/saladafun/padinho:stable
