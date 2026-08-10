@@ -1,0 +1,4 @@
+bucket    = "saladafun-terraform-state"
+namespace = "your-object-storage-namespace"
+key       = "production/terraform.tfstate"
+region    = "sa-saopaulo-1"
