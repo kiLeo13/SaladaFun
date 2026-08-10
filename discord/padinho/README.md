@@ -33,12 +33,20 @@ follow feature cohesion instead of one module per command. `Freeze` only
 validates and compiles immutable metadata and dispatch; the Discord adapter
 later translates metadata to DiscordGo and bulk-overwrites commands.
 
+## Database configuration
+
+The runtime accepts `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USERNAME`,
+`DATABASE_PASSWORD`, and `DATABASE_NAME` as separate values. It never accepts a
+DSN from configuration. The MySQL driver builds its own escaped DSN, enables
+time parsing and migration multi-statements, and creates the configured schema
+when it does not exist.
+
 ## Verification and container
 
 ```sh
 go test -race ./...
 go test -cover ./internal/command
-docker build -f padinho/Dockerfile -t padinho:local .
+docker build -f discord/padinho/Dockerfile -t salada:local .
 ```
 
 Run Docker builds from the repository root because migrations are shared at
