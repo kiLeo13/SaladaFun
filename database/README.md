@@ -7,14 +7,15 @@ before opening its Discord gateway, so an incompatible deployment fails closed.
 Place migrations in `migrations/` using sequential names such as
 `00001_create_guild_settings.sql`. Each file must contain a `-- +goose Up`
 section and should contain a reversible `-- +goose Down` section when the
-operation can be safely reversed. MySQL migration DSNs must include
-`parseTime=true&multiStatements=true`.
+operation can be safely reversed. The Go database adapter enables MySQL time
+parsing and multi-statement migration support internally.
 
-Run migrations manually with the same Padinho image:
+Run migrations manually with the Salada image:
 
 ```sh
-docker compose -f padinho/compose.yaml run --rm --entrypoint /app/migrate bot
+docker compose -f discord/padinho/compose.yaml run --rm --entrypoint /app/migrate bot
 ```
 
-Never put credentials in this directory. The runtime reads `DATABASE_DSN` from
-the host-managed environment file.
+Never put credentials in this directory. The host-managed environment supplies
+`DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, and
+`DATABASE_NAME` separately; callers never assemble or provide a DSN.
