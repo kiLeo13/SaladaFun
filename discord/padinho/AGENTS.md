@@ -15,7 +15,7 @@
   then handler. Middleware may reject without calling `next`.
 - Add tests for every behavior change. Critical registry and dispatch paths must
   retain 100% statement coverage; database changes require live MySQL tests.
-- Do not expose HTTP ports. Padinho communicates outbound to Discord and over the
+- Do not expose HTTP ports. The bot communicates outbound to Discord and over the
   private subnet to MySQL.
 - Keep runtime images distroless, non-root, read-only, and within the configured
   384 MB container memory limit.
