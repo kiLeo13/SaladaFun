@@ -5,3 +5,15 @@ target/
 *.db-wal
 .idea/
 *.iml
+
+# Local secrets and generated infrastructure state.
+**/.env
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/backend.hcl
+**/terraform.tfvars
+**/*.tfplan
+infrastructure/ansible/inventories/production.yml
+**/coverage
+**/coverage.out
