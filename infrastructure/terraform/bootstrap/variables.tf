@@ -11,5 +11,5 @@ variable "region" {
 variable "state_bucket_name" {
   description = "Globally unique name within the tenancy Object Storage namespace."
   type        = string
-  default     = "saladafun-terraform-state"
+  default     = "salada-terraform-state"
 }
