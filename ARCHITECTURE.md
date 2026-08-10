@@ -3,58 +3,56 @@
 ## Purpose
 
 SaladaFun is a monorepo for independently deployable applications used by one
-Discord guild and its game servers. Keeping the projects together makes shared
-ownership, conventions, and cross-project documentation straightforward without
-forcing every application into the same language or build system.
+Discord guild and its game servers. Projects share ownership and conventions
+without being forced into the same language or build system.
 
 ## Repository structure
 
-Projects are grouped first by platform and then by deployable application:
-
 ```text
 .
-├── minecraft/
-│   ├── AGENTS.md
-│   └── salada/
-│       ├── AGENTS.md
-│       ├── ARCHITECTURE.md
-│       ├── README.md
-│       ├── docs/
-│       ├── pom.xml
-│       └── src/
-├── AGENTS.md
-├── ARCHITECTURE.md
-└── README.md
+|-- database/                 Ecosystem SQL migration history
+|-- infrastructure/
+|   |-- ansible/              VM configuration and Compose reconciliation
+|   `-- terraform/            OCI bootstrap, modules, and production stack
+|-- minecraft/
+|   `-- salada/               Purpur plugin
+|-- padinho/                  Go Discord bot
+|-- AGENTS.md
+|-- ARCHITECTURE.md
+`-- README.md
 ```
 
-The repository root contains ecosystem-wide governance, navigation, and
-architecture. A platform directory may define shared conventions for its child
-projects. Each deployable project owns its build configuration, implementation,
-tests, operational documentation, and detailed architecture.
+The root owns ecosystem governance, navigation, architecture, shared schema,
+and infrastructure. Each deployable project owns its implementation, tests,
+build, operational documentation, and detailed architecture. There is no root
+language-specific aggregator.
 
-There is intentionally no root Maven aggregator. This keeps Salada independently
-buildable and leaves room for Discord bots, web applications, and infrastructure
-to use the tools appropriate to them.
+Shared migrations are a cross-release contract. Padinho copies them into its
+image and applies them before connecting to Discord. Terraform owns OCI
+resources; Ansible configures the resulting VM and reconciles Docker Compose.
 
 ## Projects
 
 ### Minecraft: Salada
 
 `minecraft/salada` is a Java 25/Purpur 26.2 plugin providing shared player
-vitals, batch breaking, and an optional Discord chat bridge. It remains one Maven
-JAR project with isolated domain, SQLite persistence, and Purpur adapter
-boundaries.
+vitals, batch breaking, and an optional Discord chat bridge. See
+[`minecraft/salada/ARCHITECTURE.md`](minecraft/salada/ARCHITECTURE.md).
 
-See [`minecraft/salada/ARCHITECTURE.md`](minecraft/salada/ARCHITECTURE.md) for its
-detailed runtime and package architecture.
+### Discord: Padinho
 
-## Build and verification
+`padinho` is a Go 1.26 application designed for a 1 GB
+`VM.Standard.E2.1.Micro`. Its command declarations are independent of DiscordGo;
+a frozen registry produces immutable Discord definitions and runtime dispatch.
+Middleware composes from registry to route, and application data lives in a
+typed request rather than context values. See
+[`padinho/ARCHITECTURE.md`](padinho/ARCHITECTURE.md).
 
-Projects are verified independently. Build Salada from the repository root with:
+## Verification
+
+Projects remain independent:
 
 ```text
 mvn -f minecraft/salada/pom.xml clean package
+cd padinho && go test -race ./...
 ```
-
-Its deployable artifact is
-`minecraft/salada/target/saladafun-1.0.jar`.
