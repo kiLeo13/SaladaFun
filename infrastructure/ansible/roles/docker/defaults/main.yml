@@ -1,0 +1,5 @@
+---
+docker_apt_architecture: amd64
+docker_apt_release_channel: stable
+docker_users:
+  - "{{ ansible_user }}"
