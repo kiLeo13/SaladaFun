@@ -4,7 +4,7 @@
     that:
       - ansible_distribution == "Ubuntu"
       - ansible_distribution_version is version('24.04', '>=')
-    fail_msg: Padinho's Docker role supports Ubuntu 24.04 or newer.
+    fail_msg: Salada's Docker role supports Ubuntu 24.04 or newer.
 
 - name: Install Docker repository prerequisites
   ansible.builtin.apt:
