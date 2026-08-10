@@ -10,9 +10,10 @@ while remaining independently buildable and deployable.
 .
 |-- database/          Shared SQL migrations
 |-- infrastructure/    OCI Terraform and host Ansible
+|-- discord/
+|   `-- padinho/       Padinho Discord bot
 |-- minecraft/
 |   `-- salada/        Java 25/Purpur 26.2 Minecraft plugin
-|-- padinho/           Go Discord bot
 |-- AGENTS.md          Repository-wide contribution guidance
 `-- ARCHITECTURE.md    Ecosystem structure and project index
 ```
@@ -22,7 +23,7 @@ while remaining independently buildable and deployable.
 | Project | Description | Documentation |
 | --- | --- | --- |
 | Salada | Minecraft gameplay features and an optional Discord chat bridge | [`minecraft/salada`](minecraft/salada/README.md) |
-| Padinho | Typed Discord bot foundation for the guild | [`padinho`](padinho/README.md) |
+| Padinho | Typed Discord bot foundation for the guild | [`discord/padinho`](discord/padinho/README.md) |
 
 Infrastructure and migrations are shared operational concerns. Their runbooks
 live in [`infrastructure/terraform`](infrastructure/terraform/README.md),
@@ -40,7 +41,7 @@ mvn -f minecraft/salada/pom.xml clean package
 Verify Padinho with Go 1.26:
 
 ```text
-cd padinho
+cd discord/padinho
 go test -race ./...
 ```
 

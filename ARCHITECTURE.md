@@ -14,9 +14,10 @@ without being forced into the same language or build system.
 |-- infrastructure/
 |   |-- ansible/              VM configuration and Compose reconciliation
 |   `-- terraform/            OCI bootstrap, modules, and production stack
+|-- discord/
+|   `-- padinho/              Padinho Discord bot
 |-- minecraft/
 |   `-- salada/               Purpur plugin
-|-- padinho/                  Go Discord bot
 |-- AGENTS.md
 |-- ARCHITECTURE.md
 `-- README.md
@@ -41,12 +42,12 @@ vitals, batch breaking, and an optional Discord chat bridge. See
 
 ### Discord: Padinho
 
-`padinho` is a Go 1.26 application designed for a 1 GB
+Padinho, under `discord/padinho`, is a Go 1.26 application designed for a 1 GB
 `VM.Standard.E2.1.Micro`. Its command declarations are independent of DiscordGo;
 a frozen registry produces immutable Discord definitions and runtime dispatch.
 Middleware composes from registry to route, and application data lives in a
 typed request rather than context values. See
-[`padinho/ARCHITECTURE.md`](padinho/ARCHITECTURE.md).
+[`discord/padinho/ARCHITECTURE.md`](discord/padinho/ARCHITECTURE.md).
 
 ## Verification
 
@@ -54,5 +55,5 @@ Projects remain independent:
 
 ```text
 mvn -f minecraft/salada/pom.xml clean package
-cd padinho && go test -race ./...
+cd discord/padinho && go test -race ./...
 ```
