@@ -39,14 +39,14 @@ resource "oci_vault_secret" "registry_credentials" {
 resource "oci_identity_dynamic_group" "bot" {
   compartment_id = var.tenancy_ocid
   name           = "${replace(var.name, "-", "_")}_instances"
-  description    = "Instances allowed to read Padinho runtime secrets"
+  description    = "Instances allowed to read Salada runtime secrets"
   matching_rule  = "ALL {instance.id = '${var.instance_id}'}"
 }
 
 resource "oci_identity_policy" "bot_secrets" {
   compartment_id = var.compartment_ocid
   name           = "${replace(var.name, "-", "_")}_read_secrets"
-  description    = "Allow Padinho instances to read only secret bundles"
+  description    = "Allow Salada instances to read only secret bundles"
   statements = [
     "Allow dynamic-group ${oci_identity_dynamic_group.bot.name} to read secret-bundles in compartment id ${var.compartment_ocid}"
   ]
