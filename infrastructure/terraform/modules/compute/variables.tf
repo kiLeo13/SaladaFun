@@ -12,7 +12,7 @@ variable "shape" {
   default = "VM.Standard.E2.1.Micro"
   validation {
     condition     = var.shape == "VM.Standard.E2.1.Micro"
-    error_message = "Padinho is constrained to the Always Free VM.Standard.E2.1.Micro shape."
+    error_message = "Salada is constrained to the Always Free VM.Standard.E2.1.Micro shape."
   }
 }
 variable "boot_volume_size_gb" {

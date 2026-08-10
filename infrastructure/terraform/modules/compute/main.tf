@@ -16,7 +16,7 @@ resource "oci_core_instance" "bot" {
   create_vnic_details {
     assign_public_ip = true
     display_name     = "${var.name}-primary"
-    hostname_label   = "padinho"
+    hostname_label   = "salada"
     nsg_ids          = var.nsg_ids
     subnet_id        = var.subnet_id
   }
