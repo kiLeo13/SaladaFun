@@ -11,6 +11,6 @@ discord_guild_id       = "replace-me"
 ghcr_username          = "replace-me"
 ghcr_token             = "replace-with-read-packages-token"
 
-mysql_admin_username = "padinho_admin"
+mysql_admin_username = "salada_admin"
 mysql_admin_password = "Replace-Me_123!"
-mysql_database_name  = "padinho"
+mysql_database_name  = "salada"

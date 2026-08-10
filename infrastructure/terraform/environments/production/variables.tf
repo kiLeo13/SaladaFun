@@ -29,19 +29,19 @@ variable "ghcr_token" {
 }
 variable "mysql_admin_username" {
   type    = string
-  default = "padinho_admin"
+  default = "salada_admin"
 }
 variable "mysql_admin_password" {
   type      = string
   sensitive = true
   validation {
-    condition     = length(var.mysql_admin_password) >= 8 && length(var.mysql_admin_password) <= 32 && can(regex("^[A-Za-z0-9!#$%&*+_=?.-]+$", var.mysql_admin_password))
-    error_message = "mysql_admin_password must be 8-32 characters and use only DSN-safe letters, digits, or !#$%&*+_=?.-."
+    condition     = length(var.mysql_admin_password) >= 8 && length(var.mysql_admin_password) <= 32 && !strcontains(var.mysql_admin_password, "\n")
+    error_message = "mysql_admin_password must be 8-32 characters and contain no newlines."
   }
 }
 variable "mysql_database_name" {
   type    = string
-  default = "padinho"
+  default = "salada"
   validation {
     condition     = can(regex("^[a-z][a-z0-9_]*$", var.mysql_database_name))
     error_message = "mysql_database_name must be a lowercase MySQL identifier."
