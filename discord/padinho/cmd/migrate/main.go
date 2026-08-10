@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/kiLeo13/SaladaFun/padinho/internal/config"
-	"github.com/kiLeo13/SaladaFun/padinho/internal/database"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/config"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/database"
 )
 
 func main() {
@@ -16,8 +16,12 @@ func main() {
 		os.Exit(1)
 	}
 	connection, err := database.Open(
-		context.Background(), configuration.DSN, configuration.MaxOpen,
-		configuration.MaxIdle, configuration.MaxLifetime,
+		context.Background(), database.Settings{
+			Host: configuration.Host, Port: configuration.Port,
+			Username: configuration.Username, Password: configuration.Password,
+			Name: configuration.Name, MaxOpen: configuration.MaxOpen,
+			MaxIdle: configuration.MaxIdle, MaxLifetime: configuration.MaxLifetime,
+		},
 	)
 	if err != nil {
 		slog.Error("database connection failed", "error", err)

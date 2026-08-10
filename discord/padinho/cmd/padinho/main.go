@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/kiLeo13/SaladaFun/padinho/internal/app"
-	"github.com/kiLeo13/SaladaFun/padinho/internal/config"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/app"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/config"
 )
 
 func main() {

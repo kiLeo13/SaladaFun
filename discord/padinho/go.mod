@@ -1,4 +1,4 @@
-module github.com/kiLeo13/SaladaFun/padinho
+module github.com/kiLeo13/SaladaFun/discord/padinho
 
 go 1.26.0
 

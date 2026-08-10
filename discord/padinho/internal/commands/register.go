@@ -3,7 +3,7 @@
 // separate files as each feature warrants.
 package commands
 
-import "github.com/kiLeo13/SaladaFun/padinho/internal/command"
+import "github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 
 // Register declares every Padinho command on the unique registry.
 // Padinho intentionally starts without commands.

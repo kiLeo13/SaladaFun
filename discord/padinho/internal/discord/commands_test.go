@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/kiLeo13/SaladaFun/padinho/internal/command"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 )
 
 func TestCompileDefinitions(t *testing.T) {

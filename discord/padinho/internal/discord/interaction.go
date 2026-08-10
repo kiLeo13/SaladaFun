@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/kiLeo13/SaladaFun/padinho/internal/command"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 )
 
 const genericCommandError = "Something went wrong while running that command."

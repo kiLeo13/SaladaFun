@@ -7,7 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/kiLeo13/SaladaFun/padinho/internal/command"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 )
 
 // Gateway owns Padinho's Discord session, registration, and interaction adapter.

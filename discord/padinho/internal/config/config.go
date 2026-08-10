@@ -18,8 +18,12 @@ const (
 )
 
 var (
-	ErrDiscordTokenMissing = errors.New("DISCORD_TOKEN is required")
-	ErrDatabaseDSNMissing  = errors.New("DATABASE_DSN is required")
+	ErrDiscordTokenMissing     = errors.New("DISCORD_TOKEN is required")
+	ErrDatabaseHostMissing     = errors.New("DATABASE_HOST is required")
+	ErrDatabasePortMissing     = errors.New("DATABASE_PORT is required")
+	ErrDatabaseUsernameMissing = errors.New("DATABASE_USERNAME is required")
+	ErrDatabasePasswordMissing = errors.New("DATABASE_PASSWORD is required")
+	ErrDatabaseNameMissing     = errors.New("DATABASE_NAME is required")
 )
 
 // Config contains Padinho's environment-backed runtime configuration.
@@ -28,17 +32,17 @@ type Config struct {
 	DiscordApplication string
 	DiscordGuild       string
 	SyncCommands       bool
-	DatabaseDSN        string
-	DatabaseMaxOpen    int
-	DatabaseMaxIdle    int
-	DatabaseMaxLife    time.Duration
-	MigrationsPath     string
+	Database           Database
 	LogLevel           string
 }
 
 // Database contains configuration shared by the bot and migration command.
 type Database struct {
-	DSN            string
+	Host           string
+	Port           uint16
+	Username       string
+	Password       string
+	Name           string
 	MaxOpen        int
 	MaxIdle        int
 	MaxLifetime    time.Duration
@@ -55,11 +59,7 @@ func Load() (Config, error) {
 		DiscordToken:       os.Getenv("DISCORD_TOKEN"),
 		DiscordApplication: os.Getenv("DISCORD_APPLICATION_ID"),
 		DiscordGuild:       os.Getenv("DISCORD_GUILD_ID"),
-		DatabaseDSN:        database.DSN,
-		DatabaseMaxOpen:    database.MaxOpen,
-		DatabaseMaxIdle:    database.MaxIdle,
-		DatabaseMaxLife:    database.MaxLifetime,
-		MigrationsPath:     database.MigrationsPath,
+		Database:           database,
 		LogLevel:           valueOrDefault("LOG_LEVEL", defaultLogLevel),
 	}
 	if config.SyncCommands, err = boolValue("DISCORD_SYNC_COMMANDS", defaultCommandSyncEnabled); err != nil {
@@ -75,10 +75,28 @@ func Load() (Config, error) {
 // without Discord credentials.
 func LoadDatabase() (Database, error) {
 	database := Database{
-		DSN:            os.Getenv("DATABASE_DSN"),
+		Host:           os.Getenv("DATABASE_HOST"),
+		Username:       os.Getenv("DATABASE_USERNAME"),
+		Password:       os.Getenv("DATABASE_PASSWORD"),
+		Name:           os.Getenv("DATABASE_NAME"),
 		MigrationsPath: valueOrDefault("MIGRATIONS_PATH", defaultMigrationsPath),
 	}
+	if database.Host == "" {
+		return Database{}, ErrDatabaseHostMissing
+	}
 	var err error
+	if database.Port, err = portValue("DATABASE_PORT"); err != nil {
+		return Database{}, err
+	}
+	if database.Username == "" {
+		return Database{}, ErrDatabaseUsernameMissing
+	}
+	if database.Password == "" {
+		return Database{}, ErrDatabasePasswordMissing
+	}
+	if database.Name == "" {
+		return Database{}, ErrDatabaseNameMissing
+	}
 	if database.MaxOpen, err = intValue("DATABASE_MAX_OPEN_CONNECTIONS", defaultDatabaseMaxOpen); err != nil {
 		return Database{}, err
 	}
@@ -88,13 +106,22 @@ func LoadDatabase() (Database, error) {
 	if database.MaxLifetime, err = durationValue("DATABASE_CONNECTION_MAX_LIFETIME", defaultDatabaseMaxLife); err != nil {
 		return Database{}, err
 	}
-	if database.DSN == "" {
-		return Database{}, ErrDatabaseDSNMissing
-	}
 	if database.MaxIdle > database.MaxOpen {
 		return Database{}, errors.New("DATABASE_MAX_IDLE_CONNECTIONS cannot exceed DATABASE_MAX_OPEN_CONNECTIONS")
 	}
 	return database, nil
+}
+
+func portValue(name string) (uint16, error) {
+	value := os.Getenv(name)
+	if value == "" {
+		return 0, ErrDatabasePortMissing
+	}
+	parsed, err := strconv.ParseUint(value, 10, 16)
+	if err != nil || parsed == 0 {
+		return 0, fmt.Errorf("%s must be an integer between 1 and 65535", name)
+	}
+	return uint16(parsed), nil
 }
 
 func valueOrDefault(name, fallback string) string {
