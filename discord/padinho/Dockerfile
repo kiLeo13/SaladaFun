@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.19
 FROM golang:1.26.0-bookworm@sha256:2a0ba12e116687098780d3ce700f9ce3cb340783779646aafbabed748fa6677c AS build
 
-WORKDIR /src/padinho
-COPY padinho/go.mod padinho/go.sum ./
+WORKDIR /src/discord/padinho
+COPY discord/padinho/go.mod discord/padinho/go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
-COPY padinho/ ./
+COPY discord/padinho/ ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o /out/padinho ./cmd/padinho && \
