@@ -17,7 +17,7 @@ ansible-playbook site.yml  # Expected: no changes (idempotence check).
 ```
 
 SSH remains the only inbound host port and OCI limits it to the configured
-administrator `/32`. The bot and MySQL communicate privately. Watchtower polls
-GHCR every 300 seconds and only updates containers carrying Padinho's explicit
+administrator `/32`. Padinho and MySQL communicate privately. Watchtower polls
+GHCR every 300 seconds and only updates containers carrying Salada's explicit
 enable/scope labels. Its archived status is an accepted project constraint, so
 the image is digest-pinned and its HTTP API is not enabled.
