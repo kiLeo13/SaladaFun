@@ -44,7 +44,6 @@ module "identity" {
   instance_id         = module.compute.instance_id
   name                = local.name
   runtime_environment = <<-EOT
-    DISCORD_TOKEN=${jsonencode(var.discord_token)}
     DISCORD_APPLICATION_ID=${var.discord_application_id}
     DISCORD_GUILD_ID=${var.discord_guild_id}
     DISCORD_SYNC_COMMANDS=true
@@ -56,7 +55,6 @@ module "identity" {
     DATABASE_MAX_OPEN_CONNECTIONS=5
     DATABASE_MAX_IDLE_CONNECTIONS=2
     DATABASE_CONNECTION_MAX_LIFETIME=30m
-    MIGRATIONS_PATH=/app/migrations
     LOG_LEVEL=info
   EOT
   registry_credentials = jsonencode({
