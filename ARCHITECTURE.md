@@ -28,9 +28,11 @@ and infrastructure. Each deployable project owns its implementation, tests,
 build, operational documentation, and detailed architecture. There is no root
 language-specific aggregator.
 
-Shared migrations are a cross-release contract. Padinho copies them into its
-image and applies them before connecting to Discord. Terraform owns OCI
-resources; Ansible configures the resulting VM and reconciles Docker Compose.
+Shared migrations are a cross-release contract owned by the independent root
+`database` Go module. Compose applies them through a one-shot migration service
+before starting Padinho; application code never owns schema evolution.
+Terraform owns OCI resources; Ansible configures the resulting VM and
+reconciles Docker Compose.
 
 ## Projects
 
@@ -46,7 +48,9 @@ Padinho, under `discord/padinho`, is a Go 1.26 application designed for a 1 GB
 `VM.Standard.E2.1.Micro`. Its command declarations are independent of DiscordGo;
 a frozen registry produces immutable Discord definitions and runtime dispatch.
 Middleware composes from registry to route, and application data lives in a
-typed request rather than context values. See
+typed request rather than context values. Its composition root opens GORM and
+retrieves the Discord token through the database-backed configuration
+repository before opening the gateway. See
 [`discord/padinho/ARCHITECTURE.md`](discord/padinho/ARCHITECTURE.md).
 
 ## Verification
