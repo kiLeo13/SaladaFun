@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.19
-FROM golang:1.26.0-bookworm@sha256:2a0ba12e116687098780d3ce700f9ce3cb340783779646aafbabed748fa6677c AS build
+FROM golang:1.26.5-alpine3.24@sha256:111d79159b2326f7e80c4a4706e1ba166acb0e2611df853955f3621828cd49e8 AS build
 
 WORKDIR /src/discord/padinho
 COPY discord/padinho/go.mod discord/padinho/go.sum ./
