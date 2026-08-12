@@ -10,7 +10,6 @@ import (
 
 const (
 	defaultLogLevel           = "info"
-	defaultMigrationsPath     = "/app/migrations"
 	defaultDatabaseMaxOpen    = 5
 	defaultDatabaseMaxIdle    = 2
 	defaultDatabaseMaxLife    = 30 * time.Minute
@@ -18,7 +17,6 @@ const (
 )
 
 var (
-	ErrDiscordTokenMissing     = errors.New("DISCORD_TOKEN is required")
 	ErrDatabaseHostMissing     = errors.New("DATABASE_HOST is required")
 	ErrDatabasePortMissing     = errors.New("DATABASE_PORT is required")
 	ErrDatabaseUsernameMissing = errors.New("DATABASE_USERNAME is required")
@@ -28,35 +26,32 @@ var (
 
 // Config contains Padinho's environment-backed runtime configuration.
 type Config struct {
-	DiscordToken       string
 	DiscordApplication string
 	DiscordGuild       string
 	SyncCommands       bool
-	Database           Database
+	Database           DatabaseConfig
 	LogLevel           string
 }
 
-// Database contains configuration shared by the bot and migration command.
-type Database struct {
-	Host           string
-	Port           uint16
-	Username       string
-	Password       string
-	Name           string
-	MaxOpen        int
-	MaxIdle        int
-	MaxLifetime    time.Duration
-	MigrationsPath string
+// DatabaseConfig contains Padinho's typed MySQL connection and pool settings.
+type DatabaseConfig struct {
+	Host        string
+	Port        uint16
+	Username    string
+	Password    string
+	Name        string
+	MaxOpen     int
+	MaxIdle     int
+	MaxLifetime time.Duration
 }
 
 // Load reads and validates configuration from environment variables.
 func Load() (Config, error) {
-	database, err := LoadDatabase()
+	database, err := loadDatabase()
 	if err != nil {
 		return Config{}, err
 	}
 	config := Config{
-		DiscordToken:       os.Getenv("DISCORD_TOKEN"),
 		DiscordApplication: os.Getenv("DISCORD_APPLICATION_ID"),
 		DiscordGuild:       os.Getenv("DISCORD_GUILD_ID"),
 		Database:           database,
@@ -65,49 +60,43 @@ func Load() (Config, error) {
 	if config.SyncCommands, err = boolValue("DISCORD_SYNC_COMMANDS", defaultCommandSyncEnabled); err != nil {
 		return Config{}, err
 	}
-	if config.DiscordToken == "" {
-		return Config{}, ErrDiscordTokenMissing
-	}
 	return config, nil
 }
 
-// LoadDatabase reads only database settings, allowing migrations to run
-// without Discord credentials.
-func LoadDatabase() (Database, error) {
-	database := Database{
-		Host:           os.Getenv("DATABASE_HOST"),
-		Username:       os.Getenv("DATABASE_USERNAME"),
-		Password:       os.Getenv("DATABASE_PASSWORD"),
-		Name:           os.Getenv("DATABASE_NAME"),
-		MigrationsPath: valueOrDefault("MIGRATIONS_PATH", defaultMigrationsPath),
+func loadDatabase() (DatabaseConfig, error) {
+	database := DatabaseConfig{
+		Host:     os.Getenv("DATABASE_HOST"),
+		Username: os.Getenv("DATABASE_USERNAME"),
+		Password: os.Getenv("DATABASE_PASSWORD"),
+		Name:     os.Getenv("DATABASE_NAME"),
 	}
 	if database.Host == "" {
-		return Database{}, ErrDatabaseHostMissing
+		return DatabaseConfig{}, ErrDatabaseHostMissing
 	}
 	var err error
 	if database.Port, err = portValue("DATABASE_PORT"); err != nil {
-		return Database{}, err
+		return DatabaseConfig{}, err
 	}
 	if database.Username == "" {
-		return Database{}, ErrDatabaseUsernameMissing
+		return DatabaseConfig{}, ErrDatabaseUsernameMissing
 	}
 	if database.Password == "" {
-		return Database{}, ErrDatabasePasswordMissing
+		return DatabaseConfig{}, ErrDatabasePasswordMissing
 	}
 	if database.Name == "" {
-		return Database{}, ErrDatabaseNameMissing
+		return DatabaseConfig{}, ErrDatabaseNameMissing
 	}
 	if database.MaxOpen, err = intValue("DATABASE_MAX_OPEN_CONNECTIONS", defaultDatabaseMaxOpen); err != nil {
-		return Database{}, err
+		return DatabaseConfig{}, err
 	}
 	if database.MaxIdle, err = intValue("DATABASE_MAX_IDLE_CONNECTIONS", defaultDatabaseMaxIdle); err != nil {
-		return Database{}, err
+		return DatabaseConfig{}, err
 	}
 	if database.MaxLifetime, err = durationValue("DATABASE_CONNECTION_MAX_LIFETIME", defaultDatabaseMaxLife); err != nil {
-		return Database{}, err
+		return DatabaseConfig{}, err
 	}
 	if database.MaxIdle > database.MaxOpen {
-		return Database{}, errors.New("DATABASE_MAX_IDLE_CONNECTIONS cannot exceed DATABASE_MAX_OPEN_CONNECTIONS")
+		return DatabaseConfig{}, errors.New("DATABASE_MAX_IDLE_CONNECTIONS cannot exceed DATABASE_MAX_OPEN_CONNECTIONS")
 	}
 	return database, nil
 }
