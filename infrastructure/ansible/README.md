@@ -4,7 +4,8 @@ Ansible configures the existing Terraform VM; it does not provision OCI
 resources. It installs Docker Engine and Compose from Docker's signed Ubuntu
 repository, bounds container logs for the 1 GB host, installs a pinned OCI CLI,
 retrieves runtime and GHCR secrets through the instance principal, and
-reconciles the Compose project.
+reconciles the Compose project. Compose applies the root database migrations as
+a one-shot service before Padinho starts.
 
 ```sh
 cd infrastructure/ansible
