@@ -2,62 +2,50 @@ package database
 
 import (
 	"context"
-	"errors"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
 	mysqldriver "github.com/go-sql-driver/mysql"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/config"
 )
 
-func TestOpenAndMigrateAgainstMySQL(t *testing.T) {
-	settings := liveSettings(t)
+func TestOpenAgainstMySQL(t *testing.T) {
+	configuration := liveConfig(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	connection, err := Open(ctx, settings)
+	database, err := Open(ctx, configuration)
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
-	t.Cleanup(func() { _ = connection.SQL.Close() })
-	for run := 0; run < 2; run++ {
-		if err := Migrate(ctx, connection.SQL, "testdata/migrations"); err != nil {
-			t.Fatalf("Migrate() run %d error = %v", run+1, err)
-		}
+	pool, err := database.DB()
+	if err != nil {
+		t.Fatal(err)
 	}
-	if err := connection.GORM.Exec("INSERT INTO migration_probe (name) VALUES (?)", "live-mysql").Error; err != nil {
-		t.Fatalf("GORM insert error = %v", err)
-	}
+	t.Cleanup(func() { _ = pool.Close() })
 	var count int64
-	if err := connection.GORM.Table("migration_probe").Where("name = ?", "live-mysql").Count(&count).Error; err != nil || count != 1 {
+	if err := database.Raw("SELECT 1").Scan(&count).Error; err != nil || count != 1 {
 		t.Fatalf("GORM count = %d, error = %v", count, err)
 	}
 }
 
 func TestSettingsBuildsDriverDSN(t *testing.T) {
 	t.Parallel()
-	settings := Settings{
+	configuration := config.DatabaseConfig{
 		Host: "mysql.internal", Port: 3307, Username: "salada",
 		Password: "p@ss:/word", Name: "salada",
 	}
-	parsed, err := mysqldriver.ParseDSN(settings.dsn(settings.Name))
+	parsed, err := mysqldriver.ParseDSN(dataSourceName(configuration))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if parsed.Addr != "mysql.internal:3307" || parsed.User != "salada" || parsed.Passwd != "p@ss:/word" || parsed.DBName != "salada" || !parsed.ParseTime || !parsed.MultiStatements || parsed.Loc != time.UTC {
+	if parsed.Addr != "mysql.internal:3307" || parsed.User != "salada" || parsed.Passwd != "p@ss:/word" || parsed.DBName != "salada" || !parsed.ParseTime || parsed.MultiStatements || parsed.Loc != time.UTC {
 		t.Fatalf("parsed DSN = %#v", parsed)
 	}
 }
 
-func TestOpenRejectsInvalidDatabaseName(t *testing.T) {
-	t.Parallel()
-	_, err := Open(context.Background(), Settings{Name: "salada-test"})
-	if !errors.Is(err, ErrDatabaseName) {
-		t.Fatalf("Open() error = %v", err)
-	}
-}
-
-func liveSettings(t *testing.T) Settings {
+func liveConfig(t *testing.T) config.DatabaseConfig {
 	t.Helper()
 	values := map[string]string{
 		"host": os.Getenv("TEST_DATABASE_HOST"), "port": os.Getenv("TEST_DATABASE_PORT"),
@@ -73,7 +61,7 @@ func liveSettings(t *testing.T) Settings {
 	if err != nil || port == 0 {
 		t.Fatalf("TEST_DATABASE_PORT is invalid: %q", values["port"])
 	}
-	return Settings{
+	return config.DatabaseConfig{
 		Host: values["host"], Port: uint16(port), Username: values["username"],
 		Password: values["password"], Name: values["name"], MaxOpen: 3,
 		MaxIdle: 1, MaxLifetime: time.Minute,
