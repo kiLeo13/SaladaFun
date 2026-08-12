@@ -3,7 +3,7 @@
 Padinho is SaladaFun's Discord bot foundation, written in Go 1.26 for a small
 private guild. It currently declares no user-facing commands. The repository
 contains the typed registry, middleware, Discord adapter, MySQL/GORM lifecycle,
-migration runner, and production container shape needed to add them later.
+and production container shape needed to add them later.
 
 ## Command composition
 
@@ -37,9 +37,14 @@ later translates metadata to DiscordGo and bulk-overwrites commands.
 
 The runtime accepts `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_USERNAME`,
 `DATABASE_PASSWORD`, and `DATABASE_NAME` as separate values. It never accepts a
-DSN from configuration. The MySQL driver builds its own escaped DSN, enables
-time parsing and migration multi-statements, and creates the configured schema
-when it does not exist.
+DSN from configuration. `cmd/padinho` opens `*gorm.DB`, passes it directly to
+the configuration repository, and loads the required `app.token` value before
+constructing the Discord gateway.
+
+Schema creation and migration belong exclusively to the root
+[`database`](../../database/README.md) project. Compose runs its one-shot
+`migrate` service successfully before starting Padinho. Insert `app.token`
+through a trusted private database session before expecting the bot to start.
 
 ## Verification and container
 
@@ -49,6 +54,6 @@ go test -cover ./internal/command
 docker build -f discord/padinho/Dockerfile -t salada:local .
 ```
 
-Run Docker builds from the repository root because migrations are shared at
-`database/migrations`. The image includes `/app/migrate` for manual migration
-runs. See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed boundaries.
+Run Docker builds from the repository root because the image packages the
+independently built database migration executable and shared SQL history. See
+[ARCHITECTURE.md](ARCHITECTURE.md) for the detailed boundaries.
