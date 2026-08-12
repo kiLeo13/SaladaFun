@@ -7,14 +7,6 @@ variable "ssh_public_key" {
   type      = string
   sensitive = true
 }
-variable "discord_token" {
-  type      = string
-  sensitive = true
-  validation {
-    condition     = length(var.discord_token) > 0 && !strcontains(var.discord_token, "\n")
-    error_message = "discord_token must be non-empty and contain no newlines."
-  }
-}
 variable "discord_application_id" { type = string }
 variable "discord_guild_id" {
   description = "Development guild for immediate command updates; empty means global commands."
