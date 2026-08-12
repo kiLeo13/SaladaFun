@@ -2,12 +2,12 @@
 
 ## Startup and shutdown
 
-`cmd/padinho` loads explicit environment configuration and creates a
-signal-cancelled context. `internal/app` creates the configured MySQL schema
-when absent, opens a bounded GORM pool, pings it, applies pending Goose
-migrations, registers and freezes commands, and only then opens Discord. A
-migration failure exits before the bot serves against an incompatible schema.
-Shutdown closes the Discord session and database pool.
+`cmd/padinho` is the visible composition root. It loads explicit environment
+configuration, creates a signal-cancelled context, opens a bounded `*gorm.DB`,
+constructs the configuration repository, retrieves `app.token`, registers and
+freezes commands, and only then opens Discord. A missing or empty token fails
+startup before any Discord connection. Shutdown closes the Discord session and
+underlying database pool.
 
 ## Command boundary
 
@@ -30,14 +30,21 @@ turns expected middleware rejections into ephemeral responses.
 
 ## Persistence and deployment
 
-`internal/database` exposes the same bounded connection through GORM and
-`database/sql`; Goose consumes the latter. Callers provide typed host, port,
-username, password, and database fields rather than a DSN. Migrations live at
-`../../database/migrations` and are copied into `/app/migrations`.
+`internal/database` returns `*gorm.DB`; repositories receive that value directly
+instead of a project-specific connection wrapper. `internal/configuration`
+maps the `config(name, value)` table and owns the `app.token` key. Callers
+provide typed host, port, username, password, and database fields rather than a
+DSN.
 
-The Salada production image is static, distroless, non-root, read-only, and limited to
-384 MB. Watchtower is an explicitly accepted archived dependency: it is
-digest-pinned, scoped by labels, polls every 300 seconds, and has no HTTP API.
+The root `database` Go module exclusively owns Goose, the migration executable,
+and SQL history. Compose runs that executable as a one-shot dependency before
+starting Padinho. Padinho never creates its schema or runs migrations.
+
+The Salada production image uses a digest-pinned Go 1.26.5/Alpine 3.24 builder
+for its CGO-disabled binaries. Its runtime is static, distroless, non-root,
+read-only, and limited to 384 MB. Watchtower is an explicitly accepted archived
+dependency: it is digest-pinned, scoped by labels, polls every 300 seconds, and
+has no HTTP API.
 
 Terraform provisions an Always Free `VM.Standard.E2.1.Micro` with only SSH from
 one administrator `/32`. `MySQL.Free` and `HeatWave.Free` remain private and
