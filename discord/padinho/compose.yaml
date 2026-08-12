@@ -1,6 +1,20 @@
 name: salada
 
 services:
+  migrate:
+    image: ${SALADA_IMAGE:-ghcr.io/kileo13/salada:stable}
+    pull_policy: always
+    restart: "no"
+    entrypoint: ["/app/migrate"]
+    env_file:
+      - ${SALADA_ENV_FILE:-/etc/salada/salada.env}
+    mem_limit: 128m
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+
   bot:
     image: ${SALADA_IMAGE:-ghcr.io/kileo13/salada:stable}
     pull_policy: always
@@ -13,6 +27,9 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp:size=16m,mode=1777
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     labels:
       com.centurylinklabs.watchtower.enable: "true"
       com.centurylinklabs.watchtower.scope: salada
