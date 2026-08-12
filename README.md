@@ -45,6 +45,13 @@ cd discord/padinho
 go test -race ./...
 ```
 
+Verify the independent migration project with the same Go baseline:
+
+```text
+cd database
+go test -race ./...
+```
+
 ## License
 
 This repository does not currently include a license. Add an explicit license
