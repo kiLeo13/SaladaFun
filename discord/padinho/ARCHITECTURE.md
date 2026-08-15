@@ -2,19 +2,17 @@
 
 ## Startup and shutdown
 
-`cmd/padinho` is the visible composition root. It loads explicit environment
-configuration, creates a signal-cancelled context, opens a bounded `*gorm.DB`,
-constructs the configuration repository, retrieves `app.token`, registers and
-freezes commands, and only then opens Discord. A missing or empty token fails
-startup before any Discord connection. Shutdown closes the Discord session and
-underlying database pool.
+`cmd/padinho` is the visible composition root. It opens a bounded `*gorm.DB`,
+retrieves `app.token` and `birthday.channel_id` through the `config` repository,
+constructs the birthday repository/service, registers and freezes all Discord
+routes, and starts the gateway plus recurring-job scheduler. Missing or empty
+runtime configuration fails before Discord connects.
 
 ## Command boundary
 
-`internal/command` is framework-neutral. The unique `Registry` exposes typed
-options, top-level slash commands, direct subcommands, and Discord's one
-supported subcommand-group level. It intentionally has no recursive groups that
-Discord cannot represent.
+The unique `internal/command.Registry` exposes typed options, top-level slash
+commands, direct subcommands, and Discord's one supported subcommand-group
+level. It intentionally has no recursive groups that Discord cannot represent.
 
 Metadata belongs in feature registration functions. Handlers receive a typed
 `CommandRequest`; `context.Context` is reserved for cancellation and deadlines.
@@ -24,17 +22,60 @@ Metadata belongs in feature registration functions. Handlers receive a typed
 registry -> command group -> subcommand group -> route -> handler
 ```
 
-`internal/discord` is the only DiscordGo adapter. It compiles definitions,
-bulk-overwrites commands at startup, maps interactions into typed requests, and
-turns expected middleware rejections into ephemeral responses.
+`internal/discord.Routes` owns that command registry plus stable component and
+modal route maps. It freezes them as one composition and dispatches application
+commands, message components, and modal submissions from the same gateway.
+Component `custom_id` values use `route:param...`; handlers validate every
+parameter because client input is untrusted.
+
+Response payloads intentionally use native DiscordGo types. The small bound
+responder owns the session and source interaction, sends exactly one initial
+response, and reports whether the gateway may still send an error. This is a
+documented exception to library-neutral command requests: mirroring Discord's
+Components V2 model would add maintenance and conversion failures without
+protecting the application layer. Domain, application, persistence, and job
+packages remain DiscordGo-free.
+
+## Birthday feature
+
+```text
+discord/birthday handlers -> application/birthday service
+                                      |
+                                      v
+                         persistence/mysql repository -> GORM
+
+job/birthday -> application/birthday service -> discord/birthday sender
+```
+
+`internal/domain/entity` owns the GORM birthday and delivery-ledger structures.
+The application package owns the repository interface it consumes, validation,
+IANA timezone loading, age calculation, and the February 29 rule (February 28
+in non-leap years). `internal/persistence/mysql` provides the concrete GORM
+implementation. Discord handlers consume a smaller service interface local to
+their feature package.
+
+The `/birthdays` command always starts at January. Each of the twelve pages
+queries and renders one month in day/name order with Components V2. Arrow-only
+buttons carry direction, current month, and invoking user in a stateless custom
+ID; the ➕ button opens the registration modal. All visible copy except command
+names lives in the typed `internal/locale/ptbr` package. Allowed mentions are
+explicitly restricted, and display names are Markdown-escaped.
+
+The standard-library scheduler runs the birthday job every minute. The service
+converts the current instant into each stored IANA timezone, so DST and
+quarter-hour offsets are handled by Go's embedded timezone database. A due
+announcement is sent through Components V2 and recorded in
+`birthday_announcements` only after successful Discord delivery. Sequential
+execution prevents a job from overlapping itself; the ledger prevents later
+checks from sending the same local-date birthday again.
 
 ## Persistence and deployment
 
-`internal/database` returns `*gorm.DB`; repositories receive that value directly
-instead of a project-specific connection wrapper. `internal/configuration`
-maps the `config(name, value)` table and owns the `app.token` key. Callers
-provide typed host, port, username, password, and database fields rather than a
-DSN.
+`internal/database.Open()` privately reads the small `DB_*` bootstrap contract
+and returns `*gorm.DB`; credentials are never retained in a general application
+configuration object. `internal/config` maps `config(name, value)`, receives
+GORM directly, and owns the `app.token` and `birthday.channel_id` keys. Neither
+layer passes contexts through synchronous startup queries.
 
 The root `database` Go module exclusively owns Goose, the migration executable,
 and SQL history. Compose runs that executable as a one-shot dependency before
