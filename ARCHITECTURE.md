@@ -45,12 +45,19 @@ vitals, batch breaking, and an optional Discord chat bridge. See
 ### Discord: Padinho
 
 Padinho, under `discord/padinho`, is a Go 1.26 application designed for a 1 GB
-`VM.Standard.E2.1.Micro`. Its command declarations are independent of DiscordGo;
-a frozen registry produces immutable Discord definitions and runtime dispatch.
-Middleware composes from registry to route, and application data lives in a
-typed request rather than context values. Its composition root opens GORM and
-retrieves the Discord token through the database-backed configuration
-repository before opening the gateway. See
+`VM.Standard.E2.1.Micro`. A frozen route composition owns slash commands,
+stateless message components, and modal submissions. Command declarations stay
+typed while responders deliberately accept native DiscordGo payloads so Salada
+does not maintain a second copy of the evolving Discord component model.
+Application data lives in typed requests rather than context values.
+
+The first feature stores birthdays in MySQL, presents one Components V2 page
+per month, accepts registrations through a modal, and checks local calendar
+dates once per minute. A delivery ledger makes repeated scheduler checks
+idempotent. The composition root opens GORM and retrieves the Discord token and
+birthday channel through the database-backed `config` repository before
+opening the gateway. Discord derives its application identity from the
+connected bot and synchronizes global commands unconditionally. See
 [`discord/padinho/ARCHITECTURE.md`](discord/padinho/ARCHITECTURE.md).
 
 ## Verification
