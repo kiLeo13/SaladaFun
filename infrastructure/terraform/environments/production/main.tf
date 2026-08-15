@@ -44,18 +44,14 @@ module "identity" {
   instance_id         = module.compute.instance_id
   name                = local.name
   runtime_environment = <<-EOT
-    DISCORD_APPLICATION_ID=${var.discord_application_id}
-    DISCORD_GUILD_ID=${var.discord_guild_id}
-    DISCORD_SYNC_COMMANDS=true
-    DATABASE_HOST=${module.mysql.private_ip}
-    DATABASE_PORT=3306
-    DATABASE_USERNAME=${var.mysql_admin_username}
-    DATABASE_PASSWORD=${jsonencode(var.mysql_admin_password)}
-    DATABASE_NAME=${var.mysql_database_name}
-    DATABASE_MAX_OPEN_CONNECTIONS=5
-    DATABASE_MAX_IDLE_CONNECTIONS=2
-    DATABASE_CONNECTION_MAX_LIFETIME=30m
-    LOG_LEVEL=info
+    DB_HOST=${module.mysql.private_ip}
+    DB_PORT=3306
+    DB_USER=${var.mysql_admin_username}
+    DB_PASSWORD=${jsonencode(var.mysql_admin_password)}
+    DB_NAME=${var.mysql_database_name}
+    DB_MAX_OPEN=5
+    DB_MAX_IDLE=2
+    DB_MAX_LIFETIME=30m
   EOT
   registry_credentials = jsonencode({
     username = var.ghcr_username

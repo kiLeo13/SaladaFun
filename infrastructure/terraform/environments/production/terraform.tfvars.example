@@ -5,8 +5,6 @@ availability_domain = "replace-with-an-availability-domain"
 admin_cidr           = "203.0.113.10/32"
 ssh_public_key       = "ssh-ed25519 replace-me"
 
-discord_application_id = "replace-me"
-discord_guild_id       = "replace-me"
 ghcr_username          = "replace-me"
 ghcr_token             = "replace-with-read-packages-token"
 

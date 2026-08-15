@@ -7,12 +7,6 @@ variable "ssh_public_key" {
   type      = string
   sensitive = true
 }
-variable "discord_application_id" { type = string }
-variable "discord_guild_id" {
-  description = "Development guild for immediate command updates; empty means global commands."
-  type        = string
-  default     = ""
-}
 variable "ghcr_username" { type = string }
 variable "ghcr_token" {
   description = "Fine-grained GitHub token limited to read:packages."
