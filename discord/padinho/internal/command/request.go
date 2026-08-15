@@ -1,10 +1,11 @@
 package command
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // Snowflake is a Discord entity identifier. An empty Snowflake represents an
@@ -48,15 +49,11 @@ type Actor struct {
 	RoleIDs []Snowflake
 }
 
-// Response is a framework-neutral Discord response.
-type Response struct {
-	Content   string
-	Ephemeral bool
-}
-
-// Responder sends the initial response for a command request.
+// Responder sends one native Discord initial interaction response. It remains
+// bound to the originating interaction so handlers cannot accidentally answer
+// a different request or send two initial responses.
 type Responder interface {
-	Respond(context.Context, Response) error
+	Respond(*discordgo.InteractionResponse) error
 }
 
 var (

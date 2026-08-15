@@ -43,6 +43,7 @@ func TestCompileDefinitionsRejectsUnknownOptionAtEveryLevel(t *testing.T) {
 
 func TestMapRequest(t *testing.T) {
 	t.Parallel()
+	responder := &testResponder{}
 	interaction := interactionWithOptions([]*discordgo.ApplicationCommandInteractionDataOption{{
 		Name: "members", Type: discordgo.ApplicationCommandOptionSubCommandGroup,
 		Options: []*discordgo.ApplicationCommandInteractionDataOption{{
@@ -56,7 +57,7 @@ func TestMapRequest(t *testing.T) {
 			},
 		}},
 	}})
-	request, responder, err := mapRequest(&discordgo.Session{}, interaction)
+	request, err := mapRequest(interaction, responder)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +75,8 @@ func TestMapRequest(t *testing.T) {
 func TestMapRequestDirectAndMalformedOptions(t *testing.T) {
 	t.Parallel()
 	direct := interactionWithOptions([]*discordgo.ApplicationCommandInteractionDataOption{{Name: "ban", Type: discordgo.ApplicationCommandOptionSubCommand}})
-	request, _, err := mapRequest(&discordgo.Session{}, direct)
+	responder := &testResponder{}
+	request, err := mapRequest(direct, responder)
 	if err != nil || request.Path.Subcommand != "ban" {
 		t.Fatalf("direct map = %#v, %v", request, err)
 	}
@@ -82,19 +84,28 @@ func TestMapRequestDirectAndMalformedOptions(t *testing.T) {
 	dm := interactionWithOptions(nil)
 	dm.Member = nil
 	dm.User = &discordgo.User{ID: "dm-user"}
-	request, _, err = mapRequest(&discordgo.Session{}, dm)
+	request, err = mapRequest(dm, responder)
 	if err != nil || request.Actor.UserID != "dm-user" {
 		t.Fatalf("DM map = %#v, %v", request, err)
 	}
 
 	malformed := interactionWithOptions([]*discordgo.ApplicationCommandInteractionDataOption{{Name: "group", Type: discordgo.ApplicationCommandOptionSubCommandGroup}})
-	if _, _, err := mapRequest(&discordgo.Session{}, malformed); err == nil {
+	if _, err := mapRequest(malformed, responder); err == nil {
 		t.Fatal("malformed group accepted")
 	}
 	unsupported := interactionWithOptions([]*discordgo.ApplicationCommandInteractionDataOption{{Name: "number", Type: discordgo.ApplicationCommandOptionNumber, Value: 1.5}})
-	if _, _, err := mapRequest(&discordgo.Session{}, unsupported); err == nil {
+	if _, err := mapRequest(unsupported, responder); err == nil {
 		t.Fatal("unsupported option accepted")
 	}
+}
+
+type testResponder struct {
+	response *discordgo.InteractionResponse
+}
+
+func (r *testResponder) Respond(response *discordgo.InteractionResponse) error {
+	r.response = response
+	return nil
 }
 
 func allOptions() []command.OptionDefinition {

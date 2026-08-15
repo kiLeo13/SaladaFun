@@ -46,7 +46,7 @@ func RejectForbidden(reason string) error {
 func RejectCooldown(retryAfter time.Duration) error {
 	return &Rejection{
 		Code:       RejectionCooldown,
-		Message:    "command is on cooldown",
+		Message:    "Este comando está em tempo de espera.",
 		RetryAfter: retryAfter,
 	}
 }

@@ -10,39 +10,36 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const genericCommandError = "Something went wrong while running that command."
-
 type interactionHandler struct {
-	registry *command.Registry
-	logger   *slog.Logger
-	ctx      context.Context
+	routes *Routes
+	logger *slog.Logger
+	ctx    context.Context
 }
 
 func (h *interactionHandler) handle(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-	if interaction.Type != discordgo.InteractionApplicationCommand {
+	responder := newInteractionResponder(session, interaction)
+	handled, err := h.routes.dispatch(h.ctx, interaction, responder)
+	if !handled {
 		return
-	}
-	request, responder, err := mapRequest(session, interaction)
-	if err == nil {
-		err = h.registry.Dispatch(h.ctx, request)
 	}
 	if err == nil || responder.responded() {
 		return
 	}
-	response := genericCommandError
+	response := ptbr.GenericInteractionError
 	if rejection, ok := command.AsRejection(err); ok {
 		response = rejection.Error()
 	} else {
 		h.logger.Error("command execution failed", "request_id", interaction.ID, "error", err)
 	}
-	if responseErr := responder.Respond(context.Background(), command.Response{Content: response, Ephemeral: true}); responseErr != nil {
+	if responseErr := responder.Respond(ephemeralTextResponse(response)); responseErr != nil {
 		h.logger.Error("command error response failed", "request_id", interaction.ID, "error", responseErr)
 	}
 }
 
-func mapRequest(session *discordgo.Session, interaction *discordgo.InteractionCreate) (*command.CommandRequest, *interactionResponder, error) {
+func mapRequest(interaction *discordgo.InteractionCreate, responder command.Responder) (*command.CommandRequest, error) {
 	data := interaction.ApplicationCommandData()
 	path := command.CommandPath{Command: data.Name}
 	options := data.Options
@@ -52,7 +49,7 @@ func mapRequest(session *discordgo.Session, interaction *discordgo.InteractionCr
 	} else if len(options) > 0 && options[0].Type == discordgo.ApplicationCommandOptionSubCommandGroup {
 		path.Group = options[0].Name
 		if len(options[0].Options) == 0 || options[0].Options[0].Type != discordgo.ApplicationCommandOptionSubCommand {
-			return nil, newInteractionResponder(session, interaction), errors.New("Discord subcommand group has no subcommand")
+			return nil, errors.New("Discord subcommand group has no subcommand")
 		}
 		path.Subcommand = options[0].Options[0].Name
 		options = options[0].Options[0].Options
@@ -61,28 +58,15 @@ func mapRequest(session *discordgo.Session, interaction *discordgo.InteractionCr
 	for _, option := range options {
 		value, err := mapOption(option)
 		if err != nil {
-			return nil, newInteractionResponder(session, interaction), err
+			return nil, err
 		}
 		values[option.Name] = value
 	}
-	actor := command.Actor{}
-	if interaction.Member != nil {
-		if interaction.Member.User != nil {
-			actor.UserID = command.Snowflake(interaction.Member.User.ID)
-		}
-		actor.RoleIDs = make([]command.Snowflake, len(interaction.Member.Roles))
-		for index, role := range interaction.Member.Roles {
-			actor.RoleIDs[index] = command.Snowflake(role)
-		}
-	} else if interaction.User != nil {
-		actor.UserID = command.Snowflake(interaction.User.ID)
-	}
-	responder := newInteractionResponder(session, interaction)
 	return &command.CommandRequest{
-		Path: path, Actor: actor, GuildID: command.Snowflake(interaction.GuildID),
+		Path: path, Actor: actor(interaction), GuildID: command.Snowflake(interaction.GuildID),
 		ChannelID: command.Snowflake(interaction.ChannelID), Options: command.NewOptionValues(values),
 		Responder: responder, RequestID: interaction.ID, ReceivedAt: time.Now().UTC(),
-	}, responder, nil
+	}, nil
 }
 
 func mapOption(option *discordgo.ApplicationCommandInteractionDataOption) (any, error) {
@@ -111,23 +95,30 @@ func newInteractionResponder(session *discordgo.Session, interaction *discordgo.
 	return &interactionResponder{session: session, interaction: interaction}
 }
 
-func (r *interactionResponder) Respond(_ context.Context, response command.Response) error {
+func (r *interactionResponder) Respond(response *discordgo.InteractionResponse) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.didRespond {
 		return errors.New("interaction already has an initial response")
 	}
-	data := &discordgo.InteractionResponseData{Content: response.Content}
-	if response.Ephemeral {
-		data.Flags = discordgo.MessageFlagsEphemeral
+	if response == nil {
+		return errors.New("interaction response is nil")
 	}
-	if err := r.session.InteractionRespond(r.interaction.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource, Data: data,
-	}); err != nil {
+	if err := r.session.InteractionRespond(r.interaction.Interaction, response); err != nil {
 		return fmt.Errorf("respond to Discord interaction: %w", err)
 	}
 	r.didRespond = true
 	return nil
+}
+
+func ephemeralTextResponse(message string) *discordgo.InteractionResponse {
+	return &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Flags:      discordgo.MessageFlagsEphemeral | discordgo.MessageFlagsIsComponentsV2,
+			Components: []discordgo.MessageComponent{discordgo.TextDisplay{Content: message}},
+		},
+	}
 }
 
 func (r *interactionResponder) responded() bool {
