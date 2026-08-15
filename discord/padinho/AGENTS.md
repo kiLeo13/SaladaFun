@@ -1,10 +1,16 @@
 # Padinho contribution guidance
 
 - Keep the Go baseline at 1.26 and preserve static builds with `CGO_ENABLED=0`.
-- Keep `internal/command` independent of DiscordGo, GORM, and OCI types.
+- Keep command declaration, validation, options, and dispatch independent of
+  GORM and OCI types. The interaction-bound responder deliberately accepts a
+  native DiscordGo response; do not duplicate DiscordGo's response/component
+  model in project-owned structs.
 - Register every command through the single composition root in
   `internal/commands`. Feature registration functions may delegate from there;
   do not create a second registry.
+- Register stable component and modal routes with the same `discord.Routes`
+  composition. Keep reconstructible state in validated `custom_id` parameters;
+  add expiring server-side state only for flows that cannot be reconstructed.
 - Accept handlers by function signature. A feature may use standalone functions
   or bound methods and may group several handlers in one file when cohesive.
 - Put command names, descriptions, options, and middleware beside the feature's
@@ -21,3 +27,30 @@
   384 MB container memory limit.
 - Update this project's README and architecture documentation with every runtime,
   command framework, persistence, or deployment change.
+- Keep user-facing text in `internal/locale/ptbr`; command names are the only
+  user-facing identifiers that may remain untranslated.
+- Organize growing features through `internal/domain/entity`,
+  `internal/application/<feature>`, and concrete adapters such as
+  `internal/persistence/mysql`. Discord handlers and jobs consume application
+  services rather than querying repositories directly.
+- Declare small interfaces in the package that consumes them. Keep concrete
+  GORM repositories in `internal/persistence/mysql`, and keep test fakes beside
+  their consumers unless substantial reuse justifies a shared test utility.
+- Group cohesive slash commands, buttons, modals, and feature-specific Discord
+  listeners in one feature package. Do not create one directory per handler.
+  Keep process-scheduled work under `internal/job`.
+- Keep `cmd/padinho` as explicit dependency wiring. Name repositories, services,
+  senders, jobs, and other reusable dependencies before passing them onward;
+  avoid nested constructor chains. Separate large composition roots with short
+  section comments such as repositories, services, Discord, and scheduled jobs.
+- Avoid blank-identifier compile-time interface assertions when ordinary
+  constructor wiring already verifies the implementation. Use one only when it
+  provides otherwise-missing compile-time coverage and explain why.
+- Split deeply nested payloads and composite literals into meaningful locals or
+  focused helpers when that makes the data flow easier to scan. Prefer named
+  constants over unexplained limits and magic values, but do not extract small
+  cohesive expressions merely to manufacture abstraction.
+- Bootstrap MySQL directly from the individual `DB_*` environment variables and
+  return `*gorm.DB`. Do not introduce a general environment `Config`, a
+  `DBConfig`, or a caller-provided DSN. Schema history and migration execution
+  remain solely owned by the root `database` module.
