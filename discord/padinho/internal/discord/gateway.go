@@ -23,17 +23,26 @@ func New(token string, routes *Routes, logger *slog.Logger) (*Gateway, error) {
 		return nil, fmt.Errorf("create Discord session: %w", err)
 	}
 	session.Identify.Intents = discordgo.IntentsGuilds
-	return &Gateway{session: session, routes: routes, logger: logger}, nil
+	return &Gateway{
+        session: session,
+        routes:  routes,
+        logger:  logger,
+    }, nil
 }
 
 // Run opens Discord, synchronizes global commands, and blocks until cancellation.
 func (g *Gateway) Run(ctx context.Context) error {
-	handler := &interactionHandler{routes: g.routes, logger: g.logger, ctx: ctx}
+	handler := &interactionHandler{
+        routes: g.routes,
+        logger: g.logger,
+        ctx:    ctx,
+    }
 	g.session.AddHandler(handler.handle)
 	if err := g.session.Open(); err != nil {
 		return fmt.Errorf("open Discord gateway: %w", err)
 	}
 	defer g.session.Close()
+
 	if err := g.synchronizeCommands(); err != nil {
 		return err
 	}

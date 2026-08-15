@@ -27,10 +27,10 @@ func cloneOptionDefinitions(options []OptionDefinition) []OptionDefinition {
 	return append([]OptionDefinition(nil), options...)
 }
 
-func cloneDefinitions(definitions []Definition) []Definition {
-	result := make([]Definition, len(definitions))
+func cloneDefinitions(definitions []*Definition) []*Definition {
+	result := make([]*Definition, len(definitions))
 	for index, definition := range definitions {
-		result[index] = Definition{
+		result[index] = &Definition{
 			Name:        definition.Name,
 			Description: definition.Description,
 			Options:     cloneOptionDefinitions(definition.Options),

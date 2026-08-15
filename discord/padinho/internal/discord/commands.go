@@ -9,7 +9,7 @@ import (
 
 // CompileDefinitions converts the framework-neutral registry snapshot at the
 // Discord boundary.
-func CompileDefinitions(definitions []command.Definition) ([]*discordgo.ApplicationCommand, error) {
+func CompileDefinitions(definitions []*command.Definition) ([]*discordgo.ApplicationCommand, error) {
 	result := make([]*discordgo.ApplicationCommand, 0, len(definitions))
 	for _, definition := range definitions {
 		compiled := &discordgo.ApplicationCommand{

@@ -66,7 +66,7 @@ type Registry struct {
 	frozen      bool
 	middleware  []Middleware
 	roots       []*rootDeclaration
-	definitions []Definition
+	definitions []*Definition
 	dispatch    map[string]HandlerFunc
 }
 
@@ -223,10 +223,10 @@ func (r *Registry) Freeze() error {
 		return &ValidationError{Problems: problems}
 	}
 
-	r.definitions = make([]Definition, 0, len(r.roots))
+	r.definitions = make([]*Definition, 0, len(r.roots))
 	r.dispatch = make(map[string]HandlerFunc)
 	for _, root := range r.roots {
-		definition := Definition{Name: root.name, Description: root.description}
+		definition := &Definition{Name: root.name, Description: root.description}
 		if root.leaf {
 			definition.Options = cloneOptionDefinitions(root.options)
 			path := CommandPath{Command: root.name}
@@ -441,7 +441,7 @@ func validateOptions(location string, options []OptionDefinition) []string {
 }
 
 // Definitions returns a deep copy of the frozen application-command metadata.
-func (r *Registry) Definitions() ([]Definition, error) {
+func (r *Registry) Definitions() ([]*Definition, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	if !r.frozen {
