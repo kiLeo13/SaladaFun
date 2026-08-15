@@ -3,49 +3,93 @@
 package migration
 
 import (
-	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"time"
 
 	mysqldriver "github.com/go-sql-driver/mysql"
-	"github.com/kiLeo13/SaladaFun/database/internal/config"
 	"github.com/pressly/goose/v3"
 )
 
-// Open creates and verifies the MySQL pool used exclusively by migrations.
-func Open(ctx context.Context, configuration config.Config) (*sql.DB, error) {
-	database, err := sql.Open("mysql", dataSourceName(configuration))
+const migrationsPath = "/app/migrations"
+
+type settings struct {
+	host     string
+	port     uint16
+	user     string
+	password string
+	name     string
+}
+
+// Open reads the DB_* variables and returns a verified migration connection.
+func Open() (*sql.DB, error) {
+	cfg, err := load()
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("mysql", dataSourceName(cfg))
 	if err != nil {
 		return nil, fmt.Errorf("open migration database: %w", err)
 	}
-	if err := database.PingContext(ctx); err != nil {
-		_ = database.Close()
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
 		return nil, fmt.Errorf("ping migration database: %w", err)
 	}
-	return database, nil
+	return db, nil
 }
 
-// Up applies every pending SQL migration.
-func Up(ctx context.Context, database *sql.DB, path string) error {
+// Up applies every pending SQL migration from the packaged migration path.
+func Up(db *sql.DB) error {
+	return up(db, migrationsPath)
+}
+
+func up(db *sql.DB, path string) error {
 	if err := goose.SetDialect("mysql"); err != nil {
 		return fmt.Errorf("configure goose dialect: %w", err)
 	}
-	if err := goose.UpContext(ctx, database, path); err != nil {
+	if err := goose.Up(db, path); err != nil {
 		return fmt.Errorf("apply database migrations: %w", err)
 	}
 	return nil
 }
 
-func dataSourceName(configuration config.Config) string {
+func load() (settings, error) {
+	cfg := settings{
+		host: os.Getenv("DB_HOST"), user: os.Getenv("DB_USER"),
+		password: os.Getenv("DB_PASSWORD"), name: os.Getenv("DB_NAME"),
+	}
+	if cfg.host == "" {
+		return settings{}, errors.New("DB_HOST is required")
+	}
+	value := os.Getenv("DB_PORT")
+	port, err := strconv.ParseUint(value, 10, 16)
+	if value == "" || err != nil || port == 0 {
+		return settings{}, errors.New("DB_PORT must be an integer between 1 and 65535")
+	}
+	cfg.port = uint16(port)
+	if cfg.user == "" {
+		return settings{}, errors.New("DB_USER is required")
+	}
+	if cfg.password == "" {
+		return settings{}, errors.New("DB_PASSWORD is required")
+	}
+	if cfg.name == "" {
+		return settings{}, errors.New("DB_NAME is required")
+	}
+	return cfg, nil
+}
+
+func dataSourceName(cfg settings) string {
 	driverConfig := mysqldriver.NewConfig()
-	driverConfig.User = configuration.Username
-	driverConfig.Passwd = configuration.Password
+	driverConfig.User = cfg.user
+	driverConfig.Passwd = cfg.password
 	driverConfig.Net = "tcp"
-	driverConfig.Addr = net.JoinHostPort(configuration.Host, strconv.FormatUint(uint64(configuration.Port), 10))
-	driverConfig.DBName = configuration.DatabaseName
+	driverConfig.Addr = net.JoinHostPort(cfg.host, strconv.FormatUint(uint64(cfg.port), 10))
+	driverConfig.DBName = cfg.name
 	driverConfig.ParseTime = true
 	driverConfig.MultiStatements = true
 	driverConfig.Loc = time.UTC
