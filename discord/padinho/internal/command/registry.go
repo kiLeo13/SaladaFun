@@ -88,18 +88,30 @@ func (r *Registry) Slash(
 	options ...Option,
 ) *Route {
 	declaration := &rootDeclaration{
-		name: name, description: description, leaf: true, handler: handler,
-		options: snapshotOptions(options),
+		name:        name,
+		description: description,
+		leaf:        true,
+		handler:     handler,
+		options:     snapshotOptions(options),
 	}
 	r.mutate(func() { r.roots = append(r.roots, declaration) })
-	return &Route{registry: r, middleware: &declaration.middleware}
+	return &Route{
+		registry:   r,
+		middleware: &declaration.middleware,
+	}
 }
 
 // Group registers a top-level slash command that owns subcommands.
 func (r *Registry) Group(name, description string) *CommandGroup {
-	declaration := &rootDeclaration{name: name, description: description}
+	declaration := &rootDeclaration{
+		name:        name,
+		description: description,
+	}
 	r.mutate(func() { r.roots = append(r.roots, declaration) })
-	return &CommandGroup{registry: r, declaration: declaration}
+	return &CommandGroup{
+		registry:    r,
+		declaration: declaration,
+	}
 }
 
 // Route is a registered leaf command.
@@ -137,24 +149,34 @@ func (g *CommandGroup) Sub(
 	options ...Option,
 ) *Route {
 	declaration := &routeDeclaration{
-		name: name, description: description, handler: handler,
-		options: snapshotOptions(options),
+		name:        name,
+		description: description,
+		handler:     handler,
+		options:     snapshotOptions(options),
 	}
 	g.registry.mutate(func() {
 		g.declaration.subcommands = append(g.declaration.subcommands, declaration)
 	})
-	return &Route{registry: g.registry, middleware: &declaration.middleware}
+	return &Route{
+		registry:   g.registry,
+		middleware: &declaration.middleware,
+	}
 }
 
 // Group registers a Discord subcommand group. The returned type deliberately
 // has no Group method because Discord does not support deeper nesting.
 func (g *CommandGroup) Group(name, description string) *SubcommandGroup {
-	declaration := &groupDeclaration{name: name, description: description}
+	declaration := &groupDeclaration{
+		name:        name,
+		description: description,
+	}
 	g.registry.mutate(func() {
 		g.declaration.groups = append(g.declaration.groups, declaration)
 	})
 	return &SubcommandGroup{
-		registry: g.registry, root: g.declaration, declaration: declaration,
+		registry:    g.registry,
+		root:        g.declaration,
+		declaration: declaration,
 	}
 }
 
@@ -181,13 +203,18 @@ func (g *SubcommandGroup) Sub(
 	options ...Option,
 ) *Route {
 	declaration := &routeDeclaration{
-		name: name, description: description, handler: handler,
-		options: snapshotOptions(options),
+		name:        name,
+		description: description,
+		handler:     handler,
+		options:     snapshotOptions(options),
 	}
 	g.registry.mutate(func() {
 		g.declaration.subcommands = append(g.declaration.subcommands, declaration)
 	})
-	return &Route{registry: g.registry, middleware: &declaration.middleware}
+	return &Route{
+		registry:   g.registry,
+		middleware: &declaration.middleware,
+	}
 }
 
 func (r *Registry) mutate(mutation func()) {
@@ -226,64 +253,131 @@ func (r *Registry) Freeze() error {
 	r.definitions = make([]*Definition, 0, len(r.roots))
 	r.dispatch = make(map[string]HandlerFunc)
 	for _, root := range r.roots {
-		definition := &Definition{Name: root.name, Description: root.description}
-		if root.leaf {
-			definition.Options = cloneOptionDefinitions(root.options)
-			path := CommandPath{Command: root.name}
-			compiled := compose(
-				root.handler, appendMiddleware(r.middleware, root.middleware)...,
-			)
-			if compiled == nil {
-				return nilMiddlewareHandlerError(path)
-			}
-			r.dispatch[path.key()] = compiled
-		} else {
-			for _, subcommand := range root.subcommands {
-				definition.Subcommands = append(definition.Subcommands, SubcommandDefinition{
-					Name: subcommand.name, Description: subcommand.description,
-					Options: cloneOptionDefinitions(subcommand.options),
-				})
-				path := CommandPath{Command: root.name, Subcommand: subcommand.name}
-				compiled := compose(subcommand.handler,
-					appendMiddleware(r.middleware, root.middleware, subcommand.middleware)...,
-				)
-				if compiled == nil {
-					return nilMiddlewareHandlerError(path)
-				}
-				r.dispatch[path.key()] = compiled
-			}
-			for _, group := range root.groups {
-				groupDefinition := SubcommandGroupDefinition{
-					Name: group.name, Description: group.description,
-				}
-				for _, subcommand := range group.subcommands {
-					groupDefinition.Subcommands = append(
-						groupDefinition.Subcommands,
-						SubcommandDefinition{
-							Name: subcommand.name, Description: subcommand.description,
-							Options: cloneOptionDefinitions(subcommand.options),
-						},
-					)
-					path := CommandPath{
-						Command: root.name, Group: group.name, Subcommand: subcommand.name,
-					}
-					compiled := compose(subcommand.handler,
-						appendMiddleware(
-							r.middleware, root.middleware, group.middleware,
-							subcommand.middleware,
-						)...,
-					)
-					if compiled == nil {
-						return nilMiddlewareHandlerError(path)
-					}
-					r.dispatch[path.key()] = compiled
-				}
-				definition.Groups = append(definition.Groups, groupDefinition)
-			}
+		definition, err := r.compileRoot(root)
+		if err != nil {
+			return err
 		}
 		r.definitions = append(r.definitions, definition)
 	}
 	r.frozen = true
+	return nil
+}
+
+func (r *Registry) compileRoot(root *rootDeclaration) (*Definition, error) {
+	definition := &Definition{
+		Name:        root.name,
+		Description: root.description,
+	}
+	if root.leaf {
+		definition.Options = cloneOptionDefinitions(root.options)
+		path := CommandPath{Command: root.name}
+		return definition, r.compileRoute(
+			path,
+			root.handler,
+			r.middleware,
+			root.middleware,
+		)
+	}
+
+	if err := r.compileDirectSubcommands(definition, root); err != nil {
+		return nil, err
+	}
+	if err := r.compileSubcommandGroups(definition, root); err != nil {
+		return nil, err
+	}
+	return definition, nil
+}
+
+func (r *Registry) compileDirectSubcommands(
+	definition *Definition,
+	root *rootDeclaration,
+) error {
+	for _, subcommand := range root.subcommands {
+		definition.Subcommands = append(
+			definition.Subcommands,
+			newSubcommandDefinition(subcommand),
+		)
+		path := CommandPath{
+			Command:    root.name,
+			Subcommand: subcommand.name,
+		}
+		if err := r.compileRoute(
+			path,
+			subcommand.handler,
+			r.middleware,
+			root.middleware,
+			subcommand.middleware,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Registry) compileSubcommandGroups(
+	definition *Definition,
+	root *rootDeclaration,
+) error {
+	for _, group := range root.groups {
+		groupDefinition, err := r.compileSubcommandGroup(root, group)
+		if err != nil {
+			return err
+		}
+		definition.Groups = append(definition.Groups, groupDefinition)
+	}
+	return nil
+}
+
+func (r *Registry) compileSubcommandGroup(
+	root *rootDeclaration,
+	group *groupDeclaration,
+) (SubcommandGroupDefinition, error) {
+	definition := SubcommandGroupDefinition{
+		Name:        group.name,
+		Description: group.description,
+	}
+	for _, subcommand := range group.subcommands {
+		definition.Subcommands = append(
+			definition.Subcommands,
+			newSubcommandDefinition(subcommand),
+		)
+		path := CommandPath{
+			Command:    root.name,
+			Group:      group.name,
+			Subcommand: subcommand.name,
+		}
+		if err := r.compileRoute(
+			path,
+			subcommand.handler,
+			r.middleware,
+			root.middleware,
+			group.middleware,
+			subcommand.middleware,
+		); err != nil {
+			return SubcommandGroupDefinition{}, err
+		}
+	}
+	return definition, nil
+}
+
+func newSubcommandDefinition(declaration *routeDeclaration) SubcommandDefinition {
+	return SubcommandDefinition{
+		Name:        declaration.name,
+		Description: declaration.description,
+		Options:     cloneOptionDefinitions(declaration.options),
+	}
+}
+
+func (r *Registry) compileRoute(
+	path CommandPath,
+	handler HandlerFunc,
+	middleware ...[]Middleware,
+) error {
+	compiled := compose(handler, appendMiddleware(middleware...)...)
+	if compiled == nil {
+		return nilMiddlewareHandlerError(path)
+	}
+	r.dispatch[path.key()] = compiled
 	return nil
 }
 
@@ -306,70 +400,94 @@ func appendMiddleware(groups ...[]Middleware) []Middleware {
 }
 
 func (r *Registry) validate() []string {
-	var problems []string
 	rootNames := make(map[string]struct{}, len(r.roots))
-	problems = append(problems, validateMiddleware("registry", r.middleware)...)
+	problems := validateMiddleware("registry", r.middleware)
 	for _, root := range r.roots {
-		location := "/" + root.name
-		problems = append(problems, validateMetadata(location, root.name, root.description)...)
-		if _, exists := rootNames[root.name]; exists {
-			problems = append(problems, fmt.Sprintf("duplicate command %s", location))
+		problems = append(problems, validateRoot(root, rootNames)...)
+	}
+	return problems
+}
+
+func validateRoot(root *rootDeclaration, rootNames map[string]struct{}) []string {
+	location := "/" + root.name
+	problems := validateMetadata(location, root.name, root.description)
+	if _, exists := rootNames[root.name]; exists {
+		problems = append(problems, fmt.Sprintf("duplicate command %s", location))
+	}
+	rootNames[root.name] = struct{}{}
+	problems = append(problems, validateMiddleware(location, root.middleware)...)
+
+	if root.leaf {
+		problems = append(problems, validateHandler(location, root.handler)...)
+		return append(problems, validateOptions(location, root.options)...)
+	}
+	return append(problems, validateCommandGroup(location, root)...)
+}
+
+func validateCommandGroup(location string, root *rootDeclaration) []string {
+	var problems []string
+	childCount := len(root.subcommands) + len(root.groups)
+	if childCount == 0 {
+		problems = append(problems, fmt.Sprintf("command group %s is empty", location))
+	}
+	if childCount > maximumCommandOptions {
+		problems = append(problems, fmt.Sprintf(
+			"command group %s has more than %d children",
+			location,
+			maximumCommandOptions,
+		))
+	}
+
+	childNames := make(map[string]struct{}, childCount)
+	for _, subcommand := range root.subcommands {
+		childLocation := location + " " + subcommand.name
+		problems = append(problems, validateRoute(childLocation, subcommand)...)
+		if _, exists := childNames[subcommand.name]; exists {
+			problems = append(problems, fmt.Sprintf("duplicate child %s", childLocation))
 		}
-		rootNames[root.name] = struct{}{}
-		problems = append(problems, validateMiddleware(location, root.middleware)...)
-		if root.leaf {
-			problems = append(problems, validateHandler(location, root.handler)...)
-			problems = append(problems, validateOptions(location, root.options)...)
-			continue
+		childNames[subcommand.name] = struct{}{}
+	}
+	for _, group := range root.groups {
+		problems = append(problems, validateSubcommandGroup(location, group, childNames)...)
+	}
+	return problems
+}
+
+func validateSubcommandGroup(
+	rootLocation string,
+	group *groupDeclaration,
+	childNames map[string]struct{},
+) []string {
+	location := rootLocation + " " + group.name
+	problems := validateMetadata(location, group.name, group.description)
+	problems = append(problems, validateMiddleware(location, group.middleware)...)
+	if _, exists := childNames[group.name]; exists {
+		problems = append(problems, fmt.Sprintf("duplicate child %s", location))
+	}
+	childNames[group.name] = struct{}{}
+
+	if len(group.subcommands) == 0 {
+		problems = append(problems, fmt.Sprintf("subcommand group %s is empty", location))
+	}
+	if len(group.subcommands) > maximumCommandOptions {
+		problems = append(problems, fmt.Sprintf(
+			"subcommand group %s has more than %d subcommands",
+			location,
+			maximumCommandOptions,
+		))
+	}
+
+	subcommandNames := make(map[string]struct{}, len(group.subcommands))
+	for _, subcommand := range group.subcommands {
+		subcommandLocation := location + " " + subcommand.name
+		problems = append(problems, validateRoute(subcommandLocation, subcommand)...)
+		if _, exists := subcommandNames[subcommand.name]; exists {
+			problems = append(
+				problems,
+				fmt.Sprintf("duplicate subcommand %s", subcommandLocation),
+			)
 		}
-		if len(root.subcommands) == 0 && len(root.groups) == 0 {
-			problems = append(problems, fmt.Sprintf("command group %s is empty", location))
-		}
-		if len(root.subcommands)+len(root.groups) > maximumCommandOptions {
-			problems = append(problems, fmt.Sprintf(
-				"command group %s has more than %d children", location, maximumCommandOptions,
-			))
-		}
-		childNames := make(map[string]struct{}, len(root.subcommands)+len(root.groups))
-		for _, subcommand := range root.subcommands {
-			childLocation := location + " " + subcommand.name
-			problems = append(problems, validateRoute(childLocation, subcommand)...)
-			if _, exists := childNames[subcommand.name]; exists {
-				problems = append(problems, fmt.Sprintf("duplicate child %s", childLocation))
-			}
-			childNames[subcommand.name] = struct{}{}
-		}
-		for _, group := range root.groups {
-			groupLocation := location + " " + group.name
-			problems = append(problems, validateMetadata(
-				groupLocation, group.name, group.description,
-			)...)
-			problems = append(problems, validateMiddleware(groupLocation, group.middleware)...)
-			if _, exists := childNames[group.name]; exists {
-				problems = append(problems, fmt.Sprintf("duplicate child %s", groupLocation))
-			}
-			childNames[group.name] = struct{}{}
-			if len(group.subcommands) == 0 {
-				problems = append(problems, fmt.Sprintf("subcommand group %s is empty", groupLocation))
-			}
-			if len(group.subcommands) > maximumCommandOptions {
-				problems = append(problems, fmt.Sprintf(
-					"subcommand group %s has more than %d subcommands",
-					groupLocation, maximumCommandOptions,
-				))
-			}
-			subcommandNames := make(map[string]struct{}, len(group.subcommands))
-			for _, subcommand := range group.subcommands {
-				subcommandLocation := groupLocation + " " + subcommand.name
-				problems = append(problems, validateRoute(subcommandLocation, subcommand)...)
-				if _, exists := subcommandNames[subcommand.name]; exists {
-					problems = append(problems, fmt.Sprintf(
-						"duplicate subcommand %s", subcommandLocation,
-					))
-				}
-				subcommandNames[subcommand.name] = struct{}{}
-			}
-		}
+		subcommandNames[subcommand.name] = struct{}{}
 	}
 	return problems
 }

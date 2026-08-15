@@ -47,7 +47,7 @@ func TestRegistryBuildsDefinitionsAndDispatchesInScopeOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Definitions() error = %v", err)
 	}
-	want := []Definition{{
+	want := []*Definition{{
 		Name: "groups", Description: "Manage groups",
 		Subcommands: []SubcommandDefinition{},
 		Groups: []SubcommandGroupDefinition{{
