@@ -1,16 +1,17 @@
-// Package configuration provides typed access to Padinho's database-backed
-// application configuration.
-package configuration
+// Package config provides access to Padinho's database-backed configuration.
+package config
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
 )
 
-const AppTokenName = "app.token"
+const (
+	AppToken          = "app.token"
+	BirthdayChannelID = "birthday.channel_id"
+)
 
 var ErrNotFound = errors.New("configuration value not found")
 
@@ -25,21 +26,18 @@ func (entry) TableName() string {
 
 // Repository reads application configuration through GORM.
 type Repository struct {
-	database *gorm.DB
+	db *gorm.DB
 }
 
-// NewRepository binds configuration access to the provided GORM connection.
-func NewRepository(database *gorm.DB) *Repository {
-	return &Repository{database: database}
+// New binds configuration access to db.
+func New(db *gorm.DB) *Repository {
+	return &Repository{db: db}
 }
 
 // Get returns the value stored under name.
-func (r *Repository) Get(ctx context.Context, name string) (string, error) {
+func (r *Repository) Get(name string) (string, error) {
 	var item entry
-	err := r.database.WithContext(ctx).
-		Select("value").
-		Where("name = ?", name).
-		Take(&item).Error
+	err := r.db.Select("value").Where("name = ?", name).Take(&item).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", fmt.Errorf("%w: %s", ErrNotFound, name)
 	}

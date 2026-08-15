@@ -1,7 +1,6 @@
-package configuration
+package config
 
 import (
-	"context"
 	"errors"
 	"regexp"
 	"testing"
@@ -13,41 +12,32 @@ import (
 
 const selectValueQuery = "SELECT `value` FROM `config` WHERE name = ? LIMIT ?"
 
-func TestRepositoryGet(t *testing.T) {
+func TestGet(t *testing.T) {
 	database, mock := mockDatabase(t)
-	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).
-		WithArgs(AppTokenName, 1).
+	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(AppToken, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow("token"))
-
-	value, err := NewRepository(database).Get(context.Background(), AppTokenName)
+	value, err := New(database).Get(AppToken)
 	if err != nil || value != "token" {
 		t.Fatalf("Get() = %q, %v", value, err)
 	}
 	assertExpectations(t, mock)
 }
 
-func TestRepositoryGetReturnsNotFound(t *testing.T) {
+func TestGetReturnsNotFound(t *testing.T) {
 	database, mock := mockDatabase(t)
-	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).
-		WithArgs(AppTokenName, 1).
+	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(AppToken, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"value"}))
-
-	_, err := NewRepository(database).Get(context.Background(), AppTokenName)
-	if !errors.Is(err, ErrNotFound) {
+	if _, err := New(database).Get(AppToken); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("Get() error = %v", err)
 	}
 	assertExpectations(t, mock)
 }
 
-func TestRepositoryGetWrapsDatabaseError(t *testing.T) {
+func TestGetWrapsDatabaseError(t *testing.T) {
 	database, mock := mockDatabase(t)
 	want := errors.New("database unavailable")
-	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).
-		WithArgs(AppTokenName, 1).
-		WillReturnError(want)
-
-	_, err := NewRepository(database).Get(context.Background(), AppTokenName)
-	if !errors.Is(err, want) {
+	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(AppToken, 1).WillReturnError(want)
+	if _, err := New(database).Get(AppToken); !errors.Is(err, want) {
 		t.Fatalf("Get() error = %v", err)
 	}
 	assertExpectations(t, mock)
