@@ -3,15 +3,17 @@
 Ansible configures the existing Terraform VM; it does not provision OCI
 resources. It installs Docker Engine and Compose from Docker's signed Ubuntu
 repository, bounds container logs for the 1 GB host, installs a pinned OCI CLI,
-retrieves runtime and GHCR secrets through the instance principal, and
-reconciles the Compose project. Compose applies the root database migrations as
-a one-shot service before Padinho starts.
+retrieves the runtime secret through the instance principal, and reconciles the
+Compose project. Compose pulls Salada's public GHCR image anonymously and
+starts Padinho without applying database migrations. Build, upload, and run the
+root database migration executable manually before deploying code that requires
+new schema.
 
 ```sh
 cd infrastructure/ansible
 ansible-galaxy collection install -r requirements.yml
 cp inventories/production.yml.example inventories/production.yml
-# Fill the public IP and the two sensitive Terraform outputs.
+# Fill the public IP and runtime secret Terraform output.
 ansible-playbook site.yml --check --diff
 ansible-playbook site.yml
 ansible-playbook site.yml  # Expected: no changes (idempotence check).
