@@ -16,7 +16,10 @@ level. It intentionally has no recursive groups that Discord cannot represent.
 
 Metadata belongs in feature registration functions. Handlers receive a typed
 `CommandRequest`; `context.Context` is reserved for cancellation and deadlines.
-`Freeze` validates declarations, snapshots definitions, and composes dispatch:
+`Freeze` first validates the declaration tree by command level, then compiles
+each root according to its route shape. Focused compilation helpers snapshot
+definitions and compose the matching dispatch entry without obscuring the
+top-level lifecycle:
 
 ```text
 registry -> command group -> subcommand group -> route -> handler
@@ -78,8 +81,9 @@ GORM directly, and owns the `app.token` and `birthday.channel_id` keys. Neither
 layer passes contexts through synchronous startup queries.
 
 The root `database` Go module exclusively owns Goose, the migration executable,
-and SQL history. Compose runs that executable as a one-shot dependency before
-starting Padinho. Padinho never creates its schema or runs migrations.
+and SQL history. Its SQL files are embedded in a self-contained executable that
+is built locally, uploaded, and run manually on the Padinho VM. Padinho and
+Compose never create schemas or run migrations.
 
 The Salada production image uses a digest-pinned Go 1.26.5/Alpine 3.24 builder
 for its CGO-disabled binaries. Its runtime is static, distroless, non-root,
@@ -89,5 +93,7 @@ has no HTTP API.
 
 Terraform provisions an Always Free `VM.Standard.E2.1.Micro` with only SSH from
 one administrator `/32`. `MySQL.Free` and `HeatWave.Free` remain private and
-accept 3306 only from the bot NSG. Runtime and read-only GHCR credentials live in
-OCI Vault; Ansible retrieves them with the instance principal and runs Compose.
+accept 3306 only from the bot NSG. The database environment lives in OCI Vault;
+Ansible retrieves it with the instance principal and runs Compose. GitHub
+Actions publishes Padinho's `latest` image as a public GHCR package, so the VM
+pulls it anonymously and no registry token enters Terraform state or OCI Vault.
