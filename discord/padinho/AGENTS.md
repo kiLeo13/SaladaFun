@@ -25,6 +25,11 @@
   private subnet to MySQL.
 - Keep runtime images distroless, non-root, read-only, and within the configured
   384 MB container memory limit.
+- Keep Padinho's image and GitHub Actions workflow independent of the root
+  database module. Database migrations are built and applied manually, never by
+  Padinho's image, Compose, or CI.
+- Publish only `ghcr.io/kileo13/salada:latest` from Padinho's `master` branch;
+  pull requests may validate the image without publishing it.
 - Update this project's README and architecture documentation with every runtime,
   command framework, persistence, or deployment change.
 - Keep user-facing text in `internal/locale/ptbr`; command names are the only
