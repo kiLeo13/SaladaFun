@@ -46,10 +46,11 @@ application ID after connecting and always synchronizes global commands; there
 are no Discord environment switches.
 
 Schema creation and migration belong exclusively to the root
-[`database`](../../database/README.md) project. Compose runs its one-shot
-`migrate` service successfully before starting Padinho. Insert both required
-configuration values through a trusted private database session before
-expecting the bot to start.
+[`database`](../../database/README.md) project. Build its self-contained Linux
+executable locally, upload it to the Padinho VM, and run it there before
+deploying code that requires a new schema. Compose never applies migrations.
+Insert both required configuration values through a trusted private database
+session before expecting the bot to start.
 
 ## Verification and container
 
@@ -59,6 +60,14 @@ go test -cover ./internal/command ./internal/application/birthday ./internal/dis
 docker build -f discord/padinho/Dockerfile -t salada:local .
 ```
 
-Run Docker builds from the repository root because the image packages the
-independently built database migration executable and shared SQL history. See
+Run Docker builds from the repository root. The image contains only Padinho;
+migrations remain an independently built manual tool. See
 [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed boundaries.
+
+The `Padinho` GitHub Actions workflow tests this Go module and builds the image
+for pull requests. Pushes to `master` publish only
+`ghcr.io/kileo13/salada:latest`. The workflow authenticates with its built-in
+`GITHUB_TOKEN`, so it requires no repository secret. GHCR creates the package as
+private on its first publication; make it public in the package settings before
+deploying, because the OCI host intentionally pulls it without registry
+credentials.
