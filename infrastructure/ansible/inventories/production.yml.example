@@ -4,5 +4,4 @@ all:
       ansible_host: 203.0.113.20
       ansible_user: ubuntu
       runtime_secret_ocid: ocid1.vaultsecret.oc1.replace-me
-      registry_secret_ocid: ocid1.vaultsecret.oc1.replace-me
-      salada_image: ghcr.io/kileo13/salada:stable
+      salada_image: ghcr.io/kileo13/salada:latest

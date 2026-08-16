@@ -4,4 +4,4 @@ oci_cli_virtualenv: /opt/oci-cli
 salada_directory: /opt/salada
 salada_environment_directory: /etc/salada
 salada_environment_file: /etc/salada/salada.env
-salada_image: ghcr.io/kileo13/salada:stable
+salada_image: ghcr.io/kileo13/salada:latest
