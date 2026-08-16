@@ -16,6 +16,7 @@ resource "oci_core_route_table" "public" {
   compartment_id = var.compartment_ocid
   vcn_id         = oci_core_vcn.this.id
   display_name   = "${var.name}-public"
+
   route_rules {
     destination       = "0.0.0.0/0"
     destination_type  = "CIDR_BLOCK"
@@ -69,6 +70,7 @@ resource "oci_core_network_security_group_security_rule" "bot_ssh" {
   source                    = var.admin_cidr
   source_type               = "CIDR_BLOCK"
   stateless                 = false
+
   tcp_options {
     destination_port_range {
       min = 22
@@ -99,6 +101,7 @@ resource "oci_core_network_security_group_security_rule" "database_mysql" {
   source                    = oci_core_network_security_group.bot.id
   source_type               = "NETWORK_SECURITY_GROUP"
   stateless                 = false
+
   tcp_options {
     destination_port_range {
       min = 3306
