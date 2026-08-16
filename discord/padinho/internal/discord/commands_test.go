@@ -11,7 +11,7 @@ import (
 
 func TestCompileDefinitions(t *testing.T) {
 	t.Parallel()
-	definitions := []command.Definition{
+	definitions := []*command.Definition{
 		{Name: "ping", Description: "Check", Options: allOptions()},
 		{Name: "admin", Description: "Admin", Subcommands: []command.SubcommandDefinition{{Name: "ban", Description: "Ban"}}, Groups: []command.SubcommandGroupDefinition{{Name: "members", Description: "Members", Subcommands: []command.SubcommandDefinition{{Name: "add", Description: "Add", Options: allOptions()}}}}},
 	}
@@ -29,13 +29,13 @@ func TestCompileDefinitions(t *testing.T) {
 
 func TestCompileDefinitionsRejectsUnknownOptionAtEveryLevel(t *testing.T) {
 	t.Parallel()
-	tests := []command.Definition{
+	tests := []*command.Definition{
 		{Name: "root", Description: "Root", Options: invalidOptions()},
 		{Name: "root", Description: "Root", Subcommands: []command.SubcommandDefinition{{Name: "sub", Description: "Sub", Options: invalidOptions()}}},
 		{Name: "root", Description: "Root", Groups: []command.SubcommandGroupDefinition{{Name: "group", Description: "Group", Subcommands: []command.SubcommandDefinition{{Name: "sub", Description: "Sub", Options: invalidOptions()}}}}},
 	}
 	for _, definition := range tests {
-		if _, err := CompileDefinitions([]command.Definition{definition}); err == nil || !strings.Contains(err.Error(), "unsupported") {
+		if _, err := CompileDefinitions([]*command.Definition{definition}); err == nil || !strings.Contains(err.Error(), "unsupported") {
 			t.Fatalf("CompileDefinitions(%#v) error = %v", definition, err)
 		}
 	}
