@@ -8,11 +8,12 @@ output "runtime_secret_ocid" {
   value       = module.identity.runtime_secret_ocid
 }
 
-output "registry_secret_ocid" {
-  description = "Vault secret containing the read-only GHCR credentials."
-  value       = module.identity.registry_secret_ocid
+output "mysql_private_ip" {
+  description = "Private IPv4 address reached only from the Padinho subnet."
+  value       = module.mysql.private_ip
 }
 
-output "mysql_private_ip" {
-  value = module.mysql.private_ip
+output "availability_domain" {
+  description = "Tenancy-specific availability-domain name selected by number."
+  value       = data.oci_identity_availability_domain.selected.name
 }

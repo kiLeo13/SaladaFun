@@ -8,6 +8,7 @@ resource "oci_kms_key" "this" {
   compartment_id      = var.compartment_ocid
   display_name        = "${var.name}-secrets"
   management_endpoint = oci_kms_vault.this.management_endpoint
+
   key_shape {
     algorithm = "AES"
     length    = 32
@@ -19,20 +20,10 @@ resource "oci_vault_secret" "runtime_environment" {
   key_id         = oci_kms_key.this.id
   secret_name    = "${var.name}-runtime-environment"
   vault_id       = oci_kms_vault.this.id
+
   secret_content {
     content_type = "BASE64"
     content      = base64encode(var.runtime_environment)
-  }
-}
-
-resource "oci_vault_secret" "registry_credentials" {
-  compartment_id = var.compartment_ocid
-  key_id          = oci_kms_key.this.id
-  secret_name     = "${var.name}-registry-credentials"
-  vault_id        = oci_kms_vault.this.id
-  secret_content {
-    content_type = "BASE64"
-    content      = base64encode(var.registry_credentials)
   }
 }
 

@@ -1,33 +1,70 @@
-variable "tenancy_ocid" { type = string }
-variable "compartment_ocid" { type = string }
-variable "region" { type = string }
-variable "availability_domain" { type = string }
-variable "admin_cidr" { type = string }
-variable "ssh_public_key" {
-  type      = string
-  sensitive = true
+variable "tenancy_ocid" {
+  description = "OCID of the OCI tenancy that contains the deployment."
+  type        = string
 }
-variable "ghcr_username" { type = string }
-variable "ghcr_token" {
-  description = "Fine-grained GitHub token limited to read:packages."
+
+variable "compartment_ocid" {
+  description = "OCID of the compartment that owns Salada resources."
+  type        = string
+}
+
+variable "region" {
+  description = "OCI region where Salada is deployed."
+  type        = string
+}
+
+variable "availability_domain_number" {
+  description = "OCI availability-domain number used by Compute and MySQL."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.availability_domain_number >= 1 && floor(var.availability_domain_number) == var.availability_domain_number
+    error_message = "availability_domain_number must be a positive integer."
+  }
+}
+
+variable "admin_cidr" {
+  description = "Administrator's public IPv4 address in /32 notation."
+  type        = string
+}
+
+variable "ssh_public_key" {
+  description = "OpenSSH public key authorized on the Padinho VM."
   type        = string
   sensitive   = true
 }
+
 variable "mysql_admin_username" {
-  type    = string
-  default = "salada_admin"
+  description = "Administrator username created with the MySQL DB system."
+  type        = string
+  default     = "salada_admin"
 }
+
 variable "mysql_admin_password" {
-  type      = string
-  sensitive = true
+  description = "Administrator password created with the MySQL DB system."
+  type        = string
+  sensitive   = true
+
   validation {
-    condition     = length(var.mysql_admin_password) >= 8 && length(var.mysql_admin_password) <= 32 && !strcontains(var.mysql_admin_password, "\n")
-    error_message = "mysql_admin_password must be 8-32 characters and contain no newlines."
+    condition = (
+      length(var.mysql_admin_password) >= 8 &&
+      length(var.mysql_admin_password) <= 32 &&
+      can(regex("^[ -~]+$", var.mysql_admin_password)) &&
+      !strcontains(var.mysql_admin_password, "$") &&
+      !strcontains(var.mysql_admin_password, "`") &&
+      !strcontains(var.mysql_admin_password, "\\") &&
+      !strcontains(var.mysql_admin_password, "\"")
+    )
+    error_message = "mysql_admin_password must be 8-32 printable characters without $, backticks, backslashes, or double quotes."
   }
 }
+
 variable "mysql_database_name" {
-  type    = string
-  default = "salada"
+  description = "MySQL schema consumed by migrations and Padinho."
+  type        = string
+  default     = "salada"
+
   validation {
     condition     = can(regex("^[a-z][a-z0-9_]*$", var.mysql_database_name))
     error_message = "mysql_database_name must be a lowercase MySQL identifier."

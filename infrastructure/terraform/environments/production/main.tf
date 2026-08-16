@@ -17,7 +17,7 @@ module "compute" {
   source = "../../modules/compute"
 
   compartment_ocid    = var.compartment_ocid
-  availability_domain = var.availability_domain
+  availability_domain = data.oci_identity_availability_domain.selected.name
   subnet_id           = module.network.bot_subnet_id
   nsg_ids             = [module.network.bot_nsg_id]
   ssh_public_key      = var.ssh_public_key
@@ -28,7 +28,7 @@ module "mysql" {
   source = "../../modules/mysql"
 
   compartment_ocid    = var.compartment_ocid
-  availability_domain = var.availability_domain
+  availability_domain = data.oci_identity_availability_domain.selected.name
   subnet_id           = module.network.database_subnet_id
   nsg_ids             = [module.network.database_nsg_id]
   name                = local.name
@@ -53,8 +53,4 @@ module "identity" {
     DB_MAX_IDLE=2
     DB_MAX_LIFETIME=30m
   EOT
-  registry_credentials = jsonencode({
-    username = var.ghcr_username
-    token    = var.ghcr_token
-  })
 }
