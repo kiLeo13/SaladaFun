@@ -8,14 +8,18 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
 	mysqldriver "github.com/go-sql-driver/mysql"
+	migrationfiles "github.com/kiLeo13/SaladaFun/database/migrations"
 	"github.com/pressly/goose/v3"
 )
 
-const migrationsPath = "/app/migrations"
+const migrationsPath = "."
+
+var databaseNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 
 type settings struct {
 	host     string
@@ -31,6 +35,9 @@ func Open() (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := ensureDatabase(cfg); err != nil {
+		return nil, err
+	}
 	db, err := sql.Open("mysql", dataSourceName(cfg))
 	if err != nil {
 		return nil, fmt.Errorf("open migration database: %w", err)
@@ -42,8 +49,23 @@ func Open() (*sql.DB, error) {
 	return db, nil
 }
 
-// Up applies every pending SQL migration from the packaged migration path.
+func ensureDatabase(cfg settings) error {
+	serverSettings := cfg
+	serverSettings.name = ""
+	server, err := sql.Open("mysql", dataSourceName(serverSettings))
+	if err != nil {
+		return fmt.Errorf("open MySQL server connection: %w", err)
+	}
+	defer server.Close()
+	if _, err := server.Exec("CREATE DATABASE IF NOT EXISTS `" + cfg.name + "`"); err != nil {
+		return fmt.Errorf("create migration database %s: %w", cfg.name, err)
+	}
+	return nil
+}
+
+// Up applies every pending SQL migration embedded in the executable.
 func Up(db *sql.DB) error {
+	goose.SetBaseFS(migrationfiles.Files)
 	return up(db, migrationsPath)
 }
 
@@ -79,6 +101,9 @@ func load() (settings, error) {
 	}
 	if cfg.name == "" {
 		return settings{}, errors.New("DB_NAME is required")
+	}
+	if !databaseNamePattern.MatchString(cfg.name) {
+		return settings{}, errors.New("DB_NAME must be a lowercase MySQL identifier")
 	}
 	return cfg, nil
 }

@@ -1,14 +1,24 @@
 package migration
 
 import (
+	"io/fs"
 	"os"
-	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
 	mysqldriver "github.com/go-sql-driver/mysql"
+	migrationfiles "github.com/kiLeo13/SaladaFun/database/migrations"
 )
+
+func TestEmbeddedMigrations(t *testing.T) {
+	files, err := fs.Glob(migrationfiles.Files, "*.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) == 0 {
+		t.Fatal("migration executable contains no SQL files")
+	}
+}
 
 func TestLoad(t *testing.T) {
 	setRequiredEnvironment(t)
@@ -28,6 +38,9 @@ func TestLoadValidation(t *testing.T) {
 		"user":     func(t *testing.T) { t.Setenv("DB_USER", "") },
 		"password": func(t *testing.T) { t.Setenv("DB_PASSWORD", "") },
 		"name":     func(t *testing.T) { t.Setenv("DB_NAME", "") },
+		"name format": func(t *testing.T) {
+			t.Setenv("DB_NAME", "Salada; DROP DATABASE salada")
+		},
 	}
 	for name, configure := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -62,7 +75,7 @@ func TestUpAgainstMySQL(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = database.Close() })
 	for run := 0; run < 2; run++ {
-		if err := up(database, testMigrationsPath(t)); err != nil {
+		if err := Up(database); err != nil {
 			t.Fatalf("up() run %d error = %v", run+1, err)
 		}
 	}
@@ -124,13 +137,4 @@ func setLiveEnvironment(t *testing.T) {
 		}
 		t.Setenv(target, value)
 	}
-}
-
-func testMigrationsPath(t *testing.T) string {
-	t.Helper()
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("resolve migration test path")
-	}
-	return filepath.Join(filepath.Dir(file), "..", "..", "migrations")
 }
