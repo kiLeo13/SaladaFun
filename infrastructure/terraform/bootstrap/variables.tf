@@ -4,12 +4,6 @@ variable "compartment_ocid" {
 }
 
 variable "region" {
-  description = "OCI home region for the state bucket."
+  description = "OCI region where the state bucket is created."
   type        = string
-}
-
-variable "state_bucket_name" {
-  description = "Globally unique name within the tenancy Object Storage namespace."
-  type        = string
-  default     = "salada-terraform-state"
 }

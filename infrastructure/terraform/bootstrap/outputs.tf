@@ -1,5 +1,5 @@
 output "bucket" {
-  description = "Bucket name to place in backend.hcl."
+  description = "Generated state bucket name to place in backend.hcl."
   value       = oci_objectstorage_bucket.terraform_state.name
 }
 
