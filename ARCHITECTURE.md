@@ -29,10 +29,12 @@ build, operational documentation, and detailed architecture. There is no root
 language-specific aggregator.
 
 Shared migrations are a cross-release contract owned by the independent root
-`database` Go module. Compose applies them through a one-shot migration service
-before starting Padinho; application code never owns schema evolution.
+`database` Go module. Its self-contained Linux executable is built and run
+manually on the Padinho VM; application code and Compose never own schema
+evolution.
 Terraform owns OCI resources; Ansible configures the resulting VM and
-reconciles Docker Compose.
+reconciles Docker Compose. GitHub Actions tests and publishes Padinho's image to
+the public GitHub Container Registry package used by Compose.
 
 ## Projects
 
