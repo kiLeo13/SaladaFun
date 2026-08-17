@@ -53,7 +53,7 @@ func TestChangePage(t *testing.T) {
 	responder := &fakeResponder{}
 	request := &discord.InteractionRequest{
 		Actor:      command.Actor{UserID: "123"},
-		Parameters: []string{"next", "1", "123"}, Responder: responder,
+		Parameters: []string{"next", "1"}, Responder: responder,
 	}
 	if err := handler.ChangePage(context.Background(), request); err != nil {
 		t.Fatal(err)
@@ -63,17 +63,28 @@ func TestChangePage(t *testing.T) {
 	}
 	assertPage(t, responder.response, discordgo.InteractionResponseUpdateMessage, "fevereiro", ptbr.BirthdayEmptyMonth)
 
-	request.Parameters = []string{"previous", "12", "123"}
+	request.Parameters = []string{"previous", "12"}
 	if err := handler.ChangePage(context.Background(), request); err != nil || service.month != time.November {
 		t.Fatalf("previous error = %v, month = %v", err, service.month)
 	}
-	request.Parameters = []string{"next", "12", "123"}
+	request.Parameters = []string{"next", "12"}
 	if err := handler.ChangePage(context.Background(), request); err != nil || service.month != time.December {
 		t.Fatalf("December boundary error = %v, month = %v", err, service.month)
 	}
-	request.Parameters = []string{"previous", "1", "123"}
+	request.Parameters = []string{"previous", "1"}
 	if err := handler.ChangePage(context.Background(), request); err != nil || service.month != time.January {
 		t.Fatalf("January boundary error = %v, month = %v", err, service.month)
+	}
+}
+
+func TestChangePageIsAvailableToAnotherMember(t *testing.T) {
+	service := &fakeService{}
+	responder := &fakeResponder{}
+	err := (Handler{service: service}).ChangePage(context.Background(), &discord.InteractionRequest{
+		Actor: command.Actor{UserID: "456"}, Parameters: []string{"next", "1"}, Responder: responder,
+	})
+	if err != nil || service.month != time.February {
+		t.Fatalf("ChangePage() error = %v, month = %v", err, service.month)
 	}
 }
 
@@ -83,7 +94,7 @@ func TestChangePageRejectsInvalidAndForeignButtons(t *testing.T) {
 		"missing":   nil,
 		"direction": {"sideways", "1", "123"},
 		"month":     {"next", "13", "123"},
-		"owner":     {"next", "1", ""},
+		"extra":     {"next", "1", "123"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			responder := &fakeResponder{}
@@ -95,19 +106,12 @@ func TestChangePageRejectsInvalidAndForeignButtons(t *testing.T) {
 			}
 		})
 	}
-	responder := &fakeResponder{}
-	err := handler.ChangePage(context.Background(), &discord.InteractionRequest{
-		Actor: command.Actor{UserID: "456"}, Parameters: []string{"next", "1", "123"}, Responder: responder,
-	})
-	if err != nil || responseText(responder.response) != ptbr.BirthdayOnlyOwner {
-		t.Fatalf("foreign response = %#v, %v", responder.response, err)
-	}
 }
 
 func TestChangePageReturnsServiceError(t *testing.T) {
 	want := errors.New("month")
 	err := (Handler{service: &fakeService{err: want}}).ChangePage(context.Background(), &discord.InteractionRequest{
-		Actor: command.Actor{UserID: "123"}, Parameters: []string{"next", "1", "123"}, Responder: &fakeResponder{},
+		Actor: command.Actor{UserID: "123"}, Parameters: []string{"next", "1"}, Responder: &fakeResponder{},
 	})
 	if !errors.Is(err, want) {
 		t.Fatalf("ChangePage() error = %v", err)
@@ -116,9 +120,48 @@ func TestChangePageReturnsServiceError(t *testing.T) {
 
 func TestOpenModal(t *testing.T) {
 	responder := &fakeResponder{}
-	err := (Handler{}).OpenModal(context.Background(), &discord.InteractionRequest{Responder: responder})
+	err := (Handler{}).OpenModal(context.Background(), &discord.InteractionRequest{
+		Actor: command.Actor{Permissions: discordgo.PermissionManageGuild}, Responder: responder,
+	})
 	if err != nil || responder.response.Type != discordgo.InteractionResponseModal || responder.response.Data.Title != ptbr.BirthdayAddModalTitle || len(responder.response.Data.Components) != 4 {
 		t.Fatalf("modal response = %#v, %v", responder.response, err)
+	}
+}
+
+func TestBirthdayManagementRequiresManageServer(t *testing.T) {
+	for name, handler := range map[string]func(*discord.InteractionRequest) error{
+		"open modal": func(request *discord.InteractionRequest) error {
+			return (Handler{}).OpenModal(context.Background(), request)
+		},
+		"submit modal": func(request *discord.InteractionRequest) error {
+			return (Handler{}).Submit(context.Background(), request)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			responder := &fakeResponder{}
+			request := &discord.InteractionRequest{Responder: responder}
+			if name == "submit modal" {
+				request.Interaction = &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
+					Data: discordgo.ModalSubmitInteractionData{CustomID: addBirthdayRoute},
+				}}
+			}
+			if err := handler(request); err != nil {
+				t.Fatal(err)
+			}
+			if got := responseText(responder.response); got != ptbr.BirthdayManageServerRequired {
+				t.Fatalf("response = %q", got)
+			}
+		})
+	}
+}
+
+func TestAdministratorCanManageBirthdays(t *testing.T) {
+	responder := &fakeResponder{}
+	err := (Handler{}).OpenModal(context.Background(), &discord.InteractionRequest{
+		Actor: command.Actor{Permissions: discordgo.PermissionAdministrator}, Responder: responder,
+	})
+	if err != nil || responder.response.Type != discordgo.InteractionResponseModal {
+		t.Fatalf("response = %#v, error = %v", responder.response, err)
 	}
 }
 
@@ -191,7 +234,7 @@ func TestModalValuesIgnoresUnknownComponents(t *testing.T) {
 func TestPageEscapesMarkdownAndDisablesMentions(t *testing.T) {
 	response := pageResponse(discordgo.InteractionResponseChannelMessageWithSource, time.January, []*entity.Birthday{{
 		Name: "*@everyone*", Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-	}}, "123")
+	}})
 	if got := responseText(response); !strings.Contains(got, "\\*@everyone\\*") {
 		t.Fatalf("page content = %q", got)
 	}
@@ -273,7 +316,7 @@ func modalRequest(userID string, values map[string]string, responder *fakeRespon
 		}})
 	}
 	return &discord.InteractionRequest{
-		Actor: command.Actor{UserID: command.Snowflake(userID)}, Responder: responder,
+		Actor: command.Actor{UserID: command.Snowflake(userID), Permissions: discordgo.PermissionManageGuild}, Responder: responder,
 		Interaction: &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionModalSubmit,
 			Data: discordgo.ModalSubmitInteractionData{CustomID: addBirthdayRoute, Components: rows},

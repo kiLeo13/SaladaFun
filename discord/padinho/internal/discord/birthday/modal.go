@@ -24,6 +24,9 @@ const (
 )
 
 func (h Handler) OpenModal(_ context.Context, request *discord.InteractionRequest) error {
+	if !hasManageServerPermission(request.Actor.Permissions) {
+		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayManageServerRequired))
+	}
 	return request.Responder.Respond(addBirthdayModal())
 }
 
@@ -77,6 +80,9 @@ func addBirthdayModal() *discordgo.InteractionResponse {
 }
 
 func (h Handler) Submit(_ context.Context, request *discord.InteractionRequest) error {
+	if !hasManageServerPermission(request.Actor.Permissions) {
+		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayManageServerRequired))
+	}
 	values := modalValues(request.Interaction.ModalSubmitData().Components)
 	userID, err := strconv.ParseUint(string(request.Actor.UserID), 10, 64)
 	if err != nil || userID == 0 {
@@ -102,6 +108,12 @@ func (h Handler) Submit(_ context.Context, request *discord.InteractionRequest) 
 		return err
 	}
 	return request.Responder.Respond(ephemeralMessage(message))
+}
+
+// hasManageServerPermission accepts the explicit Manage Server permission and
+// Administrator, whose effective permissions include every server action.
+func hasManageServerPermission(permissions int64) bool {
+	return permissions&(discordgo.PermissionManageGuild|discordgo.PermissionAdministrator) != 0
 }
 
 func inputRow(
