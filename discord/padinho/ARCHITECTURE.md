@@ -31,6 +31,18 @@ commands, message components, and modal submissions from the same gateway.
 Component `custom_id` values use `route:param...`; handlers validate every
 parameter because client input is untrusted.
 
+`command.CommandRequest` is the typed boundary for slash commands: `Path`
+identifies the registered command route, `Actor` identifies the invoking user
+and effective guild permission bitmask, `GuildID` and `ChannelID` identify the
+Discord context, `Options` contains normalized command arguments, `Responder`
+owns the single initial response, and `RequestID`/`ReceivedAt` support
+correlation and timing. `discord.InteractionRequest` is the equivalent boundary
+for buttons and modals. Its `Parameters` are the colon-separated values after
+the registered custom-ID route; for example,
+`birthdays.page:next:1` becomes `[]string{"next", "1"}`. They are untrusted
+input and must be validated by the receiving handler. `Interaction` remains
+available only when a handler needs native Discord data, such as modal fields.
+
 ## Voice moves
 
 The cohesive `internal/discord/move` feature owns `/move-all`. It receives a
@@ -71,10 +83,12 @@ their feature package.
 
 The `/birthdays` command always starts at January. Each of the twelve pages
 queries and renders one month in day/name order with Components V2. Arrow-only
-buttons carry direction, current month, and invoking user in a stateless custom
-ID; the ➕ button opens the registration modal. All visible copy except command
-names lives in the typed `internal/locale/ptbr` package. Allowed mentions are
-explicitly restricted, and display names are Markdown-escaped.
+buttons carry only direction and current month in a stateless custom ID, so any
+member can browse the list. The `Adicionar` button and modal submission require
+Discord's `Manage Server` (`PermissionManageGuild`) permission. The birthday
+saved is still the invoking member's own birthday. All visible copy except
+command names lives in the typed `internal/locale/ptbr` package. Allowed
+mentions are explicitly restricted, and display names are Markdown-escaped.
 
 The standard-library scheduler runs the birthday job every minute. The service
 converts the current instant into each stored IANA timezone, so DST and
