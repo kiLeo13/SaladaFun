@@ -35,22 +35,3 @@ module "mysql" {
   admin_username      = var.mysql_admin_username
   admin_password      = var.mysql_admin_password
 }
-
-module "identity" {
-  source = "../../modules/identity"
-
-  tenancy_ocid        = var.tenancy_ocid
-  compartment_ocid    = var.compartment_ocid
-  instance_id         = module.compute.instance_id
-  name                = local.name
-  runtime_environment = <<-EOT
-    DB_HOST=${module.mysql.private_ip}
-    DB_PORT=3306
-    DB_USER=${var.mysql_admin_username}
-    DB_PASSWORD=${jsonencode(var.mysql_admin_password)}
-    DB_NAME=${var.mysql_database_name}
-    DB_MAX_OPEN=5
-    DB_MAX_IDLE=2
-    DB_MAX_LIFETIME=30m
-  EOT
-}
