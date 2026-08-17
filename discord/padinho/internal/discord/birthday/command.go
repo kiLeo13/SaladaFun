@@ -2,25 +2,69 @@ package birthday
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/enus"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
+
+const monthOptionName = "month"
+
+var errInvalidMonth = errors.New("invalid birthday month")
 
 // Handler owns the cohesive /birthdays command, button, and modal flow.
 type Handler struct {
 	service Service
+	now     func() time.Time
 }
 
 func (h Handler) List(_ context.Context, request *command.CommandRequest) error {
-	birthdays, err := h.service.Month(time.January)
+	month, err := h.month(request)
+	if err != nil {
+		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayInvalidMonth))
+	}
+	birthdays, err := h.service.Month(month)
 	if err != nil {
 		return err
 	}
 	return request.Responder.Respond(pageResponse(
 		discordgo.InteractionResponseChannelMessageWithSource,
-		time.January,
+		month,
 		birthdays,
 	))
+}
+
+func (h Handler) month(request *command.CommandRequest) (time.Month, error) {
+	value, err := request.Options.String(monthOptionName)
+	if errors.Is(err, command.ErrOptionMissing) {
+		if h.now != nil {
+			return h.now().Month(), nil
+		}
+		return time.Now().Month(), nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	for month := time.January; month <= time.December; month++ {
+		if value == enus.MonthNames[month] {
+			return month, nil
+		}
+	}
+	return 0, fmt.Errorf("%w: %s", errInvalidMonth, value)
+}
+
+func monthOption() *command.StringCommandOption {
+	choices := make([]command.OptionChoice, 0, len(enus.MonthNames)-1)
+	for month := time.January; month <= time.December; month++ {
+		value := enus.MonthNames[month]
+		choices = append(choices, command.OptionChoice{
+			Name: locale.Capitalize(value), Value: value,
+		})
+	}
+	return command.StringOption(monthOptionName, enus.BirthdayMonthOptionDescription).Choices(choices...)
 }

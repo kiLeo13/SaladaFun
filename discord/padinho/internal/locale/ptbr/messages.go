@@ -21,6 +21,7 @@ const (
 	BirthdayInvalidDate           = "Informe a data de nascimento no formato AAAA-MM-DD."
 	BirthdayInvalidTimeZone       = "Informe um fuso horário IANA válido, como America/Sao_Paulo."
 	BirthdayInvalidMessage        = "A mensagem aceita somente os campos {age}, {name} e {mention}."
+	BirthdayInvalidMonth          = "Selecione um mês válido entre janeiro e dezembro."
 	BirthdayManageServerRequired  = "Você precisa da permissão Gerenciar servidor para adicionar aniversários."
 	BirthdayInvalidInteraction    = "Este botão não é mais válido. Execute /birthdays novamente."
 	GenericInteractionError       = "Algo deu errado ao processar essa interação."

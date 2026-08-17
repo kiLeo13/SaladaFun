@@ -29,14 +29,50 @@ func TestRegisterAndListStartsInJanuary(t *testing.T) {
 	if err != nil || len(definitions) != 1 || definitions[0].Name != commandName || definitions[0].Description != ptbr.BirthdayCommandDescription {
 		t.Fatalf("definitions = %#v, %v", definitions, err)
 	}
+	if len(definitions[0].Options) != 1 || definitions[0].Options[0].Name != monthOptionName || len(definitions[0].Options[0].Choices) != 12 || definitions[0].Options[0].Choices[0].Name != "January" || definitions[0].Options[0].Choices[0].Value != "january" || definitions[0].Options[0].Choices[11].Name != "December" {
+		t.Fatalf("month option = %#v", definitions[0].Options[0])
+	}
+	wantMonths := []string{"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"}
+	for index, value := range wantMonths {
+		choice := definitions[0].Options[0].Choices[index]
+		if choice.Value != value {
+			t.Fatalf("month choice %d = %#v, want value %q", index, choice, value)
+		}
+	}
 	responder := &fakeResponder{}
-	err = (Handler{service: service}).List(context.Background(), &command.CommandRequest{
+	err = (Handler{service: service, now: func() time.Time {
+		return time.Date(2026, time.January, 15, 0, 0, 0, 0, time.UTC)
+	}}).List(context.Background(), &command.CommandRequest{
 		Actor: command.Actor{UserID: "123"}, Responder: responder,
 	})
 	if err != nil || service.month != time.January {
 		t.Fatalf("List() error = %v, month = %v", err, service.month)
 	}
 	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "janeiro", "Leo")
+}
+
+func TestListUsesSelectedMonth(t *testing.T) {
+	service := &fakeService{}
+	responder := &fakeResponder{}
+	err := (Handler{service: service, now: func() time.Time {
+		return time.Date(2026, time.January, 15, 0, 0, 0, 0, time.UTC)
+	}}).List(context.Background(), &command.CommandRequest{
+		Options: command.NewOptionValues(map[string]any{monthOptionName: "october"}), Responder: responder,
+	})
+	if err != nil || service.month != time.October {
+		t.Fatalf("List() error = %v, month = %v", err, service.month)
+	}
+	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "outubro")
+}
+
+func TestListRejectsInvalidMonth(t *testing.T) {
+	responder := &fakeResponder{}
+	err := (Handler{}).List(context.Background(), &command.CommandRequest{
+		Options: command.NewOptionValues(map[string]any{monthOptionName: "not-a-month"}), Responder: responder,
+	})
+	if err != nil || responseText(responder.response) != ptbr.BirthdayInvalidMonth {
+		t.Fatalf("List() response = %#v, error = %v", responder.response, err)
+	}
 }
 
 func TestListReturnsServiceError(t *testing.T) {
