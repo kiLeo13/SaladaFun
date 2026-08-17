@@ -33,4 +33,5 @@ SSH remains the only inbound host port and OCI limits it to the configured
 administrator `/32`. Padinho and MySQL communicate privately. Watchtower polls
 GHCR every 300 seconds and only updates containers carrying Salada's explicit
 enable/scope labels. Its archived status is an accepted project constraint, so
-the image is digest-pinned and its HTTP API is not enabled.
+the image is digest-pinned, its HTTP API is not enabled, and Compose pins its
+Docker client API to `1.44` for compatibility with the installed daemon.

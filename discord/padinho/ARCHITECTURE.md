@@ -89,7 +89,9 @@ The Salada production image uses a digest-pinned Go 1.26.5/Alpine 3.24 builder
 for its CGO-disabled binaries. Its runtime is static, distroless, non-root,
 read-only, and limited to 384 MB. Watchtower is an explicitly accepted archived
 dependency: it is digest-pinned, scoped by labels, polls every 300 seconds, and
-has no HTTP API.
+has no HTTP API. Its Docker client is pinned to API `1.44`, the minimum accepted
+by the deployed Docker Engine, because the archived client does not negotiate
+correctly with recent daemons.
 
 Terraform provisions an Always Free `VM.Standard.E2.1.Micro` with only SSH from
 one administrator `/32`. `MySQL.Free` and `HeatWave.Free` remain private and
