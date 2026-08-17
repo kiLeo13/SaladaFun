@@ -10,12 +10,9 @@ import (
 )
 
 func (h Handler) ChangePage(_ context.Context, request *discord.InteractionRequest) error {
-	direction, month, ownerID, err := parsePage(request.Parameters)
+	direction, month, err := parsePage(request.Parameters)
 	if err != nil {
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayInvalidInteraction))
-	}
-	if string(request.Actor.UserID) != ownerID {
-		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayOnlyOwner))
 	}
 	if direction == "previous" && month > time.January {
 		month--
@@ -30,7 +27,6 @@ func (h Handler) ChangePage(_ context.Context, request *discord.InteractionReque
 		discordgo.InteractionResponseUpdateMessage,
 		month,
 		birthdays,
-		ownerID,
 	))
 }
 

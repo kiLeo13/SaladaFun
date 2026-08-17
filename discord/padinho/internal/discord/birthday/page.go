@@ -11,17 +11,16 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const birthdayAccentColor = 0x65A30D
+const birthdayAccentColor = 0xFC2D87
 
 func pageResponse(
 	responseType discordgo.InteractionResponseType,
 	month time.Month,
 	birthdays []*entity.Birthday,
-	ownerID string,
 ) *discordgo.InteractionResponse {
 	content := pageContent(month, birthdays)
 	container := pageContainer(content)
-	actions := pageActions(month, ownerID)
+	actions := pageActions(month)
 
 	return &discordgo.InteractionResponse{
 		Type: responseType,
@@ -43,19 +42,17 @@ func pageContainer(content string) discordgo.Container {
 	}
 }
 
-func pageActions(month time.Month, ownerID string) discordgo.ActionsRow {
+func pageActions(month time.Month) discordgo.ActionsRow {
 	previous := pageButton(
 		"⬅️",
 		"previous",
 		month,
-		ownerID,
 		month == time.January,
 	)
 	next := pageButton(
 		"➡️",
 		"next",
 		month,
-		ownerID,
 		month == time.December,
 	)
 
@@ -98,34 +95,30 @@ func pageButton(
 	emoji string,
 	direction string,
 	month time.Month,
-	ownerID string,
 	disabled bool,
 ) discordgo.Button {
 	return discordgo.Button{
 		Style: discordgo.SecondaryButton, Disabled: disabled,
 		Emoji:    &discordgo.ComponentEmoji{Name: emoji},
-		CustomID: fmt.Sprintf("%s:%s:%d:%s", pageRoute, direction, month, ownerID),
+		CustomID: fmt.Sprintf("%s:%s:%d", pageRoute, direction, month),
 	}
 }
 
 func addButton() discordgo.Button {
 	return discordgo.Button{
 		Style:    discordgo.SuccessButton,
-		Emoji:    &discordgo.ComponentEmoji{Name: "➕"},
+		Label:    ptbr.BirthdayButtonAdd,
 		CustomID: addBirthdayRoute,
 	}
 }
 
-func parsePage(parameters []string) (string, time.Month, string, error) {
-	if len(parameters) != 3 || parameters[0] != "previous" && parameters[0] != "next" {
-		return "", 0, "", fmt.Errorf("invalid birthday page parameters")
+func parsePage(parameters []string) (string, time.Month, error) {
+	if len(parameters) != 2 || parameters[0] != "previous" && parameters[0] != "next" {
+		return "", 0, fmt.Errorf("invalid birthday page parameters")
 	}
 	month, err := strconv.Atoi(parameters[1])
 	if err != nil || month < int(time.January) || month > int(time.December) {
-		return "", 0, "", fmt.Errorf("invalid birthday page month")
+		return "", 0, fmt.Errorf("invalid birthday page month")
 	}
-	if parameters[2] == "" {
-		return "", 0, "", fmt.Errorf("birthday page owner is empty")
-	}
-	return parameters[0], time.Month(month), parameters[2], nil
+	return parameters[0], time.Month(month), nil
 }

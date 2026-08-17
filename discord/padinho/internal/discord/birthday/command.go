@@ -22,6 +22,5 @@ func (h Handler) List(_ context.Context, request *command.CommandRequest) error 
 		discordgo.InteractionResponseChannelMessageWithSource,
 		time.January,
 		birthdays,
-		string(request.Actor.UserID),
 	))
 }
