@@ -23,6 +23,12 @@
   retain 100% statement coverage; database changes require live MySQL tests.
 - Do not expose HTTP ports. The bot communicates outbound to Discord and over the
   private subnet to MySQL.
+- Give Padinho a dedicated DML-only MySQL account. Never put the MySQL
+  administrator credential in Padinho's environment or Ansible variables; it is
+  reserved for Terraform provisioning and interactive migration maintenance.
+- Keep the runtime database password in the ignored, encrypted Ansible Vault
+  host-variable file. Do not reintroduce OCI Vault/KMS for this deployment or
+  commit decrypted production variables.
 - Keep runtime images distroless, non-root, read-only, and within the configured
   384 MB container memory limit.
 - Keep Padinho's image and GitHub Actions workflow independent of the root
