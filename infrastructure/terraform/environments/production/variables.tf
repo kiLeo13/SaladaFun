@@ -1,5 +1,5 @@
 variable "tenancy_ocid" {
-  description = "OCID of the OCI tenancy that contains the deployment."
+  description = "OCID of the tenancy used to resolve availability domains."
   type        = string
 }
 

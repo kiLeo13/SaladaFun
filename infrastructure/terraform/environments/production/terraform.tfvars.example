@@ -1,4 +1,4 @@
-tenancy_ocid = "ocid1.tenancy.oc1..replace-me"
+tenancy_ocid     = "ocid1.tenancy.oc1..replace-me"
 compartment_ocid = "ocid1.compartment.oc1..replace-me"
 region = "us-ashburn-1"
 availability_domain_number = 3
