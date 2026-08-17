@@ -93,7 +93,9 @@ has no HTTP API.
 
 Terraform provisions an Always Free `VM.Standard.E2.1.Micro` with only SSH from
 one administrator `/32`. `MySQL.Free` and `HeatWave.Free` remain private and
-accept 3306 only from the bot NSG. The database environment lives in OCI Vault;
-Ansible retrieves it with the instance principal and runs Compose. GitHub
-Actions publishes Padinho's `latest` image as a public GHCR package, so the VM
-pulls it anonymously and no registry token enters Terraform state or OCI Vault.
+accept 3306 only from the bot NSG. An ignored Ansible Vault file protects the
+restricted runtime database password at rest; Ansible renders the root-only
+environment file and runs Compose. The MySQL administrator remains exclusive to
+Terraform provisioning and manual migrations. GitHub Actions publishes
+Padinho's `latest` image as a public GHCR package, so the VM pulls it
+anonymously and no registry token enters Terraform state.
