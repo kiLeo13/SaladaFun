@@ -11,10 +11,6 @@ resource "oci_mysql_mysql_db_system" "this" {
   data_storage_size_in_gb = 50
   is_highly_available     = false
 
-  backup_policy {
-    is_enabled = false
-  }
-
   deletion_policy {
     automatic_backup_retention = "DELETE"
     final_backup               = "SKIP_FINAL_BACKUP"
