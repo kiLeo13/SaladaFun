@@ -3,5 +3,14 @@ all:
     salada:
       ansible_host: 203.0.113.20
       ansible_user: ubuntu
-      runtime_secret_ocid: ocid1.vaultsecret.oc1.replace-me
+      ansible_ssh_private_key_file: /home/replace-me/.ssh/padinho
+
+      padinho_database_host: 10.42.20.10
+      padinho_database_port: 3306
+      padinho_database_user: padinho
+      padinho_database_name: salada
+      padinho_database_max_open: 5
+      padinho_database_max_idle: 2
+      padinho_database_max_lifetime: 30m
+
       salada_image: ghcr.io/kileo13/salada:latest
