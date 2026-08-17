@@ -35,6 +35,9 @@ evolution.
 Terraform owns OCI resources; Ansible configures the resulting VM and
 reconciles Docker Compose. GitHub Actions tests and publishes Padinho's image to
 the public GitHub Container Registry package used by Compose.
+The private MySQL subnet admits TCP/3306 from the bot subnet through a subnet
+security list. MySQL deliberately has no NSG attachment because OCI requires
+separate `mysqldbsystem` resource-principal IAM policies to provision one.
 
 ## Projects
 

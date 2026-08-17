@@ -5,7 +5,13 @@ Terraform provisions only resources selected for OCI Always Free: one
 node, Object Storage state, and the required networking. The VM has a public IP
 only because Always Free has no NAT Gateway allowance. Its NSG admits TCP/22
 solely from `admin_cidr`; no Padinho application port is exposed.
-MySQL has no public IP and accepts TCP/3306 only from the bot NSG.
+MySQL has no public IP and accepts TCP/3306 only from the bot subnet CIDR.
+The database subnet enforces that rule through its security list instead of
+attaching a network security group to the managed DB system. This is
+intentional: an NSG attachment makes the DB system's `mysqldbsystem` resource
+principal require additional VNIC and NSG IAM policies during provisioning.
+Do not add `nsg_ids` to the MySQL module without provisioning those Oracle
+documented resource-principal policies first.
 
 ## Bootstrap state storage
 
@@ -60,6 +66,22 @@ cp terraform.tfvars.example terraform.tfvars
 terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
+```
+
+If OCI accepts DB-system creation but its work request later fails with
+`AuthorizationFailed`, verify that the MySQL resource still has no NSG
+attachment. Caller membership in `Administrators` does not authorize the
+separate `mysqldbsystem` resource principal to attach an NSG. The subnet
+security-list design avoids that extra tenancy IAM prerequisite while limiting
+database ingress to `bot_subnet_cidr`.
+
+Run the network module tests after changing subnet, security-list, or NSG
+behavior:
+
+```sh
+cd infrastructure/terraform/modules/network
+terraform init -backend=false
+terraform test
 ```
 
 After a successful apply, copy Terraform's outputs into the ignored Ansible
