@@ -31,6 +31,11 @@ commands, message components, and modal submissions from the same gateway.
 Component `custom_id` values use `route:param...`; handlers validate every
 parameter because client input is untrusted.
 
+String command options may declare fixed `OptionChoice` values in the
+framework-neutral definition. The Discord adapter compiles those values into
+Discord's native dropdown choices, keeping command metadata separate from
+DiscordGo types.
+
 `command.CommandRequest` is the typed boundary for slash commands: `Path`
 identifies the registered command route, `Actor` identifies the invoking user
 and effective guild permission bitmask, `GuildID` and `ChannelID` identify the
@@ -81,14 +86,16 @@ in non-leap years). `internal/persistence/mysql` provides the concrete GORM
 implementation. Discord handlers consume a smaller service interface local to
 their feature package.
 
-The `/birthdays` command always starts at January. Each of the twelve pages
+The `/birthdays` command accepts an optional `month` string choice with English
+labels from January through December and lowercase values internally. When
+omitted, it uses the bot process's current calendar month. Each of the twelve pages
 queries and renders one month in day/name order with Components V2. Arrow-only
 buttons carry only direction and current month in a stateless custom ID, so any
 member can browse the list. The `Adicionar` button and modal submission require
 Discord's `Manage Server` (`PermissionManageGuild`) permission. The birthday
 saved is still the invoking member's own birthday. All visible copy except
-command names lives in the typed `internal/locale/ptbr` package. Allowed
-mentions are explicitly restricted, and display names are Markdown-escaped.
+command names lives in the typed `internal/locale` packages. Allowed mentions
+are explicitly restricted, and display names are Markdown-escaped.
 
 The standard-library scheduler runs the birthday job every minute. The service
 converts the current instant into each stored IANA timezone, so DST and
