@@ -30,7 +30,6 @@ module "mysql" {
   compartment_ocid    = var.compartment_ocid
   availability_domain = data.oci_identity_availability_domain.selected.name
   subnet_id           = module.network.database_subnet_id
-  nsg_ids             = [module.network.database_nsg_id]
   name                = local.name
   admin_username      = var.mysql_admin_username
   admin_password      = var.mysql_admin_password

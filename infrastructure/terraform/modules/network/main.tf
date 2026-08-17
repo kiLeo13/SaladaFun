@@ -33,7 +33,24 @@ resource "oci_core_security_list" "bot" {
 resource "oci_core_security_list" "database" {
   compartment_id = var.compartment_ocid
   vcn_id         = oci_core_vcn.this.id
-  display_name   = "${var.name}-mysql-empty"
+  display_name   = "${var.name}-mysql"
+
+  ingress_security_rules {
+    protocol  = "6"
+    source    = var.bot_subnet_cidr
+    stateless = false
+
+    tcp_options {
+      min = 3306
+      max = 3306
+    }
+  }
+
+  egress_security_rules {
+    destination = "0.0.0.0/0"
+    protocol    = "all"
+    stateless   = false
+  }
 }
 
 resource "oci_core_subnet" "bot" {
@@ -81,37 +98,6 @@ resource "oci_core_network_security_group_security_rule" "bot_ssh" {
 
 resource "oci_core_network_security_group_security_rule" "bot_egress" {
   network_security_group_id = oci_core_network_security_group.bot.id
-  direction                 = "EGRESS"
-  protocol                  = "all"
-  destination               = "0.0.0.0/0"
-  destination_type          = "CIDR_BLOCK"
-  stateless                 = false
-}
-
-resource "oci_core_network_security_group" "database" {
-  compartment_id = var.compartment_ocid
-  vcn_id         = oci_core_vcn.this.id
-  display_name   = "${var.name}-mysql"
-}
-
-resource "oci_core_network_security_group_security_rule" "database_mysql" {
-  network_security_group_id = oci_core_network_security_group.database.id
-  direction                 = "INGRESS"
-  protocol                  = "6"
-  source                    = oci_core_network_security_group.bot.id
-  source_type               = "NETWORK_SECURITY_GROUP"
-  stateless                 = false
-
-  tcp_options {
-    destination_port_range {
-      min = 3306
-      max = 3306
-    }
-  }
-}
-
-resource "oci_core_network_security_group_security_rule" "database_egress" {
-  network_security_group_id = oci_core_network_security_group.database.id
   direction                 = "EGRESS"
   protocol                  = "all"
   destination               = "0.0.0.0/0"

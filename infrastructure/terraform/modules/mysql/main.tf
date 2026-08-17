@@ -2,7 +2,6 @@ resource "oci_mysql_mysql_db_system" "this" {
   availability_domain     = var.availability_domain
   compartment_id          = var.compartment_ocid
   subnet_id               = var.subnet_id
-  nsg_ids                 = var.nsg_ids
   display_name            = var.name
   hostname_label          = "saladadb"
   shape_name              = var.database_shape

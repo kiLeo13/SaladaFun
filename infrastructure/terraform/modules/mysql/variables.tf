@@ -13,11 +13,6 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "nsg_ids" {
-  description = "Network security groups attached to MySQL."
-  type        = list(string)
-}
-
 variable "name" {
   description = "Display name assigned to the DB system."
   type        = string
