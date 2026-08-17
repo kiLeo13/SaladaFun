@@ -8,6 +8,11 @@ output "mysql_private_ip" {
   value       = module.mysql.private_ip
 }
 
+output "mysql_private_host_hint" {
+  description = "Private DNS hostname hint for the MySQL DB system."
+  value       = "${var.mysql_hostname_label}.db.${var.vcn_dns_label}.oraclevcn.com"
+}
+
 output "mysql_database_name" {
   description = "Schema name used by migrations and Padinho."
   value       = var.mysql_database_name

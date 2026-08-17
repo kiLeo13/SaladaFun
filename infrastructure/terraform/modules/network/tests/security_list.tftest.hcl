@@ -3,6 +3,7 @@ mock_provider "oci" {}
 variables {
   compartment_ocid     = "ocid1.compartment.oc1..example"
   name                 = "salada-test"
+  vcn_dns_label        = "saladafun"
   vcn_cidr             = "10.42.0.0/16"
   bot_subnet_cidr      = "10.42.10.0/24"
   database_subnet_cidr = "10.42.20.0/24"

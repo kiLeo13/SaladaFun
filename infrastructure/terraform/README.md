@@ -91,6 +91,7 @@ input:
 ```sh
 terraform output -raw bot_public_ip
 terraform output -raw mysql_private_ip
+terraform output -raw mysql_private_host_hint
 terraform output -raw mysql_database_name
 ```
 

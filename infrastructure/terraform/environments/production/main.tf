@@ -11,6 +11,7 @@ module "network" {
   bot_subnet_cidr      = "10.42.10.0/24"
   database_subnet_cidr = "10.42.20.0/24"
   admin_cidr           = var.admin_cidr
+  vcn_dns_label        = var.vcn_dns_label
 }
 
 module "compute" {
@@ -33,4 +34,5 @@ module "mysql" {
   name                = local.name
   admin_username      = var.mysql_admin_username
   admin_password      = var.mysql_admin_password
+  hostname_label      = var.mysql_hostname_label
 }

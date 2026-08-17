@@ -8,6 +8,11 @@ variable "name" {
   type        = string
 }
 
+variable "vcn_dns_label" {
+  description = "DNS label assigned to the VCN."
+  type        = string
+}
+
 variable "vcn_cidr" {
   description = "IPv4 CIDR assigned to the Salada VCN."
   type        = string

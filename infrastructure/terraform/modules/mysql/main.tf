@@ -3,7 +3,7 @@ resource "oci_mysql_mysql_db_system" "this" {
   compartment_id          = var.compartment_ocid
   subnet_id               = var.subnet_id
   display_name            = var.name
-  hostname_label          = "saladadb"
+  hostname_label          = var.hostname_label
   shape_name              = var.database_shape
   admin_username          = var.admin_username
   admin_password          = var.admin_password

@@ -18,6 +18,11 @@ variable "name" {
   type        = string
 }
 
+variable "hostname_label" {
+  description = "DNS hostname label assigned to the DB system."
+  type        = string
+}
+
 variable "admin_username" {
   description = "Administrator username created with the DB system."
   type        = string

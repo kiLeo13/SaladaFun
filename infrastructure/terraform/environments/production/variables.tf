@@ -70,3 +70,15 @@ variable "mysql_database_name" {
     error_message = "mysql_database_name must be a lowercase MySQL identifier."
   }
 }
+
+variable "mysql_hostname_label" {
+  description = "DNS hostname label assigned to the MySQL DB system."
+  type        = string
+  default     = "saladadb"
+}
+
+variable "vcn_dns_label" {
+  description = "DNS label assigned to the Salada VCN."
+  type        = string
+  default     = "saladafun"
+}
