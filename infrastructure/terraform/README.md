@@ -2,10 +2,9 @@
 
 Terraform provisions only resources selected for OCI Always Free: one
 `VM.Standard.E2.1.Micro`, a `MySQL.Free` DB system with one `HeatWave.Free`
-node, Object Storage state, one Vault runtime secret, and the required
-networking. The VM has a public IP only because Always Free has no NAT Gateway
-allowance. Its NSG admits TCP/22 solely from `admin_cidr`; no Padinho
-application port is exposed.
+node, Object Storage state, and the required networking. The VM has a public IP
+only because Always Free has no NAT Gateway allowance. Its NSG admits TCP/22
+solely from `admin_cidr`; no Padinho application port is exposed.
 MySQL has no public IP and accepts TCP/3306 only from the bot NSG.
 
 ## Bootstrap state storage
@@ -63,8 +62,20 @@ terraform plan
 terraform apply
 ```
 
+After a successful apply, copy Terraform's outputs into the ignored Ansible
+inventory; the discovered public IP is an output, not a `terraform.tfvars`
+input:
+
+```sh
+terraform output -raw bot_public_ip
+terraform output -raw mysql_private_ip
+terraform output -raw mysql_database_name
+```
+
 Never commit either copied file. Treat Terraform state as sensitive because the
-Vault secret payload necessarily passes through state. The public Salada GHCR
-package is pulled anonymously, so registry credentials do not belong in
-Terraform or Vault. OCI credentials should come from the standard OCI
-config/environment rather than HCL.
+MySQL administrator password necessarily passes through state. That account is
+reserved for provisioning and manual migrations; Padinho receives a distinct
+restricted account through Ansible. The public Salada GHCR package is pulled
+anonymously, so registry credentials do not belong in Terraform. OCI
+credentials should come from the standard OCI config/environment rather than
+HCL.
