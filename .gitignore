@@ -16,6 +16,7 @@ target/
 **/*.tfplan
 infrastructure/terraform/bootstrap/backend.tf
 infrastructure/ansible/inventories/production.yml
+infrastructure/ansible/host_vars/salada/vault.yml
 **/coverage
 **/coverage.out
 /database/bin/
