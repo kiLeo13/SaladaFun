@@ -1,22 +1,16 @@
 ---
-- name: Assert the runtime Vault secret identifier is provided
+- name: Assert Padinho's runtime database configuration is provided
   ansible.builtin.assert:
     that:
-      - runtime_secret_ocid | length > 0
-    fail_msg: Set runtime_secret_ocid from the Terraform output.
-
-- name: Install OCI CLI prerequisites
-  ansible.builtin.apt:
-    name:
-      - python3-pip
-      - python3-venv
-    state: present
-
-- name: Install the pinned OCI CLI in an isolated environment
-  ansible.builtin.pip:
-    name: "oci-cli=={{ oci_cli_version }}"
-    virtualenv: "{{ oci_cli_virtualenv }}"
-    virtualenv_command: python3 -m venv
+      - padinho_database_host | length > 0
+      - padinho_database_port | int > 0
+      - padinho_database_user | length > 0
+      - padinho_database_password | length > 0
+      - padinho_database_name | length > 0
+      - padinho_database_max_open | int > 0
+      - padinho_database_max_idle | int >= 0
+      - padinho_database_max_lifetime | length > 0
+    fail_msg: Fill the production inventory and encrypted host variables.
 
 - name: Create Salada configuration directories
   ansible.builtin.file:
@@ -31,28 +25,18 @@
     - path: "{{ salada_environment_directory }}"
       mode: "0700"
 
-- name: Fetch Salada's environment from OCI Vault
-  ansible.builtin.command:
-    argv:
-      - "{{ oci_cli_virtualenv }}/bin/oci"
-      - secrets
-      - secret-bundle
-      - get
-      - --secret-id
-      - "{{ runtime_secret_ocid }}"
-      - --auth
-      - instance_principal
-      - --query
-      - 'data."secret-bundle-content".content'
-      - --raw-output
-  register: salada_environment_secret
-  changed_when: false
-  no_log: true
-
 - name: Write Salada's environment file
   ansible.builtin.copy:
     dest: "{{ salada_environment_file }}"
-    content: "{{ salada_environment_secret.stdout | b64decode }}"
+    content: |
+      DB_HOST={{ padinho_database_host | string | to_json }}
+      DB_PORT={{ padinho_database_port }}
+      DB_USER={{ padinho_database_user | string | to_json }}
+      DB_PASSWORD={{ padinho_database_password | string | to_json }}
+      DB_NAME={{ padinho_database_name | string | to_json }}
+      DB_MAX_OPEN={{ padinho_database_max_open }}
+      DB_MAX_IDLE={{ padinho_database_max_idle }}
+      DB_MAX_LIFETIME={{ padinho_database_max_lifetime | string | to_json }}
     owner: root
     group: root
     mode: "0600"

@@ -1,6 +1,4 @@
 ---
-oci_cli_version: 3.90.1
-oci_cli_virtualenv: /opt/oci-cli
 salada_directory: /opt/salada
 salada_environment_directory: /etc/salada
 salada_environment_file: /etc/salada/salada.env
