@@ -24,7 +24,15 @@ type SubcommandGroupDefinition struct {
 }
 
 func cloneOptionDefinitions(options []OptionDefinition) []OptionDefinition {
-	return append([]OptionDefinition(nil), options...)
+	if options == nil {
+		return nil
+	}
+	result := make([]OptionDefinition, len(options))
+	for index, option := range options {
+		result[index] = option
+		result[index].Choices = append([]OptionChoice(nil), option.Choices...)
+	}
+	return result
 }
 
 func cloneDefinitions(definitions []*Definition) []*Definition {

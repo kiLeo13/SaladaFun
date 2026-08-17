@@ -27,6 +27,23 @@ func TestCompileDefinitions(t *testing.T) {
 	}
 }
 
+func TestCompileDefinitionsIncludesStringChoices(t *testing.T) {
+	definitions := []*command.Definition{{
+		Name: "month", Description: "Month", Options: []command.OptionDefinition{{
+			Type: command.OptionTypeString, Name: "value", Description: "Value",
+			Choices: []command.OptionChoice{{Name: "January", Value: "january"}},
+		}},
+	}}
+	compiled, err := CompileDefinitions(definitions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	choices := compiled[0].Options[0].Choices
+	if len(choices) != 1 || choices[0].Name != "January" || choices[0].Value != "january" {
+		t.Fatalf("compiled choices = %#v", choices)
+	}
+}
+
 func TestCompileDefinitionsRejectsUnknownOptionAtEveryLevel(t *testing.T) {
 	t.Parallel()
 	tests := []*command.Definition{

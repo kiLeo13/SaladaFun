@@ -13,6 +13,7 @@ const (
 	maximumCommandNameLength        = 32
 	maximumCommandDescriptionLength = 100
 	maximumCommandOptions           = 25
+	maximumOptionChoices            = 25
 )
 
 var commandNamePattern = regexp.MustCompile(`^[a-z0-9_-]+$`)
@@ -553,6 +554,23 @@ func validateOptions(location string, options []OptionDefinition) []string {
 		}
 		if option.Autocomplete && option.Type != OptionTypeString && option.Type != OptionTypeInteger {
 			problems = append(problems, fmt.Sprintf("%s cannot use autocomplete", optionLocation))
+		}
+		if len(option.Choices) > maximumOptionChoices {
+			problems = append(problems, fmt.Sprintf("%s has more than %d choices", optionLocation, maximumOptionChoices))
+		}
+		choiceValues := make(map[string]struct{}, len(option.Choices))
+		for _, choice := range option.Choices {
+			if option.Type != OptionTypeString {
+				problems = append(problems, fmt.Sprintf("%s choices require a string option", optionLocation))
+				break
+			}
+			if choice.Name == "" || choice.Value == "" {
+				problems = append(problems, fmt.Sprintf("%s has an empty choice name or value", optionLocation))
+			}
+			if _, exists := choiceValues[choice.Value]; exists {
+				problems = append(problems, fmt.Sprintf("%s has duplicate choice value %q", optionLocation, choice.Value))
+			}
+			choiceValues[choice.Value] = struct{}{}
 		}
 	}
 	return problems

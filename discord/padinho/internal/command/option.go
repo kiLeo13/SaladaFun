@@ -12,6 +12,14 @@ const (
 	OptionTypeChannel
 )
 
+// OptionChoice is one selectable value for a string command option.
+type OptionChoice struct {
+	// Name is the human-readable label shown by Discord.
+	Name string
+	// Value is the string sent back in the interaction when selected.
+	Value string
+}
+
 // OptionDefinition is the immutable option metadata emitted by a frozen
 // registry.
 type OptionDefinition struct {
@@ -20,6 +28,7 @@ type OptionDefinition struct {
 	Description  string
 	Required     bool
 	Autocomplete bool
+	Choices      []OptionChoice
 }
 
 // Option is a typed command-option descriptor.
@@ -36,7 +45,9 @@ func (o *optionDescriptor) markRequired() {
 }
 
 func (o *optionDescriptor) snapshot() OptionDefinition {
-	return o.definition
+	result := o.definition
+	result.Choices = append([]OptionChoice(nil), o.definition.Choices...)
+	return result
 }
 
 // StringCommandOption describes a string option.
@@ -54,6 +65,12 @@ func (o *StringCommandOption) snapshot() OptionDefinition { return o.optionDescr
 // Required marks the option as required.
 func (o *StringCommandOption) Required() *StringCommandOption {
 	o.markRequired()
+	return o
+}
+
+// Choices adds the fixed values displayed by Discord for this string option.
+func (o *StringCommandOption) Choices(choices ...OptionChoice) *StringCommandOption {
+	o.definition.Choices = append([]OptionChoice(nil), choices...)
 	return o
 }
 

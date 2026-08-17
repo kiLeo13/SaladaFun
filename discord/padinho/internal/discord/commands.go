@@ -63,9 +63,20 @@ func compileOptions(options []command.OptionDefinition) ([]*discordgo.Applicatio
 		result = append(result, &discordgo.ApplicationCommandOption{
 			Type: optionType, Name: option.Name, Description: option.Description,
 			Required: option.Required, Autocomplete: option.Autocomplete,
+			Choices: compileOptionChoices(option.Choices),
 		})
 	}
 	return result, nil
+}
+
+func compileOptionChoices(choices []command.OptionChoice) []*discordgo.ApplicationCommandOptionChoice {
+	result := make([]*discordgo.ApplicationCommandOptionChoice, 0, len(choices))
+	for _, choice := range choices {
+		result = append(result, &discordgo.ApplicationCommandOptionChoice{
+			Name: choice.Name, Value: choice.Value,
+		})
+	}
+	return result
 }
 
 func compileOptionType(optionType command.OptionType) (discordgo.ApplicationCommandOptionType, error) {
