@@ -45,8 +45,14 @@ func (p CommandPath) key() string {
 
 // Actor identifies the Discord user invoking a command and their known roles.
 type Actor struct {
-	UserID  Snowflake
+	// UserID is the Discord user who initiated the interaction.
+	UserID Snowflake
+	// RoleIDs are the guild roles Discord reported for the user.
 	RoleIDs []Snowflake
+	// Permissions is the effective guild permission bitmask for the user in the
+	// interaction context. The transport layer obtains it from Discord; feature
+	// handlers compare it with Discord permission constants when needed.
+	Permissions int64
 }
 
 // Responder sends one native Discord initial interaction response. It remains
@@ -130,12 +136,20 @@ func (v OptionValues) Snowflake(name string) (Snowflake, error) {
 // CommandRequest contains all typed application data needed to execute a
 // command. context.Context is reserved for cancellation and deadlines.
 type CommandRequest struct {
-	Path       CommandPath
-	Actor      Actor
-	GuildID    Snowflake
-	ChannelID  Snowflake
-	Options    OptionValues
-	Responder  Responder
-	RequestID  string
+	// Path identifies the slash command, group, and subcommand being executed.
+	Path CommandPath
+	// Actor identifies the user and guild capabilities associated with it.
+	Actor Actor
+	// GuildID is the guild where the command was invoked; it is empty in DMs.
+	GuildID Snowflake
+	// ChannelID is the channel where the command was invoked.
+	ChannelID Snowflake
+	// Options contains the command's validated, typed option values.
+	Options OptionValues
+	// Responder sends the one initial response for this interaction.
+	Responder Responder
+	// RequestID is Discord's unique interaction ID, useful for correlation logs.
+	RequestID string
+	// ReceivedAt is the UTC time at which Padinho mapped the Discord request.
 	ReceivedAt time.Time
 }

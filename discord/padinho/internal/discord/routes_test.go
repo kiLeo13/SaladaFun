@@ -27,11 +27,11 @@ func TestRoutesDispatchComponentsAndModals(t *testing.T) {
 	responder := &testResponder{}
 	component := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
 		Type: discordgo.InteractionMessageComponent, GuildID: "guild", ChannelID: "channel",
-		Member: &discordgo.Member{User: &discordgo.User{ID: "123"}, Roles: []string{"role"}},
-		Data:   discordgo.MessageComponentInteractionData{CustomID: "birthday.page:next:1:123"},
+		Member: &discordgo.Member{User: &discordgo.User{ID: "123"}, Roles: []string{"role"}, Permissions: discordgo.PermissionManageGuild},
+		Data:   discordgo.MessageComponentInteractionData{CustomID: "birthday.page:next:1"},
 	}}
 	handled, err := routes.dispatch(context.Background(), component, responder)
-	if err != nil || !handled || componentRequest == nil || !reflect.DeepEqual(componentRequest.Parameters, []string{"next", "1", "123"}) || componentRequest.Actor.UserID != "123" || componentRequest.GuildID != "guild" || componentRequest.ChannelID != "channel" {
+	if err != nil || !handled || componentRequest == nil || !reflect.DeepEqual(componentRequest.Parameters, []string{"next", "1"}) || componentRequest.Actor.UserID != "123" || componentRequest.Actor.Permissions != discordgo.PermissionManageGuild || componentRequest.GuildID != "guild" || componentRequest.ChannelID != "channel" {
 		t.Fatalf("component request = %#v, handled = %v, error = %v", componentRequest, handled, err)
 	}
 	modal := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{

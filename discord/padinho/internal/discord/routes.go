@@ -17,13 +17,23 @@ var (
 	ErrUnknownRoute    = errors.New("unknown Discord interaction route")
 )
 
-// InteractionRequest contains typed common data for component and modal handlers.
+// InteractionRequest contains the typed common data passed to component and
+// modal handlers after Routes has decoded a Discord custom_id.
 type InteractionRequest struct {
-	Actor       command.Actor
-	GuildID     command.Snowflake
-	ChannelID   command.Snowflake
-	Parameters  []string
-	Responder   command.Responder
+	// Actor identifies the user and effective guild permissions for the request.
+	Actor command.Actor
+	// GuildID is the guild where the interaction occurred; it is empty in DMs.
+	GuildID command.Snowflake
+	// ChannelID is the channel where the interaction occurred.
+	ChannelID command.Snowflake
+	// Parameters are the custom_id segments after the registered route. For
+	// example, "birthdays.page:next:1" produces ["next", "1"]. They are
+	// untrusted client input and every handler must validate their shape/value.
+	Parameters []string
+	// Responder sends the one initial response for this interaction.
+	Responder command.Responder
+	// Interaction is the original native Discord payload for handlers that need
+	// interaction-specific data, such as modal text-input values.
 	Interaction *discordgo.InteractionCreate
 }
 
@@ -157,6 +167,7 @@ func actor(interaction *discordgo.InteractionCreate) command.Actor {
 		for index, role := range interaction.Member.Roles {
 			result.RoleIDs[index] = command.Snowflake(role)
 		}
+		result.Permissions = interaction.Member.Permissions
 	} else if interaction.User != nil {
 		result.UserID = command.Snowflake(interaction.User.ID)
 	}
