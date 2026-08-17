@@ -2,7 +2,11 @@
 
 Padinho is SaladaFun's Discord bot, written in Go 1.26 for a small private
 guild. Its `/birthdays` command displays a Components V2 calendar with one page
-per month, arrow-only navigation, and a modal opened through the ➕ button.
+per month, arrow-only navigation, and a modal opened through the ➕ button. Its
+`/move-all destination:<voice channel> [origin:<voice channel>]` command moves
+every currently connected member from the chosen origin; if origin is omitted,
+it uses the caller's current voice channel. Destination capacity is not checked
+before moves are requested from Discord.
 Birthday announcements are evaluated every minute against each user's IANA
 timezone and delivered once per local calendar date.
 
