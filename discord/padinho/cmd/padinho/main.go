@@ -54,13 +54,12 @@ func main() {
 
 	// Discord
 	routes := padinhodiscord.NewRoutes()
-	commands.Register(routes, birthdayService)
-	if err := routes.Freeze(); err != nil {
-		fail(logger, err)
-	}
-
 	gateway, err := padinhodiscord.New(token, routes, logger)
 	if err != nil {
+		fail(logger, err)
+	}
+	commands.Register(routes, birthdayService, gateway)
+	if err := routes.Freeze(); err != nil {
 		fail(logger, err)
 	}
 
