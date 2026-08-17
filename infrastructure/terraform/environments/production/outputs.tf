@@ -3,6 +3,11 @@ output "bot_public_ip" {
   value       = module.compute.public_ip
 }
 
+output "bot_private_ip" {
+  description = "Private IPv4 address reached only from the Padinho subnet."
+  value       = module.compute.private_ip
+}
+
 output "mysql_private_ip" {
   description = "Private IPv4 address reached only from the Padinho subnet."
   value       = module.mysql.private_ip
