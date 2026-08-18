@@ -7,6 +7,8 @@ const (
 	BirthdayEmptyMonth            = "Nenhum aniversário para este mês."
 	BirthdayEntry                 = "**%02d/%02d** — %s"
 	BirthdayAddModalTitle         = "Adicionar Aniversário"
+	BirthdayUserLabel             = "Usuário do Aniversário"
+	BirthdayUserPlaceholder       = "Selecione o usuário"
 	BirthdayNameLabel             = "Nome do Usuário"
 	BirthdayNamePlaceholder       = "Seu nome ou apelido"
 	BirthdayDateLabel             = "Data de Nascimento"
