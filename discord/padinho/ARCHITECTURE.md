@@ -93,9 +93,10 @@ queries and renders one month in day/name order with Components V2. Arrow-only
 buttons carry only direction and current month in a stateless custom ID, so any
 member can browse the list. The `Adicionar` button and modal submission require
 Discord's `Manage Server` (`PermissionManageGuild`) permission. The birthday
-saved is still the invoking member's own birthday. All visible copy except
-command names lives in the typed `internal/locale` packages. Allowed mentions
-are explicitly restricted, and display names are Markdown-escaped.
+saves the member selected in the modal's required User Select, allowing a
+manager to register a birthday for another server member. All visible copy
+except command names lives in the typed `internal/locale` packages. Allowed
+mentions are explicitly restricted, and display names are Markdown-escaped.
 
 The standard-library scheduler runs the birthday job every minute. The service
 converts the current instant into each stored IANA timezone, so DST and
@@ -106,12 +107,13 @@ execution prevents a job from overlapping itself; the ledger prevents later
 checks from sending the same local-date birthday again.
 
 The add-birthday modal uses Discord's current modal component contract: text
-inputs and the required timezone string select are wrapped in `Label`
-components. The timezone select offers localized Brazilian Portuguese labels
-for Brasília (`America/Sao_Paulo`), Amazonas (`America/Manaus`), and UTC. The
-DiscordGo dependency is replaced with the `sajfer/discordgo` v0.30.0 fork until
-the upstream dependency exposes these modal component and submitted-select
-value types.
+inputs, the required User Select, and the required timezone string select are
+wrapped in `Label` components. The User Select supplies the target member's
+snowflake, while the timezone select offers localized Brazilian Portuguese
+labels for Brasília (`America/Sao_Paulo`), Amazonas (`America/Manaus`), and
+UTC. The DiscordGo dependency is replaced with the `sajfer/discordgo` v0.30.0
+fork until the upstream dependency exposes these modal component and
+submitted-select value types.
 
 ## Persistence and deployment
 
