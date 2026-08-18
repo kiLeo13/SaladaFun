@@ -14,6 +14,7 @@ import (
 
 const (
 	nameInputID          = "name"
+	userInputID          = "user"
 	birthdayInputID      = "birthday"
 	timeZoneInputID      = "time_zone"
 	messageInputID       = "message"
@@ -33,6 +34,7 @@ func (h Handler) OpenModal(_ context.Context, request *discord.InteractionReques
 }
 
 func addBirthdayModal() *discordgo.InteractionResponse {
+	user := userLabel()
 	name := inputLabel(
 		nameInputID,
 		ptbr.BirthdayNameLabel,
@@ -65,6 +67,7 @@ func addBirthdayModal() *discordgo.InteractionResponse {
 			CustomID: addBirthdayRoute,
 			Title:    ptbr.BirthdayAddModalTitle,
 			Components: []discordgo.MessageComponent{
+				user,
 				name,
 				birthday,
 				timeZone,
@@ -79,7 +82,7 @@ func (h Handler) Submit(_ context.Context, request *discord.InteractionRequest) 
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayManageServerRequired))
 	}
 	values := modalValues(request.Interaction.ModalSubmitData().Components)
-	userID, err := strconv.ParseUint(string(request.Actor.UserID), 10, 64)
+	userID, err := strconv.ParseUint(values[userInputID], 10, 64)
 	if err != nil || userID == 0 {
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayInvalidInteraction))
 	}
@@ -129,6 +132,22 @@ func inputLabel(
 		MaxLength:   maximumLength,
 	}
 	return discordgo.Label{Label: label, Component: input}
+}
+
+func userLabel() discordgo.Label {
+	required := true
+	return discordgo.Label{
+		Label:       ptbr.BirthdayUserLabel,
+		Description: ptbr.BirthdayUserPlaceholder,
+		Component: discordgo.SelectMenu{
+			MenuType:    discordgo.UserSelectMenu,
+			CustomID:    userInputID,
+			Placeholder: ptbr.BirthdayUserPlaceholder,
+			MinValues:   intPointer(1),
+			MaxValues:   1,
+			Required:    &required,
+		},
+	}
 }
 
 func timezoneLabel() discordgo.Label {
