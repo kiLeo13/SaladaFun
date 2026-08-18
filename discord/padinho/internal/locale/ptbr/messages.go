@@ -31,7 +31,6 @@ const (
 	BirthdayManageServerRequired  = "Você precisa da permissão Gerenciar servidor para adicionar aniversários."
 	BirthdayInvalidInteraction    = "Este botão não é mais válido. Execute /birthdays novamente."
 	GenericInteractionError       = "Algo deu errado ao processar essa interação."
-	BirthdayDefaultMessage        = "Feliz aniversário, {mention}! Hoje {name} completa {age} anos! 🎉"
 	MoveAllCommandDescription     = "Move todos de um canal de voz para outro"
 	MoveAllDestinationDescription = "Canal de voz de destino"
 	MoveAllOriginDescription      = "Canal de voz de origem"
