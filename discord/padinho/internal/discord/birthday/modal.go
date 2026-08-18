@@ -125,7 +125,6 @@ func inputLabel(
 	requiredValue := required
 	input := discordgo.TextInput{
 		CustomID:    customID,
-		Label:       label,
 		Placeholder: placeholder,
 		Style:       style,
 		Required:    &requiredValue,

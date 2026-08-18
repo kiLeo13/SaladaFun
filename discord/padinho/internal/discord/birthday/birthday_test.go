@@ -170,6 +170,12 @@ func TestOpenModal(t *testing.T) {
 	if timeZone.CustomID != timeZoneInputID || len(timeZone.Options) != 3 || timeZone.Options[0].Label != ptbr.BirthdayTimeZoneBrasilia || timeZone.Options[0].Value != brasiliaTimeZone || timeZone.Options[1].Value != amazonasTimeZone || timeZone.Options[2].Value != utcTimeZone {
 		t.Fatalf("timezone select = %#v", timeZone)
 	}
+	for _, index := range []int{1, 2, 4} {
+		input := responder.response.Data.Components[index].(discordgo.Label).Component.(discordgo.TextInput)
+		if input.Label != "" {
+			t.Fatalf("text input %q has nested label %q", input.CustomID, input.Label)
+		}
+	}
 }
 
 func TestBirthdayManagementRequiresManageServer(t *testing.T) {
