@@ -98,6 +98,14 @@ manager to register a birthday for another server member. All visible copy
 except command names lives in the typed `internal/locale` packages. Allowed
 mentions are explicitly restricted, and display names are Markdown-escaped.
 
+Birthday pages use Components V2 separators between the capitalized month
+heading, the dated member-mention list, and a compact footer. The application
+service calculates the next strictly future birthday across all stored members
+in each member's timezone, applying the February 29 rule, and the footer renders
+that member plus the local-date start with Discord's relative timestamp syntax.
+Allowed mentions remain disabled for page browsing, so these are visible member
+references rather than notifications.
+
 The standard-library scheduler runs the birthday job every minute. The service
 converts the current instant into each stored IANA timezone, so DST and
 quarter-hour offsets are handled by Go's embedded timezone database. A due
