@@ -19,7 +19,7 @@ import (
 
 func TestRegisterAndListStartsInJanuary(t *testing.T) {
 	service := &fakeService{birthdays: []*entity.Birthday{{
-		Name: "Leo", Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC),
+		UserID: 123, Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC),
 	}}}
 	routes := discord.NewRoutes()
 	Register(routes, service)
@@ -49,7 +49,7 @@ func TestRegisterAndListStartsInJanuary(t *testing.T) {
 	if err != nil || service.month != time.January {
 		t.Fatalf("List() error = %v, month = %v", err, service.month)
 	}
-	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "Janeiro", "Leo")
+	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "Janeiro", "<@123>")
 }
 
 func TestListUsesSelectedMonth(t *testing.T) {
@@ -220,7 +220,7 @@ func TestSubmitBirthday(t *testing.T) {
 	service := &fakeService{}
 	responder := &fakeResponder{}
 	err := (Handler{service: service}).Submit(context.Background(), modalRequest("123", map[string]string{
-		userInputID: "456", nameInputID: "Leo", birthdayInputID: "2000-03-04",
+		userInputID: "456", nameInputID: "Leo", birthdayInputID: "04/03/2000",
 		timeZoneInputID: "America/Sao_Paulo", messageInputID: "Olá, {mention}",
 	}, responder))
 	if err != nil || responseText(responder.response) != fmt.Sprintf(ptbr.BirthdaySavedForUser, 456) {
@@ -239,7 +239,7 @@ func TestSubmitBirthdayForSelf(t *testing.T) {
 	service := &fakeService{}
 	responder := &fakeResponder{}
 	err := (Handler{service: service}).Submit(context.Background(), modalRequest("123", map[string]string{
-		userInputID: "123", birthdayInputID: "2000-03-04",
+		userInputID: "123", birthdayInputID: "04/03/2000",
 	}, responder))
 	if err != nil || responseText(responder.response) != ptbr.BirthdaySaved {
 		t.Fatalf("Submit() response = %#v, %v", responder.response, err)
@@ -250,7 +250,7 @@ func TestSubmitBirthdayReadsSelectedTimezone(t *testing.T) {
 	service := &fakeService{}
 	responder := &fakeResponder{}
 	request := modalRequest("123", map[string]string{
-		nameInputID: "Leo", birthdayInputID: "2000-03-04", messageInputID: "Olá, {mention}",
+		nameInputID: "Leo", birthdayInputID: "04/03/2000", messageInputID: "Olá, {mention}",
 	}, responder)
 	data := request.Interaction.ModalSubmitData()
 	data.Components = append(data.Components, discordgo.Label{
@@ -282,12 +282,12 @@ func TestSubmitValidation(t *testing.T) {
 		err    error
 		want   string
 	}{
-		"user":         {"bad", "2000-01-01", nil, ptbr.BirthdayInvalidInteraction},
-		"date":         {"123", "01/01/2000", nil, ptbr.BirthdayInvalidDate},
-		"name":         {"123", "2000-01-01", appbirthday.ErrInvalidName, ptbr.BirthdayInvalidName},
-		"service date": {"123", "2000-01-01", appbirthday.ErrInvalidDate, ptbr.BirthdayInvalidDate},
-		"zone":         {"123", "2000-01-01", appbirthday.ErrInvalidTimeZone, ptbr.BirthdayInvalidTimeZone},
-		"message":      {"123", "2000-01-01", appbirthday.ErrInvalidMessage, ptbr.BirthdayInvalidMessage},
+		"user":         {"bad", "01/01/2000", nil, ptbr.BirthdayInvalidInteraction},
+		"date":         {"123", "2000-01-01", nil, ptbr.BirthdayInvalidDate},
+		"name":         {"123", "01/01/2000", appbirthday.ErrInvalidName, ptbr.BirthdayInvalidName},
+		"service date": {"123", "01/01/2000", appbirthday.ErrInvalidDate, ptbr.BirthdayInvalidDate},
+		"zone":         {"123", "01/01/2000", appbirthday.ErrInvalidTimeZone, ptbr.BirthdayInvalidTimeZone},
+		"message":      {"123", "01/01/2000", appbirthday.ErrInvalidMessage, ptbr.BirthdayInvalidMessage},
 	}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -304,7 +304,7 @@ func TestSubmitValidation(t *testing.T) {
 	}
 	want := errors.New("database")
 	err := (Handler{service: &fakeService{err: want}}).Submit(context.Background(), modalRequest(
-		"123", map[string]string{birthdayInputID: "2000-01-01"}, &fakeResponder{},
+		"123", map[string]string{birthdayInputID: "01/01/2000"}, &fakeResponder{},
 	))
 	if !errors.Is(err, want) {
 		t.Fatalf("database error = %v", err)
@@ -335,15 +335,20 @@ func TestModalValuesReadsLabeledSelect(t *testing.T) {
 	}
 }
 
-func TestPageEscapesMarkdownAndDisablesMentions(t *testing.T) {
+func TestPageUsesBirthdayMentionsAndSeparators(t *testing.T) {
+	next := &appbirthday.UpcomingBirthday{UserID: 456, OccursAt: time.Unix(1_767_267_200, 0)}
 	response := pageResponse(discordgo.InteractionResponseChannelMessageWithSource, time.January, []*entity.Birthday{{
-		Name: "*@everyone*", Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-	}})
-	if got := responseText(response); !strings.Contains(got, "\\*@everyone\\*") {
+		UserID: 123, Name: "Leo", Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+	}}, next)
+	if got := responseText(response); !strings.Contains(got, "<@123>") || !strings.Contains(got, "Próximo aniversário: <@456> <t:1767267200:R>") {
 		t.Fatalf("page content = %q", got)
 	}
 	if response.Data.AllowedMentions == nil || len(response.Data.AllowedMentions.Parse) != 0 {
 		t.Fatalf("allowed mentions = %#v", response.Data.AllowedMentions)
+	}
+	container := response.Data.Components[0].(discordgo.Container)
+	if len(container.Components) != 5 || container.Components[1].Type() != discordgo.SeparatorComponent || container.Components[3].Type() != discordgo.SeparatorComponent {
+		t.Fatalf("page components = %#v", container.Components)
 	}
 }
 
@@ -406,7 +411,13 @@ func responseText(response *discordgo.InteractionResponse) string {
 	case discordgo.TextDisplay:
 		return component.Content
 	case discordgo.Container:
-		return component.Components[0].(discordgo.TextDisplay).Content
+		var content strings.Builder
+		for _, child := range component.Components {
+			if text, ok := child.(discordgo.TextDisplay); ok {
+				content.WriteString(text.Content)
+			}
+		}
+		return content.String()
 	default:
 		return ""
 	}
@@ -447,12 +458,18 @@ type fakeService struct {
 	birthdays []*entity.Birthday
 	month     time.Month
 	saved     appbirthday.SaveInput
+	next      *appbirthday.UpcomingBirthday
 	err       error
+	nextErr   error
 }
 
 func (s *fakeService) Month(month time.Month) ([]*entity.Birthday, error) {
 	s.month = month
 	return s.birthdays, s.err
+}
+
+func (s *fakeService) Next(time.Time) (*appbirthday.UpcomingBirthday, error) {
+	return s.next, s.nextErr
 }
 
 func (s *fakeService) Save(input appbirthday.SaveInput) error {
