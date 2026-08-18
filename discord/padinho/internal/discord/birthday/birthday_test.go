@@ -3,6 +3,7 @@ package birthday
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -48,7 +49,7 @@ func TestRegisterAndListStartsInJanuary(t *testing.T) {
 	if err != nil || service.month != time.January {
 		t.Fatalf("List() error = %v, month = %v", err, service.month)
 	}
-	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "janeiro", "Leo")
+	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "Janeiro", "Leo")
 }
 
 func TestListUsesSelectedMonth(t *testing.T) {
@@ -62,7 +63,7 @@ func TestListUsesSelectedMonth(t *testing.T) {
 	if err != nil || service.month != time.October {
 		t.Fatalf("List() error = %v, month = %v", err, service.month)
 	}
-	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "outubro")
+	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "Outubro")
 }
 
 func TestListRejectsInvalidMonth(t *testing.T) {
@@ -97,7 +98,7 @@ func TestChangePage(t *testing.T) {
 	if service.month != time.February {
 		t.Fatalf("month = %v", service.month)
 	}
-	assertPage(t, responder.response, discordgo.InteractionResponseUpdateMessage, "fevereiro", ptbr.BirthdayEmptyMonth)
+	assertPage(t, responder.response, discordgo.InteractionResponseUpdateMessage, "Fevereiro", ptbr.BirthdayEmptyMonth)
 
 	request.Parameters = []string{"previous", "12"}
 	if err := handler.ChangePage(context.Background(), request); err != nil || service.month != time.November {
@@ -167,7 +168,7 @@ func TestOpenModal(t *testing.T) {
 		t.Fatalf("user select = %#v", user)
 	}
 	timeZone := responder.response.Data.Components[3].(discordgo.Label).Component.(discordgo.SelectMenu)
-	if timeZone.CustomID != timeZoneInputID || len(timeZone.Options) != 3 || timeZone.Options[0].Label != ptbr.BirthdayTimeZoneBrasilia || timeZone.Options[0].Value != brasiliaTimeZone || timeZone.Options[1].Value != amazonasTimeZone || timeZone.Options[2].Value != utcTimeZone {
+	if timeZone.CustomID != timeZoneInputID || len(timeZone.Options) != 3 || timeZone.Options[0].Label != ptbr.BirthdayTimeZoneBrasilia || timeZone.Options[0].Value != brasiliaTimeZone || !timeZone.Options[0].Default || timeZone.Options[1].Value != amazonasTimeZone || timeZone.Options[2].Value != utcTimeZone {
 		t.Fatalf("timezone select = %#v", timeZone)
 	}
 	for _, index := range []int{1, 2, 4} {
@@ -222,12 +223,26 @@ func TestSubmitBirthday(t *testing.T) {
 		userInputID: "456", nameInputID: "Leo", birthdayInputID: "2000-03-04",
 		timeZoneInputID: "America/Sao_Paulo", messageInputID: "Olá, {mention}",
 	}, responder))
-	if err != nil || responseText(responder.response) != ptbr.BirthdaySaved {
+	if err != nil || responseText(responder.response) != fmt.Sprintf(ptbr.BirthdaySavedForUser, 456) {
 		t.Fatalf("Submit() response = %#v, %v", responder.response, err)
+	}
+	if responder.response.Data.AllowedMentions == nil || !reflect.DeepEqual(responder.response.Data.AllowedMentions.Users, []string{"456"}) {
+		t.Fatalf("allowed mentions = %#v", responder.response.Data.AllowedMentions)
 	}
 	wantDate := time.Date(2000, 3, 4, 0, 0, 0, 0, time.UTC)
 	if service.saved.UserID != 456 || !service.saved.Birthday.Equal(wantDate) || service.saved.Name != "Leo" {
 		t.Fatalf("saved = %#v", service.saved)
+	}
+}
+
+func TestSubmitBirthdayForSelf(t *testing.T) {
+	service := &fakeService{}
+	responder := &fakeResponder{}
+	err := (Handler{service: service}).Submit(context.Background(), modalRequest("123", map[string]string{
+		userInputID: "123", birthdayInputID: "2000-03-04",
+	}, responder))
+	if err != nil || responseText(responder.response) != ptbr.BirthdaySaved {
+		t.Fatalf("Submit() response = %#v, %v", responder.response, err)
 	}
 }
 
