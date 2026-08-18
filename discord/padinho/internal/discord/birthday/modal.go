@@ -13,14 +13,16 @@ import (
 )
 
 const (
-	nameInputID           = "name"
-	birthdayInputID       = "birthday"
-	timeZoneInputID       = "time_zone"
-	messageInputID        = "message"
-	maximumNameLength     = 100
-	birthdayDateLength    = len("2006-01-02")
-	maximumTimeZoneLength = 255
-	maximumMessageLength  = 1800
+	nameInputID          = "name"
+	birthdayInputID      = "birthday"
+	timeZoneInputID      = "time_zone"
+	messageInputID       = "message"
+	maximumNameLength    = 100
+	birthdayDateLength   = len("2006-01-02")
+	maximumMessageLength = 1800
+	brasiliaTimeZone     = "America/Sao_Paulo"
+	amazonasTimeZone     = "America/Manaus"
+	utcTimeZone          = "UTC"
 )
 
 func (h Handler) OpenModal(_ context.Context, request *discord.InteractionRequest) error {
@@ -31,7 +33,7 @@ func (h Handler) OpenModal(_ context.Context, request *discord.InteractionReques
 }
 
 func addBirthdayModal() *discordgo.InteractionResponse {
-	name := inputRow(
+	name := inputLabel(
 		nameInputID,
 		ptbr.BirthdayNameLabel,
 		ptbr.BirthdayNamePlaceholder,
@@ -39,7 +41,7 @@ func addBirthdayModal() *discordgo.InteractionResponse {
 		true,
 		maximumNameLength,
 	)
-	birthday := inputRow(
+	birthday := inputLabel(
 		birthdayInputID,
 		ptbr.BirthdayDateLabel,
 		ptbr.BirthdayDatePlaceholder,
@@ -47,15 +49,8 @@ func addBirthdayModal() *discordgo.InteractionResponse {
 		true,
 		birthdayDateLength,
 	)
-	timeZone := inputRow(
-		timeZoneInputID,
-		ptbr.BirthdayTimeZoneLabel,
-		ptbr.BirthdayTimeZonePlaceholder,
-		discordgo.TextInputShort,
-		true,
-		maximumTimeZoneLength,
-	)
-	message := inputRow(
+	timeZone := timezoneLabel()
+	message := inputLabel(
 		messageInputID,
 		ptbr.BirthdayMessageLabel,
 		ptbr.BirthdayMessagePlaceholder,
@@ -116,46 +111,86 @@ func hasManageServerPermission(permissions int64) bool {
 	return permissions&(discordgo.PermissionManageGuild|discordgo.PermissionAdministrator) != 0
 }
 
-func inputRow(
+func inputLabel(
 	customID string,
 	label string,
 	placeholder string,
 	style discordgo.TextInputStyle,
 	required bool,
 	maximumLength int,
-) discordgo.ActionsRow {
+) discordgo.MessageComponent {
+	requiredValue := required
 	input := discordgo.TextInput{
 		CustomID:    customID,
 		Label:       label,
 		Placeholder: placeholder,
 		Style:       style,
-		Required:    required,
+		Required:    &requiredValue,
 		MaxLength:   maximumLength,
 	}
-	return discordgo.ActionsRow{Components: []discordgo.MessageComponent{input}}
+	return discordgo.Label{Label: label, Component: input}
+}
+
+func timezoneLabel() discordgo.Label {
+	required := true
+	return discordgo.Label{
+		Label:       ptbr.BirthdayTimeZoneLabel,
+		Description: ptbr.BirthdayTimeZonePlaceholder,
+		Component: discordgo.SelectMenu{
+			MenuType:    discordgo.StringSelectMenu,
+			CustomID:    timeZoneInputID,
+			Placeholder: ptbr.BirthdayTimeZonePlaceholder,
+			MinValues:   intPointer(1),
+			MaxValues:   1,
+			Required:    &required,
+			Options: []discordgo.SelectMenuOption{
+				{Label: ptbr.BirthdayTimeZoneBrasilia, Value: brasiliaTimeZone},
+				{Label: ptbr.BirthdayTimeZoneAmazonas, Value: amazonasTimeZone},
+				{Label: ptbr.BirthdayTimeZoneUTC, Value: utcTimeZone},
+			},
+		},
+	}
+}
+
+func intPointer(value int) *int {
+	return &value
 }
 
 func modalValues(components []discordgo.MessageComponent) map[string]string {
 	values := make(map[string]string)
 	for _, component := range components {
-		row, ok := component.(*discordgo.ActionsRow)
-		if !ok {
-			if value, valueOK := component.(discordgo.ActionsRow); valueOK {
-				row = &value
-			} else {
-				continue
-			}
-		}
-		for _, child := range row.Components {
-			switch input := child.(type) {
-			case *discordgo.TextInput:
-				values[input.CustomID] = input.Value
-			case discordgo.TextInput:
-				values[input.CustomID] = input.Value
-			}
-		}
+		collectModalValue(values, component)
 	}
 	return values
+}
+
+func collectModalValue(values map[string]string, component discordgo.MessageComponent) {
+	switch input := component.(type) {
+	case *discordgo.Label:
+		collectModalValue(values, input.Component)
+	case discordgo.Label:
+		collectModalValue(values, input.Component)
+	case *discordgo.ActionsRow:
+		for _, child := range input.Components {
+			collectModalValue(values, child)
+		}
+	case discordgo.ActionsRow:
+		for _, child := range input.Components {
+			collectModalValue(values, child)
+		}
+	case *discordgo.TextInput:
+		values[input.CustomID] = input.Value
+	case discordgo.TextInput:
+		values[input.CustomID] = input.Value
+	case *discordgo.SelectMenu:
+		if len(input.Values) > 0 {
+			values[input.CustomID] = input.Values[0]
+		}
+	case discordgo.SelectMenu:
+		if len(input.Values) > 0 {
+			values[input.CustomID] = input.Values[0]
+		}
+	}
 }
 
 func validationMessage(err error) string {
