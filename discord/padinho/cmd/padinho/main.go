@@ -50,7 +50,7 @@ func main() {
 	}
 
 	// Services
-	birthdayService := appbirthday.NewService(birthdayRepo)
+	birthdayService := appbirthday.NewService(birthdayRepo, configRepo)
 
 	// Discord
 	routes := padinhodiscord.NewRoutes()
