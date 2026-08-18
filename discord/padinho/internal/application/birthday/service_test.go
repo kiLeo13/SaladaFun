@@ -95,6 +95,38 @@ func TestDueUsesEachUsersLocalDateAndLedger(t *testing.T) {
 	}
 }
 
+func TestNextUsesLocalDatesAndSkipsTodaysBirthday(t *testing.T) {
+	repository := &fakeRepository{birthdays: []*entity.Birthday{
+		{UserID: 1, Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC), TimeZone: "Asia/Tokyo"},
+		{UserID: 2, Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), TimeZone: "UTC"},
+		{UserID: 3, Birthday: time.Date(2000, 1, 3, 0, 0, 0, 0, time.UTC), TimeZone: "UTC"},
+	}}
+	next, err := newService(repository).Next(time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC))
+	if err != nil || next == nil || next.UserID != 1 || !next.OccursAt.Equal(time.Date(2026, 1, 2, 0, 0, 0, 0, time.FixedZone("JST", 9*60*60))) {
+		t.Fatalf("Next() = %#v, %v", next, err)
+	}
+}
+
+func TestNextUsesFebruaryTwentyEighthForLeapDayBirthday(t *testing.T) {
+	repository := &fakeRepository{birthdays: []*entity.Birthday{{
+		UserID: 1, Birthday: time.Date(2000, 2, 29, 0, 0, 0, 0, time.UTC), TimeZone: "UTC",
+	}}}
+	next, err := newService(repository).Next(time.Date(2025, 2, 27, 12, 0, 0, 0, time.UTC))
+	if err != nil || next == nil || !next.OccursAt.Equal(time.Date(2025, 2, 28, 0, 0, 0, 0, time.UTC)) {
+		t.Fatalf("Next() = %#v, %v", next, err)
+	}
+}
+
+func TestNextReturnsNoBirthdayAndRepositoryErrors(t *testing.T) {
+	if next, err := newService(&fakeRepository{}).Next(time.Now()); err != nil || next != nil {
+		t.Fatalf("Next() = %#v, %v", next, err)
+	}
+	want := errors.New("list")
+	if _, err := newService(&fakeRepository{listErr: want}).Next(time.Now()); !errors.Is(err, want) {
+		t.Fatalf("Next() error = %v", err)
+	}
+}
+
 func TestDueCelebratesLeapBirthdayOnFebruaryTwentyEighth(t *testing.T) {
 	repository := &fakeRepository{birthdays: []*entity.Birthday{{
 		UserID: 1, Birthday: time.Date(2000, 2, 29, 0, 0, 0, 0, time.UTC),

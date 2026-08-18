@@ -48,6 +48,13 @@ type Announcement struct {
 	LocalDate time.Time
 }
 
+// UpcomingBirthday identifies the next future local-date birthday and the
+// instant at which that date starts in the member's timezone.
+type UpcomingBirthday struct {
+	UserID   uint64
+	OccursAt time.Time
+}
+
 // Service owns birthday validation, calendar rules, and announcement selection.
 type Service struct {
 	repository     Repository
@@ -64,6 +71,26 @@ func (s *Service) Month(month time.Month) ([]*entity.Birthday, error) {
 		return nil, ErrInvalidMonth
 	}
 	return s.repository.ListByMonth(month)
+}
+
+// Next returns the next birthday after now across every stored member.
+func (s *Service) Next(now time.Time) (*UpcomingBirthday, error) {
+	birthdays, err := s.repository.List()
+	if err != nil {
+		return nil, err
+	}
+	var next *UpcomingBirthday
+	for _, current := range birthdays {
+		location, loadErr := time.LoadLocation(current.TimeZone)
+		if loadErr != nil {
+			return nil, fmt.Errorf("load time zone for user %d: %w", current.UserID, loadErr)
+		}
+		candidate := nextBirthday(current.Birthday, now.In(location))
+		if next == nil || candidate.Before(next.OccursAt) || candidate.Equal(next.OccursAt) && current.UserID < next.UserID {
+			next = &UpcomingBirthday{UserID: current.UserID, OccursAt: candidate}
+		}
+	}
+	return next, nil
 }
 
 // Save validates and stores one user's birthday.
@@ -184,6 +211,26 @@ func occursOn(birthday, current time.Time) bool {
 		day = 28
 	}
 	return current.Month() == month && current.Day() == day
+}
+
+func nextBirthday(birthday, now time.Time) time.Time {
+	year := now.Year()
+	month, day := observedBirthdayDate(birthday, year)
+	candidate := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+	if !candidate.After(now) {
+		year++
+		month, day = observedBirthdayDate(birthday, year)
+		candidate = time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+	}
+	return candidate
+}
+
+func observedBirthdayDate(birthday time.Time, year int) (time.Month, int) {
+	month, day := birthday.Month(), birthday.Day()
+	if month == time.February && day == 29 && !isLeap(year) {
+		day = 28
+	}
+	return month, day
 }
 
 func isLeap(year int) bool {
