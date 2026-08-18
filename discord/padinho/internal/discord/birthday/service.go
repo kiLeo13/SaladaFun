@@ -11,5 +11,7 @@ import (
 type Service interface {
 	Month(time.Month) ([]*entity.Birthday, error)
 	Next(time.Time) (*appbirthday.UpcomingBirthday, error)
+	Birthday(uint64) (*entity.Birthday, error)
 	Save(appbirthday.SaveInput) error
+	Update(appbirthday.UpdateInput) (*entity.Birthday, error)
 }

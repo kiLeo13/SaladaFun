@@ -40,7 +40,7 @@ func pageContainer(month time.Month, birthdays []*entity.Birthday, next *appbirt
 	return discordgo.Container{
 		AccentColor: &accent,
 		Components: []discordgo.MessageComponent{
-			discordgo.TextDisplay{Content: pageTitle(month)},
+			pageHeading(month),
 			discordgo.Separator{Divider: &divider},
 			discordgo.TextDisplay{Content: pageContent(birthdays)},
 			discordgo.Separator{Divider: &divider},
@@ -67,7 +67,19 @@ func pageActions(month time.Month) discordgo.ActionsRow {
 		previous,
 		next,
 		addButton(),
+		editButton(),
 	}}
+}
+
+func pageHeading(month time.Month) discordgo.Section {
+	return discordgo.Section{
+		Components: []discordgo.MessageComponent{discordgo.TextDisplay{Content: pageTitle(month)}},
+		Accessory: discordgo.Button{
+			Style:    discordgo.SecondaryButton,
+			Emoji:    &discordgo.ComponentEmoji{Name: "🔍"},
+			CustomID: inspectRoute,
+		},
+	}
 }
 
 func pageTitle(month time.Month) string {
@@ -120,6 +132,15 @@ func addButton() discordgo.Button {
 		Style:    discordgo.SuccessButton,
 		Label:    ptbr.BirthdayButtonAdd,
 		CustomID: addBirthdayRoute,
+	}
+}
+
+func editButton() discordgo.Button {
+	return discordgo.Button{
+		Style:    discordgo.PrimaryButton,
+		Label:    ptbr.BirthdayButtonEdit,
+		Emoji:    &discordgo.ComponentEmoji{Name: "✏️"},
+		CustomID: editRoute,
 	}
 }
 
