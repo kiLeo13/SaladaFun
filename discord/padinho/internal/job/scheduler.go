@@ -40,10 +40,7 @@ func (s *Scheduler) Every(interval time.Duration, task func() error) error {
 // Start launches all registered jobs. The first execution occurs after one interval.
 func (s *Scheduler) Start(ctx context.Context) {
 	for _, current := range s.jobs {
-		current := current
-		s.wait.Add(1)
-		go func() {
-			defer s.wait.Done()
+		s.wait.Go(func() {
 			ticker := time.NewTicker(current.interval)
 			defer ticker.Stop()
 			for {
@@ -56,7 +53,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 					}
 				}
 			}
-		}()
+		})
 	}
 }
 
