@@ -2,9 +2,10 @@
 
 Padinho is SaladaFun's Discord bot, written in Go 1.26 for a small private
 guild. Its `/birthdays [month:<January...December>]` command displays a
-Components V2 calendar with one page per month, arrow-only navigation, and a
-modal opened through the ➕ button. When `month` is omitted, the command starts
-at the bot process's current calendar month. Its
+Components V2 calendar with one page per month, arrow-only navigation, a
+self-inspection button beside the title, and an add modal opened through the
+`Adicionar` button. When `month` is omitted, the command starts at the bot
+process's current calendar month. Its
 `/move-all destination:<voice channel> [origin:<voice channel>]` command moves
 every currently connected member from the chosen origin; if origin is omitted,
 it uses the caller's current voice channel. Destination capacity is not checked
@@ -18,6 +19,13 @@ offers localized timezone choices for Brasília, Amazonas, and UTC instead of
 requiring an IANA timezone string. Its date field accepts `DD/MM/AAAA`.
 Saving a birthday for another member returns an ephemeral confirmation
 mentioning that member; saving for yourself retains the personal confirmation.
+The title's magnifier opens an ephemeral view of the caller's stored full date,
+name, raw IANA timezone, and custom-message state. The public `Editar` button
+opens an ephemeral dashboard only for administrators. Its User Select loads one
+existing registration into the same dashboard, where name, full date, timezone,
+and message each have a pencil that opens a prefilled one-field modal. Submitting
+the modal atomically updates that column in `birthdays`, reloads the row, and
+replaces the same dashboard message. The Discord user ID is never editable.
 
 Each birthday page separates its capitalized month heading, mention-based list,
 and footer with Discord dividers. The footer identifies the next upcoming
@@ -48,8 +56,10 @@ synchronized. Fixed string choices are declared in the command framework and
 compiled into Discord dropdown options; birthday month labels are kept in
 `internal/locale/enus`. Response bodies are native `discordgo.InteractionResponse`
 values passed through a small responder that binds the originating interaction
-and rejects a second initial response. Component IDs encode validated page and
-direction; no in-memory state is lost during Watchtower restarts. Brazilian
+and rejects a second initial response. Component IDs encode validated page,
+direction, edit field, and target user; the source message remains attached to
+component-opened modal submissions, so no in-memory dashboard session is lost
+during Watchtower restarts. Brazilian
 Portuguese response text and English command metadata are centralized as typed
 constants in `internal/locale` without a runtime translation dependency.
 

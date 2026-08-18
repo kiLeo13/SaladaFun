@@ -93,12 +93,27 @@ labels from January through December and lowercase values internally. When
 omitted, it uses the bot process's current calendar month. Each of the twelve pages
 queries and renders one month in day/name order with Components V2. Arrow-only
 buttons carry only direction and current month in a stateless custom ID, so any
-member can browse the list. The `Adicionar` button and modal submission require
+member can browse the list. A magnifier accessory in the title section looks up
+the clicking member from the interaction actor and returns their full stored
+registration ephemerally; the route never accepts a target-user parameter. The
+`Adicionar` button and modal submission require
 Discord's `Manage Server` (`PermissionManageGuild`) permission. The birthday
 saves the member selected in the modal's required User Select, allowing a
 manager to register a birthday for another server member. All visible copy
 except command names lives in the typed `internal/locale` packages. Allowed
 mentions are explicitly restricted, and display names are Markdown-escaped.
+
+The public `Editar` button opens one ephemeral Components V2 dashboard, but the
+button, target selector, field buttons, and modal submissions each independently
+require Discord's exact `Administrator` permission. A User Select updates the
+same dashboard with either a not-found state or the chosen registration. User ID
+is rendered without an accessory; name, full date, raw IANA timezone, and custom
+message use Sections with pencil-button accessories. Each pencil opens one
+prefilled text-input modal whose stateless custom ID carries the validated field
+and target user. Successful submission performs a validated atomic update of
+only that column in the existing `birthdays` table, reloads the row, and updates
+the source dashboard message. No edit table, schema migration, or expiring
+server-side interaction state is used.
 
 Birthday pages use Components V2 separators between the capitalized month
 heading, the dated member-mention list, and a compact footer. The application
