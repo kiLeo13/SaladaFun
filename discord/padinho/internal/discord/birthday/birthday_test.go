@@ -159,10 +159,14 @@ func TestOpenModal(t *testing.T) {
 	err := (Handler{}).OpenModal(context.Background(), &discord.InteractionRequest{
 		Actor: command.Actor{Permissions: discordgo.PermissionManageGuild}, Responder: responder,
 	})
-	if err != nil || responder.response.Type != discordgo.InteractionResponseModal || responder.response.Data.Title != ptbr.BirthdayAddModalTitle || len(responder.response.Data.Components) != 4 {
+	if err != nil || responder.response.Type != discordgo.InteractionResponseModal || responder.response.Data.Title != ptbr.BirthdayAddModalTitle || len(responder.response.Data.Components) != 5 {
 		t.Fatalf("modal response = %#v, %v", responder.response, err)
 	}
-	timeZone := responder.response.Data.Components[2].(discordgo.Label).Component.(discordgo.SelectMenu)
+	user := responder.response.Data.Components[0].(discordgo.Label).Component.(discordgo.SelectMenu)
+	if user.CustomID != userInputID || user.MenuType != discordgo.UserSelectMenu || user.MaxValues != 1 || user.Required == nil || !*user.Required {
+		t.Fatalf("user select = %#v", user)
+	}
+	timeZone := responder.response.Data.Components[3].(discordgo.Label).Component.(discordgo.SelectMenu)
 	if timeZone.CustomID != timeZoneInputID || len(timeZone.Options) != 3 || timeZone.Options[0].Label != ptbr.BirthdayTimeZoneBrasilia || timeZone.Options[0].Value != brasiliaTimeZone || timeZone.Options[1].Value != amazonasTimeZone || timeZone.Options[2].Value != utcTimeZone {
 		t.Fatalf("timezone select = %#v", timeZone)
 	}
@@ -209,14 +213,14 @@ func TestSubmitBirthday(t *testing.T) {
 	service := &fakeService{}
 	responder := &fakeResponder{}
 	err := (Handler{service: service}).Submit(context.Background(), modalRequest("123", map[string]string{
-		nameInputID: "Leo", birthdayInputID: "2000-03-04",
+		userInputID: "456", nameInputID: "Leo", birthdayInputID: "2000-03-04",
 		timeZoneInputID: "America/Sao_Paulo", messageInputID: "Olá, {mention}",
 	}, responder))
 	if err != nil || responseText(responder.response) != ptbr.BirthdaySaved {
 		t.Fatalf("Submit() response = %#v, %v", responder.response, err)
 	}
 	wantDate := time.Date(2000, 3, 4, 0, 0, 0, 0, time.UTC)
-	if service.saved.UserID != 123 || !service.saved.Birthday.Equal(wantDate) || service.saved.Name != "Leo" {
+	if service.saved.UserID != 456 || !service.saved.Birthday.Equal(wantDate) || service.saved.Name != "Leo" {
 		t.Fatalf("saved = %#v", service.saved)
 	}
 }
@@ -239,6 +243,14 @@ func TestSubmitBirthdayReadsSelectedTimezone(t *testing.T) {
 
 	if err := (Handler{service: service}).Submit(context.Background(), request); err != nil || service.saved.TimeZone != amazonasTimeZone {
 		t.Fatalf("Submit() error = %v, saved timezone = %q", err, service.saved.TimeZone)
+	}
+}
+
+func TestSubmitBirthdayRequiresSelectedUser(t *testing.T) {
+	responder := &fakeResponder{}
+	err := (Handler{service: &fakeService{}}).Submit(context.Background(), modalRequestWithoutSelectedUser("123", responder))
+	if err != nil || responseText(responder.response) != ptbr.BirthdayInvalidInteraction {
+		t.Fatalf("Submit() response = %#v, %v", responder.response, err)
 	}
 }
 
@@ -380,17 +392,32 @@ func responseText(response *discordgo.InteractionResponse) string {
 }
 
 func modalRequest(userID string, values map[string]string, responder *fakeResponder) *discord.InteractionRequest {
-	rows := make([]discordgo.MessageComponent, 0, len(values))
+	rows := make([]discordgo.MessageComponent, 0, len(values)+1)
 	for customID, value := range values {
+		if customID == userInputID {
+			rows = append(rows, discordgo.Label{Component: discordgo.SelectMenu{CustomID: userInputID, MenuType: discordgo.UserSelectMenu, Values: []string{value}}})
+			continue
+		}
 		rows = append(rows, discordgo.ActionsRow{Components: []discordgo.MessageComponent{
 			discordgo.TextInput{CustomID: customID, Value: value},
 		}})
 	}
+	if _, selected := values[userInputID]; !selected {
+		rows = append(rows, discordgo.Label{Component: discordgo.SelectMenu{CustomID: userInputID, MenuType: discordgo.UserSelectMenu, Values: []string{userID}}})
+	}
+	return modalRequestWithComponents(userID, rows, responder)
+}
+
+func modalRequestWithoutSelectedUser(userID string, responder *fakeResponder) *discord.InteractionRequest {
+	return modalRequestWithComponents(userID, nil, responder)
+}
+
+func modalRequestWithComponents(userID string, components []discordgo.MessageComponent, responder *fakeResponder) *discord.InteractionRequest {
 	return &discord.InteractionRequest{
 		Actor: command.Actor{UserID: command.Snowflake(userID), Permissions: discordgo.PermissionManageGuild}, Responder: responder,
 		Interaction: &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionModalSubmit,
-			Data: discordgo.ModalSubmitInteractionData{CustomID: addBirthdayRoute, Components: rows},
+			Data: discordgo.ModalSubmitInteractionData{CustomID: addBirthdayRoute, Components: components},
 		}},
 	}
 }
