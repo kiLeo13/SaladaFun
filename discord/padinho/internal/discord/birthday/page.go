@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
@@ -65,7 +66,7 @@ func pageActions(month time.Month) discordgo.ActionsRow {
 
 func pageContent(month time.Month, birthdays []*entity.Birthday) string {
 	var content strings.Builder
-	fmt.Fprintf(&content, "## "+ptbr.BirthdayTitle, ptbr.MonthNames[month])
+	fmt.Fprintf(&content, "## "+ptbr.BirthdayTitle, locale.Capitalize(ptbr.MonthNames[month]))
 	if len(birthdays) == 0 {
 		content.WriteString("\n\n")
 		content.WriteString(ptbr.BirthdayEmptyMonth)
