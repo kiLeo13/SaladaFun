@@ -54,8 +54,10 @@ The cohesive `internal/discord/move` feature owns `/move-all`. It receives a
 small Discord voice capability from the gateway, rather than reaching into the
 session directly. `origin` is optional: the gateway's voice-state cache resolves
 the caller's current channel when omitted, otherwise the command rejects the
-request. Both origin and destination must be voice or stage channels in the
-same guild. The gateway requests `GUILD_VOICE_STATES` and snapshots the origin's
+request. The slash-command options restrict both origin and destination to
+guild voice channels; the handler also validates the selected channels in the
+same guild (including stage channels for direct, already-validated requests).
+The gateway requests `GUILD_VOICE_STATES` and snapshots the origin's
 voice states before requesting an individual Discord move for every member.
 It deliberately does not inspect channel member limits; Discord evaluates each
 move request.

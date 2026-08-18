@@ -27,10 +27,10 @@ func TestRegister(t *testing.T) {
 	if definition.Name != commandName || definition.Description != ptbr.MoveAllCommandDescription || len(definition.Options) != 2 {
 		t.Fatalf("definition = %#v", definition)
 	}
-	if option := definition.Options[0]; option.Name != "destination" || option.Type != command.OptionTypeChannel || !option.Required {
+	if option := definition.Options[0]; option.Name != "destination" || option.Type != command.OptionTypeChannel || !option.Required || !reflect.DeepEqual(option.ChannelTypes, []command.ChannelType{command.ChannelTypeVoice}) {
 		t.Fatalf("destination option = %#v", option)
 	}
-	if option := definition.Options[1]; option.Name != "origin" || option.Type != command.OptionTypeChannel || option.Required {
+	if option := definition.Options[1]; option.Name != "origin" || option.Type != command.OptionTypeChannel || option.Required || !reflect.DeepEqual(option.ChannelTypes, []command.ChannelType{command.ChannelTypeVoice}) {
 		t.Fatalf("origin option = %#v", option)
 	}
 }

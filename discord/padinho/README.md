@@ -9,6 +9,8 @@ at the bot process's current calendar month. Its
 every currently connected member from the chosen origin; if origin is omitted,
 it uses the caller's current voice channel. Destination capacity is not checked
 before moves are requested from Discord.
+
+Both slash-command channel options are restricted to guild voice channels.
 Birthday announcements are evaluated every minute against each user's IANA
 timezone and delivered once per local calendar date. The add-birthday modal
 lets a server manager select the member whose birthday is being registered and

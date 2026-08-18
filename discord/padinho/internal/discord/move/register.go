@@ -15,7 +15,7 @@ func Register(routes *discord.Routes, service Service) {
 		commandName,
 		ptbr.MoveAllCommandDescription,
 		handler.MoveAll,
-		command.ChannelOption("destination", ptbr.MoveAllDestinationDescription).Required(),
-		command.ChannelOption("origin", ptbr.MoveAllOriginDescription),
+		command.ChannelOption("destination", ptbr.MoveAllDestinationDescription).VoiceOnly().Required(),
+		command.ChannelOption("origin", ptbr.MoveAllOriginDescription).VoiceOnly(),
 	)
 }
