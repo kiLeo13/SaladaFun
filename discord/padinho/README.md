@@ -10,7 +10,9 @@ every currently connected member from the chosen origin; if origin is omitted,
 it uses the caller's current voice channel. Destination capacity is not checked
 before moves are requested from Discord.
 Birthday announcements are evaluated every minute against each user's IANA
-timezone and delivered once per local calendar date.
+timezone and delivered once per local calendar date. The add-birthday modal
+offers localized timezone choices for Brasília, Amazonas, and UTC instead of
+requiring an IANA timezone string.
 
 ## Command composition
 

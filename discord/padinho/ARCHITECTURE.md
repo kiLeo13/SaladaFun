@@ -105,6 +105,14 @@ announcement is sent through Components V2 and recorded in
 execution prevents a job from overlapping itself; the ledger prevents later
 checks from sending the same local-date birthday again.
 
+The add-birthday modal uses Discord's current modal component contract: text
+inputs and the required timezone string select are wrapped in `Label`
+components. The timezone select offers localized Brazilian Portuguese labels
+for Brasília (`America/Sao_Paulo`), Amazonas (`America/Manaus`), and UTC. The
+DiscordGo dependency is replaced with the `sajfer/discordgo` v0.30.0 fork until
+the upstream dependency exposes these modal component and submitted-select
+value types.
+
 ## Persistence and deployment
 
 `internal/database.Open()` privately reads the small `DB_*` bootstrap contract
