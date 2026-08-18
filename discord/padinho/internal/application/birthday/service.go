@@ -25,7 +25,7 @@ var (
 	ErrInvalidTimeZone = errors.New("invalid birthday time zone")
 	ErrInvalidMessage  = errors.New("invalid birthday message")
 	ErrInvalidMonth    = errors.New("invalid birthday month")
-	placeholderPattern = regexp.MustCompile(`\{[^{}]+\}`)
+	placeholderPattern = regexp.MustCompile(`\{[^{}]+}`)
 	allowedPlaceholder = map[string]struct{}{
 		"{age}": {}, "{name}": {}, "{mention}": {},
 	}
@@ -91,8 +91,11 @@ func (s *Service) Save(input SaveInput) error {
 	}
 	input.Birthday = date(input.Birthday)
 	return s.repository.Save(&entity.Birthday{
-		UserID: input.UserID, Name: input.Name, Birthday: input.Birthday,
-		TimeZone: input.TimeZone, Message: input.Message,
+		UserID:   input.UserID,
+		Name:     input.Name,
+		Birthday: input.Birthday,
+		TimeZone: input.TimeZone,
+		Message:  input.Message,
 	})
 }
 
@@ -121,8 +124,10 @@ func (s *Service) Due(now time.Time) ([]Announcement, error) {
 			continue
 		}
 		result = append(result, Announcement{
-			UserID: current.UserID, Name: current.Name,
-			Age: localDate.Year() - current.Birthday.Year(), Message: current.Message,
+			UserID:    current.UserID,
+			Name:      current.Name,
+			Age:       localDate.Year() - current.Birthday.Year(),
+			Message:   current.Message,
 			LocalDate: localDate,
 		})
 	}
