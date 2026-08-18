@@ -106,6 +106,13 @@ announcement is sent through Components V2 and recorded in
 execution prevents a job from overlapping itself; the ledger prevents later
 checks from sending the same local-date birthday again.
 
+Birthday messages are trimmed before storage. An empty stored `message` remains
+empty rather than receiving a copied default. When the announcement selector
+encounters that empty value, it fetches `birthday.defaultMessage` from `config`
+once for that scheduler run and supplies its `{age}`, `{name}`, and `{mention}`
+template to the Discord sender. A birthday with a non-empty stored message never
+reads that configuration value.
+
 The add-birthday modal uses Discord's current modal component contract: text
 inputs, the required User Select, and the required timezone string select are
 wrapped in `Label` components. The User Select supplies the target member's
@@ -120,8 +127,9 @@ submitted-select value types.
 `internal/database.Open()` privately reads the small `DB_*` bootstrap contract
 and returns `*gorm.DB`; credentials are never retained in a general application
 configuration object. `internal/config` maps `config(name, value)`, receives
-GORM directly, and owns the `app.token` and `birthday.channel_id` keys. Neither
-layer passes contexts through synchronous startup queries.
+GORM directly, and owns the `app.token`, `birthday.channel_id`, and
+`birthday.defaultMessage` keys. Neither layer passes contexts through
+synchronous startup queries.
 
 The root `database` Go module exclusively owns Goose, the migration executable,
 and SQL history. Its SQL files are embedded in a self-contained executable that

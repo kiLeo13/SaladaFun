@@ -56,14 +56,17 @@ configuration struct and callers never provide a DSN.
 `cmd/padinho` passes GORM directly to `internal/config`, loads `app.token` and
 `birthday.channel_id`, and then constructs Discord. Padinho derives its
 application ID after connecting and always synchronizes global commands; there
-are no Discord environment switches.
+are no Discord environment switches. When an announced birthday has no custom
+message, Padinho reads `birthday.defaultMessage` from `config` and applies
+`{age}`, `{name}`, and `{mention}` before sending it.
 
 Schema creation and migration belong exclusively to the root
 [`database`](../../database/README.md) project. Build its self-contained Linux
 executable locally, upload it to the Padinho VM, and run it there before
 deploying code that requires a new schema. Compose never applies migrations.
-Insert both required configuration values through a trusted private database
-session before expecting the bot to start.
+Insert `app.token`, `birthday.channel_id`, and `birthday.defaultMessage`
+through a trusted private database session before expecting the first birthday
+without a custom message to be announced.
 
 ## Verification and container
 
