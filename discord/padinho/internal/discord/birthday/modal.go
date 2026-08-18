@@ -3,6 +3,7 @@ package birthday
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -99,7 +100,7 @@ func (h Handler) Submit(_ context.Context, request *discord.InteractionRequest) 
 	}
 	err = h.service.Save(input)
 	if err == nil {
-		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdaySaved))
+		return request.Responder.Respond(savedMessage(userID, string(request.Actor.UserID)))
 	}
 	message := validationMessage(err)
 	if message == "" {
@@ -137,12 +138,11 @@ func userLabel() discordgo.Label {
 	required := true
 	return discordgo.Label{
 		Label:       ptbr.BirthdayUserLabel,
-		Description: ptbr.BirthdayUserPlaceholder,
 		Component: discordgo.SelectMenu{
 			MenuType:    discordgo.UserSelectMenu,
 			CustomID:    userInputID,
 			Placeholder: ptbr.BirthdayUserPlaceholder,
-			MinValues:   intPointer(1),
+			MinValues:   new(1),
 			MaxValues:   1,
 			Required:    &required,
 		},
@@ -153,16 +153,15 @@ func timezoneLabel() discordgo.Label {
 	required := true
 	return discordgo.Label{
 		Label:       ptbr.BirthdayTimeZoneLabel,
-		Description: ptbr.BirthdayTimeZonePlaceholder,
 		Component: discordgo.SelectMenu{
 			MenuType:    discordgo.StringSelectMenu,
 			CustomID:    timeZoneInputID,
 			Placeholder: ptbr.BirthdayTimeZonePlaceholder,
-			MinValues:   intPointer(1),
+			MinValues:   new(1),
 			MaxValues:   1,
 			Required:    &required,
 			Options: []discordgo.SelectMenuOption{
-				{Label: ptbr.BirthdayTimeZoneBrasilia, Value: brasiliaTimeZone},
+				{Label: ptbr.BirthdayTimeZoneBrasilia, Value: brasiliaTimeZone, Default: true},
 				{Label: ptbr.BirthdayTimeZoneAmazonas, Value: amazonasTimeZone},
 				{Label: ptbr.BirthdayTimeZoneUTC, Value: utcTimeZone},
 			},
@@ -170,8 +169,13 @@ func timezoneLabel() discordgo.Label {
 	}
 }
 
-func intPointer(value int) *int {
-	return &value
+func savedMessage(userID uint64, actorUserID string) *discordgo.InteractionResponse {
+	if strconv.FormatUint(userID, 10) == actorUserID {
+		return ephemeralMessage(ptbr.BirthdaySaved)
+	}
+	response := ephemeralMessage(fmt.Sprintf(ptbr.BirthdaySavedForUser, userID))
+	response.Data.AllowedMentions = &discordgo.MessageAllowedMentions{Users: []string{strconv.FormatUint(userID, 10)}}
+	return response
 }
 
 func modalValues(components []discordgo.MessageComponent) map[string]string {
