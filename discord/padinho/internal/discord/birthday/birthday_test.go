@@ -350,6 +350,11 @@ func TestPageUsesBirthdayMentionsAndSeparators(t *testing.T) {
 	if len(container.Components) != 5 || container.Components[1].Type() != discordgo.SeparatorComponent || container.Components[3].Type() != discordgo.SeparatorComponent {
 		t.Fatalf("page components = %#v", container.Components)
 	}
+	heading := container.Components[0].(discordgo.Section)
+	inspect := heading.Accessory.(discordgo.Button)
+	if inspect.CustomID != inspectRoute || inspect.Emoji == nil || inspect.Emoji.Name != "🔍" {
+		t.Fatalf("inspection accessory = %#v", inspect)
+	}
 }
 
 func TestSenderRendersAllowedMention(t *testing.T) {
@@ -392,7 +397,7 @@ func assertPage(t *testing.T, response *discordgo.InteractionResponse, responseT
 		}
 	}
 	row := response.Data.Components[1].(discordgo.ActionsRow)
-	if len(row.Components) != 3 {
+	if len(row.Components) != 4 {
 		t.Fatalf("button row = %#v", row)
 	}
 	for _, component := range row.Components[:2] {
@@ -407,19 +412,25 @@ func responseText(response *discordgo.InteractionResponse) string {
 	if response == nil || response.Data == nil || len(response.Data.Components) == 0 {
 		return ""
 	}
-	switch component := response.Data.Components[0].(type) {
+	var content strings.Builder
+	for _, component := range response.Data.Components {
+		collectResponseText(&content, component)
+	}
+	return content.String()
+}
+
+func collectResponseText(content *strings.Builder, value discordgo.MessageComponent) {
+	switch component := value.(type) {
 	case discordgo.TextDisplay:
-		return component.Content
+		content.WriteString(component.Content)
 	case discordgo.Container:
-		var content strings.Builder
 		for _, child := range component.Components {
-			if text, ok := child.(discordgo.TextDisplay); ok {
-				content.WriteString(text.Content)
-			}
+			collectResponseText(content, child)
 		}
-		return content.String()
-	default:
-		return ""
+	case discordgo.Section:
+		for _, child := range component.Components {
+			collectResponseText(content, child)
+		}
 	}
 }
 
@@ -455,12 +466,17 @@ func modalRequestWithComponents(userID string, components []discordgo.MessageCom
 }
 
 type fakeService struct {
-	birthdays []*entity.Birthday
-	month     time.Month
-	saved     appbirthday.SaveInput
-	next      *appbirthday.UpcomingBirthday
-	err       error
-	nextErr   error
+	birthdays      []*entity.Birthday
+	birthday       *entity.Birthday
+	month          time.Month
+	saved          appbirthday.SaveInput
+	updated        appbirthday.UpdateInput
+	next           *appbirthday.UpcomingBirthday
+	err            error
+	nextErr        error
+	birthdayErr    error
+	updateErr      error
+	birthdayUserID uint64
 }
 
 func (s *fakeService) Month(month time.Month) ([]*entity.Birthday, error) {
@@ -475,6 +491,22 @@ func (s *fakeService) Next(time.Time) (*appbirthday.UpcomingBirthday, error) {
 func (s *fakeService) Save(input appbirthday.SaveInput) error {
 	s.saved = input
 	return s.err
+}
+
+func (s *fakeService) Birthday(userID uint64) (*entity.Birthday, error) {
+	s.birthdayUserID = userID
+	if s.birthdayErr != nil {
+		return nil, s.birthdayErr
+	}
+	return s.birthday, nil
+}
+
+func (s *fakeService) Update(input appbirthday.UpdateInput) (*entity.Birthday, error) {
+	s.updated = input
+	if s.updateErr != nil {
+		return nil, s.updateErr
+	}
+	return s.birthday, nil
 }
 
 type fakeResponder struct {
