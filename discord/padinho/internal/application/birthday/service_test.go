@@ -7,13 +7,12 @@ import (
 	"time"
 
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
-	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
 func TestMonth(t *testing.T) {
 	want := []*entity.Birthday{{UserID: 1}}
 	repository := &fakeRepository{monthBirthdays: want}
-	service := NewService(repository)
+	service := newService(repository)
 	got, err := service.Month(time.January)
 	if err != nil || !reflect.DeepEqual(got, want) || repository.month != time.January {
 		t.Fatalf("Month() = %#v, %v", got, err)
@@ -23,18 +22,18 @@ func TestMonth(t *testing.T) {
 	}
 }
 
-func TestSaveNormalizesAndDefaults(t *testing.T) {
+func TestSaveNormalizesAndTrimsMessage(t *testing.T) {
 	repository := &fakeRepository{}
-	service := NewService(repository)
+	service := newService(repository)
 	err := service.Save(SaveInput{
 		UserID: 1, Name: " Leo ", Birthday: time.Date(2000, 3, 4, 15, 0, 0, 0, time.Local),
-		TimeZone: " America/Sao_Paulo ",
+		TimeZone: " America/Sao_Paulo ", Message: " \t ",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	wantDate := time.Date(2000, 3, 4, 0, 0, 0, 0, time.UTC)
-	if repository.saved == nil || repository.saved.Name != "Leo" || repository.saved.TimeZone != "America/Sao_Paulo" || repository.saved.Message != ptbr.BirthdayDefaultMessage || !repository.saved.Birthday.Equal(wantDate) {
+	if repository.saved == nil || repository.saved.Name != "Leo" || repository.saved.TimeZone != "America/Sao_Paulo" || repository.saved.Message != "" || !repository.saved.Birthday.Equal(wantDate) {
 		t.Fatalf("saved birthday = %#v", repository.saved)
 	}
 }
@@ -61,7 +60,7 @@ func TestSaveValidation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			input := valid
 			test.change(&input)
-			if err := NewService(&fakeRepository{}).Save(input); !errors.Is(err, test.want) {
+			if err := newService(&fakeRepository{}).Save(input); !errors.Is(err, test.want) {
 				t.Fatalf("Save() error = %v, want %v", err, test.want)
 			}
 		})
@@ -71,7 +70,7 @@ func TestSaveValidation(t *testing.T) {
 func TestSaveReturnsRepositoryError(t *testing.T) {
 	want := errors.New("save")
 	repository := &fakeRepository{saveErr: want}
-	err := NewService(repository).Save(SaveInput{
+	err := newService(repository).Save(SaveInput{
 		UserID: 1, Name: "Leo", Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 		TimeZone: "UTC", Message: "Olá",
 	})
@@ -86,7 +85,7 @@ func TestDueUsesEachUsersLocalDateAndLedger(t *testing.T) {
 		{UserID: 2, Name: "Ana", Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC), TimeZone: "UTC", Message: "Olá"},
 		{UserID: 3, Name: "Bia", Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC), TimeZone: "Asia/Tokyo", Message: "Olá"},
 	}, announced: map[uint64]bool{3: true}}
-	service := NewService(repository)
+	service := newService(repository)
 	announcements, err := service.Due(time.Date(2026, 1, 1, 15, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatal(err)
@@ -101,38 +100,74 @@ func TestDueCelebratesLeapBirthdayOnFebruaryTwentyEighth(t *testing.T) {
 		UserID: 1, Birthday: time.Date(2000, 2, 29, 0, 0, 0, 0, time.UTC),
 		TimeZone: "UTC", Message: "Olá",
 	}}}
-	announcements, err := NewService(repository).Due(time.Date(2025, 2, 28, 12, 0, 0, 0, time.UTC))
+	announcements, err := newService(repository).Due(time.Date(2025, 2, 28, 12, 0, 0, 0, time.UTC))
 	if err != nil || len(announcements) != 1 || announcements[0].Age != 25 {
 		t.Fatalf("Due() = %#v, %v", announcements, err)
 	}
-	announcements, err = NewService(repository).Due(time.Date(2024, 2, 28, 12, 0, 0, 0, time.UTC))
+	announcements, err = newService(repository).Due(time.Date(2024, 2, 28, 12, 0, 0, 0, time.UTC))
 	if err != nil || len(announcements) != 0 {
 		t.Fatalf("leap-year Due() = %#v, %v", announcements, err)
 	}
 }
 
+func TestDueUsesConfiguredDefaultMessageForEmptyStoredMessage(t *testing.T) {
+	defaultMessage := &fakeDefaultMessageProvider{message: "Feliz aniversário, {mention}! Hoje {name} completa {age} anos."}
+	repository := &fakeRepository{birthdays: []*entity.Birthday{{
+		UserID: 1, Name: "Leo", Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC), TimeZone: "UTC",
+	}}}
+	announcements, err := NewService(repository, defaultMessage).Due(time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC))
+	if err != nil || len(announcements) != 1 || announcements[0].Message != defaultMessage.message || defaultMessage.calls != 1 {
+		t.Fatalf("Due() = %#v, %v; default calls = %d", announcements, err, defaultMessage.calls)
+	}
+}
+
+func TestDueDoesNotReadConfiguredDefaultForStoredMessage(t *testing.T) {
+	defaultMessage := &fakeDefaultMessageProvider{message: "default"}
+	repository := &fakeRepository{birthdays: []*entity.Birthday{{
+		UserID: 1, Name: "Leo", Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC), TimeZone: "UTC", Message: "Personalizada",
+	}}}
+	announcements, err := NewService(repository, defaultMessage).Due(time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC))
+	if err != nil || len(announcements) != 1 || announcements[0].Message != "Personalizada" || defaultMessage.calls != 0 {
+		t.Fatalf("Due() = %#v, %v; default calls = %d", announcements, err, defaultMessage.calls)
+	}
+}
+
+func TestDueReturnsDefaultMessageError(t *testing.T) {
+	want := errors.New("default message unavailable")
+	repository := &fakeRepository{birthdays: []*entity.Birthday{{
+		UserID: 1, Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC), TimeZone: "UTC",
+	}}}
+	if _, err := NewService(repository, &fakeDefaultMessageProvider{err: want}).Due(time.Date(2026, 1, 2, 12, 0, 0, 0, time.UTC)); !errors.Is(err, want) {
+		t.Fatalf("Due() error = %v", err)
+	}
+}
+
 func TestDueErrors(t *testing.T) {
 	want := errors.New("failure")
-	if _, err := NewService(&fakeRepository{listErr: want}).Due(time.Now()); !errors.Is(err, want) {
+	if _, err := newService(&fakeRepository{listErr: want}).Due(time.Now()); !errors.Is(err, want) {
 		t.Fatalf("list error = %v", err)
 	}
 	invalidZone := &fakeRepository{birthdays: []*entity.Birthday{{UserID: 1, TimeZone: "bad"}}}
-	if _, err := NewService(invalidZone).Due(time.Now()); err == nil {
+	if _, err := newService(invalidZone).Due(time.Now()); err == nil {
 		t.Fatal("invalid stored time zone accepted")
 	}
 	ledgerFailure := &fakeRepository{
 		birthdays:       []*entity.Birthday{{UserID: 1, Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), TimeZone: "UTC"}},
 		announcementErr: want,
 	}
-	if _, err := NewService(ledgerFailure).Due(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)); !errors.Is(err, want) {
+	if _, err := newService(ledgerFailure).Due(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)); !errors.Is(err, want) {
 		t.Fatalf("ledger error = %v", err)
 	}
+}
+
+func newService(repository Repository) *Service {
+	return NewService(repository, &fakeDefaultMessageProvider{})
 }
 
 func TestMarkAnnounced(t *testing.T) {
 	repository := &fakeRepository{}
 	value := time.Date(2026, 1, 2, 13, 0, 0, 0, time.FixedZone("test", 3600))
-	if err := NewService(repository).MarkAnnounced(7, value); err != nil {
+	if err := newService(repository).MarkAnnounced(7, value); err != nil {
 		t.Fatal(err)
 	}
 	if repository.markedUser != 7 || !repository.markedDate.Equal(time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)) {
@@ -151,6 +186,17 @@ type fakeRepository struct {
 	saveErr         error
 	listErr         error
 	announcementErr error
+}
+
+type fakeDefaultMessageProvider struct {
+	message string
+	calls   int
+	err     error
+}
+
+func (p *fakeDefaultMessageProvider) BirthdayDefaultMessage() (string, error) {
+	p.calls++
+	return p.message, p.err
 }
 
 func (r *fakeRepository) ListByMonth(month time.Month) ([]*entity.Birthday, error) {

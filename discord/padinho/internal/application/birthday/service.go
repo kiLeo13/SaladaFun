@@ -10,7 +10,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
-	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
 const (
@@ -51,11 +50,12 @@ type Announcement struct {
 
 // Service owns birthday validation, calendar rules, and announcement selection.
 type Service struct {
-	repository Repository
+	repository     Repository
+	defaultMessage DefaultMessageProvider
 }
 
-func NewService(repository Repository) *Service {
-	return &Service{repository: repository}
+func NewService(repository Repository, defaultMessage DefaultMessageProvider) *Service {
+	return &Service{repository: repository, defaultMessage: defaultMessage}
 }
 
 // Month returns birthdays for one calendar month in day/name order.
@@ -83,10 +83,7 @@ func (s *Service) Save(input SaveInput) error {
 	if _, err := time.LoadLocation(input.TimeZone); err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidTimeZone, err)
 	}
-	if input.Message == "" {
-		input.Message = ptbr.BirthdayDefaultMessage
-	}
-	if len(input.Message) > maximumMessageLength || hasUnknownPlaceholder(input.Message) {
+	if err := validateMessage(input.Message); err != nil {
 		return ErrInvalidMessage
 	}
 	input.Birthday = date(input.Birthday)
@@ -106,6 +103,8 @@ func (s *Service) Due(now time.Time) ([]Announcement, error) {
 		return nil, err
 	}
 	result := make([]Announcement, 0)
+	var defaultMessage string
+	defaultMessageLoaded := false
 	for _, current := range birthdays {
 		location, loadErr := time.LoadLocation(current.TimeZone)
 		if loadErr != nil {
@@ -123,15 +122,42 @@ func (s *Service) Due(now time.Time) ([]Announcement, error) {
 		if announced {
 			continue
 		}
+		message := current.Message
+		if message == "" {
+			if !defaultMessageLoaded {
+				defaultMessage, err = s.defaultMessage.BirthdayDefaultMessage()
+				if err != nil {
+					return nil, fmt.Errorf("read default birthday message: %w", err)
+				}
+				if validationErr := validateMessage(defaultMessage); validationErr != nil || defaultMessage == "" {
+					return nil, ErrInvalidMessage
+				}
+				defaultMessageLoaded = true
+			}
+			message = defaultMessage
+		}
 		result = append(result, Announcement{
 			UserID:    current.UserID,
 			Name:      current.Name,
 			Age:       localDate.Year() - current.Birthday.Year(),
-			Message:   current.Message,
+			Message:   message,
 			LocalDate: localDate,
 		})
 	}
 	return result, nil
+}
+
+// DefaultMessageProvider retrieves the fallback template used for birthdays
+// saved without a custom message.
+type DefaultMessageProvider interface {
+	BirthdayDefaultMessage() (string, error)
+}
+
+func validateMessage(message string) error {
+	if len(message) > maximumMessageLength || hasUnknownPlaceholder(message) {
+		return ErrInvalidMessage
+	}
+	return nil
 }
 
 // MarkAnnounced records a successfully delivered local-date announcement.
