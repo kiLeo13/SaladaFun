@@ -20,7 +20,8 @@ const (
 	timeZoneInputID      = "time_zone"
 	messageInputID       = "message"
 	maximumNameLength    = 100
-	birthdayDateLength   = len("2006-01-02")
+	birthdayDateFormat   = "02/01/2006"
+	birthdayDateLength   = len(birthdayDateFormat)
 	maximumMessageLength = 1800
 	brasiliaTimeZone     = "America/Sao_Paulo"
 	amazonasTimeZone     = "America/Manaus"
@@ -87,7 +88,7 @@ func (h Handler) Submit(_ context.Context, request *discord.InteractionRequest) 
 	if err != nil || userID == 0 {
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayInvalidInteraction))
 	}
-	birthdayDate, err := time.Parse("2006-01-02", values[birthdayInputID])
+	birthdayDate, err := time.Parse(birthdayDateFormat, values[birthdayInputID])
 	if err != nil {
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayInvalidDate))
 	}
@@ -137,7 +138,7 @@ func inputLabel(
 func userLabel() discordgo.Label {
 	required := true
 	return discordgo.Label{
-		Label:       ptbr.BirthdayUserLabel,
+		Label: ptbr.BirthdayUserLabel,
 		Component: discordgo.SelectMenu{
 			MenuType:    discordgo.UserSelectMenu,
 			CustomID:    userInputID,
@@ -152,7 +153,7 @@ func userLabel() discordgo.Label {
 func timezoneLabel() discordgo.Label {
 	required := true
 	return discordgo.Label{
-		Label:       ptbr.BirthdayTimeZoneLabel,
+		Label: ptbr.BirthdayTimeZoneLabel,
 		Component: discordgo.SelectMenu{
 			MenuType:    discordgo.StringSelectMenu,
 			CustomID:    timeZoneInputID,
