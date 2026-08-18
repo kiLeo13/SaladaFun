@@ -12,6 +12,13 @@ const (
 	OptionTypeChannel
 )
 
+// ChannelType identifies a supported channel type filter for channel options.
+type ChannelType uint8
+
+const (
+	ChannelTypeVoice ChannelType = iota + 1
+)
+
 // OptionChoice is one selectable value for a string command option.
 type OptionChoice struct {
 	// Name is the human-readable label shown by Discord.
@@ -29,6 +36,7 @@ type OptionDefinition struct {
 	Required     bool
 	Autocomplete bool
 	Choices      []OptionChoice
+	ChannelTypes []ChannelType
 }
 
 // Option is a typed command-option descriptor.
@@ -47,6 +55,7 @@ func (o *optionDescriptor) markRequired() {
 func (o *optionDescriptor) snapshot() OptionDefinition {
 	result := o.definition
 	result.Choices = append([]OptionChoice(nil), o.definition.Choices...)
+	result.ChannelTypes = append([]ChannelType(nil), o.definition.ChannelTypes...)
 	return result
 }
 
@@ -150,5 +159,11 @@ func (o *ChannelCommandOption) snapshot() OptionDefinition { return o.optionDesc
 
 func (o *ChannelCommandOption) Required() *ChannelCommandOption {
 	o.markRequired()
+	return o
+}
+
+// VoiceOnly restricts the channel option to guild voice channels.
+func (o *ChannelCommandOption) VoiceOnly() *ChannelCommandOption {
+	o.definition.ChannelTypes = []ChannelType{ChannelTypeVoice}
 	return o
 }

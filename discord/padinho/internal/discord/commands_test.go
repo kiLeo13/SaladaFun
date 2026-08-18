@@ -27,6 +27,20 @@ func TestCompileDefinitions(t *testing.T) {
 	}
 }
 
+func TestCompileDefinitionsIncludesVoiceChannelFilter(t *testing.T) {
+	definitions := []*command.Definition{{Name: "move-all", Description: "Move all", Options: []command.OptionDefinition{{
+		Type: command.OptionTypeChannel, Name: "destination", Description: "Destination",
+		ChannelTypes: []command.ChannelType{command.ChannelTypeVoice},
+	}}}}
+	compiled, err := CompileDefinitions(definitions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(compiled[0].Options[0].ChannelTypes, []discordgo.ChannelType{discordgo.ChannelTypeGuildVoice}) {
+		t.Fatalf("compiled channel types = %v", compiled[0].Options[0].ChannelTypes)
+	}
+}
+
 func TestCompileDefinitionsIncludesStringChoices(t *testing.T) {
 	definitions := []*command.Definition{{
 		Name: "month", Description: "Month", Options: []command.OptionDefinition{{

@@ -60,11 +60,28 @@ func compileOptions(options []command.OptionDefinition) ([]*discordgo.Applicatio
 		if err != nil {
 			return nil, err
 		}
+		channelTypes, channelTypesErr := compileChannelTypes(option.ChannelTypes)
+		if channelTypesErr != nil {
+			return nil, channelTypesErr
+		}
 		result = append(result, &discordgo.ApplicationCommandOption{
 			Type: optionType, Name: option.Name, Description: option.Description,
 			Required: option.Required, Autocomplete: option.Autocomplete,
-			Choices: compileOptionChoices(option.Choices),
+			Choices: compileOptionChoices(option.Choices), ChannelTypes: channelTypes,
 		})
+	}
+	return result, nil
+}
+
+func compileChannelTypes(channelTypes []command.ChannelType) ([]discordgo.ChannelType, error) {
+	result := make([]discordgo.ChannelType, 0, len(channelTypes))
+	for _, channelType := range channelTypes {
+		switch channelType {
+		case command.ChannelTypeVoice:
+			result = append(result, discordgo.ChannelTypeGuildVoice)
+		default:
+			return nil, fmt.Errorf("unsupported channel option type %d", channelType)
+		}
 	}
 	return result, nil
 }
