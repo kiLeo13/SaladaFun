@@ -22,6 +22,7 @@ const (
 	BirthdayMessageLabel          = "Mensagem de Aniversário"
 	BirthdayMessagePlaceholder    = "Use {age}, {name} e {mention} se quiser"
 	BirthdaySaved                 = "Seu aniversário foi salvo! 🎉"
+	BirthdaySavedForUser          = "Aniversário de <@%d> salvo!"
 	BirthdayInvalidName           = "Informe um nome ou apelido com até 100 caracteres."
 	BirthdayInvalidDate           = "Informe a data de nascimento no formato AAAA-MM-DD."
 	BirthdayInvalidTimeZone       = "Informe um fuso horário IANA válido, como America/Sao_Paulo."
