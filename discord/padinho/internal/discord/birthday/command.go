@@ -32,20 +32,22 @@ func (h Handler) List(_ context.Context, request *command.CommandRequest) error 
 	if err != nil {
 		return err
 	}
+	next, err := h.service.Next(h.currentTime())
+	if err != nil {
+		return err
+	}
 	return request.Responder.Respond(pageResponse(
 		discordgo.InteractionResponseChannelMessageWithSource,
 		month,
 		birthdays,
+		next,
 	))
 }
 
 func (h Handler) month(request *command.CommandRequest) (time.Month, error) {
 	value, err := request.Options.String(monthOptionName)
 	if errors.Is(err, command.ErrOptionMissing) {
-		if h.now != nil {
-			return h.now().Month(), nil
-		}
-		return time.Now().Month(), nil
+		return h.currentTime().Month(), nil
 	}
 	if err != nil {
 		return 0, err
@@ -56,6 +58,13 @@ func (h Handler) month(request *command.CommandRequest) (time.Month, error) {
 		}
 	}
 	return 0, fmt.Errorf("%w: %s", errInvalidMonth, value)
+}
+
+func (h Handler) currentTime() time.Time {
+	if h.now != nil {
+		return h.now()
+	}
+	return time.Now()
 }
 
 func monthOption() *command.StringCommandOption {

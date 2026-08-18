@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
@@ -18,9 +19,9 @@ func pageResponse(
 	responseType discordgo.InteractionResponseType,
 	month time.Month,
 	birthdays []*entity.Birthday,
+	next *appbirthday.UpcomingBirthday,
 ) *discordgo.InteractionResponse {
-	content := pageContent(month, birthdays)
-	container := pageContainer(content)
+	container := pageContainer(month, birthdays, next)
 	actions := pageActions(month)
 
 	return &discordgo.InteractionResponse{
@@ -33,12 +34,17 @@ func pageResponse(
 	}
 }
 
-func pageContainer(content string) discordgo.Container {
+func pageContainer(month time.Month, birthdays []*entity.Birthday, next *appbirthday.UpcomingBirthday) discordgo.Container {
 	accent := birthdayAccentColor
+	divider := true
 	return discordgo.Container{
 		AccentColor: &accent,
 		Components: []discordgo.MessageComponent{
-			discordgo.TextDisplay{Content: content},
+			discordgo.TextDisplay{Content: pageTitle(month)},
+			discordgo.Separator{Divider: &divider},
+			discordgo.TextDisplay{Content: pageContent(birthdays)},
+			discordgo.Separator{Divider: &divider},
+			discordgo.TextDisplay{Content: upcomingContent(next)},
 		},
 	}
 }
@@ -64,32 +70,36 @@ func pageActions(month time.Month) discordgo.ActionsRow {
 	}}
 }
 
-func pageContent(month time.Month, birthdays []*entity.Birthday) string {
+func pageTitle(month time.Month) string {
+	return fmt.Sprintf("## "+ptbr.BirthdayTitle, locale.Capitalize(ptbr.MonthNames[month]))
+}
+
+func pageContent(birthdays []*entity.Birthday) string {
 	var content strings.Builder
-	fmt.Fprintf(&content, "## "+ptbr.BirthdayTitle, locale.Capitalize(ptbr.MonthNames[month]))
 	if len(birthdays) == 0 {
-		content.WriteString("\n\n")
 		content.WriteString(ptbr.BirthdayEmptyMonth)
 		return content.String()
 	}
-	for _, birthday := range birthdays {
-		content.WriteString("\n\n")
+	for index, birthday := range birthdays {
+		if index > 0 {
+			content.WriteByte('\n')
+		}
 		fmt.Fprintf(
 			&content,
 			ptbr.BirthdayEntry,
 			birthday.Birthday.Day(),
 			birthday.Birthday.Month(),
-			escapeMarkdown(birthday.Name),
+			birthday.UserID,
 		)
 	}
 	return content.String()
 }
 
-func escapeMarkdown(value string) string {
-	return strings.NewReplacer(
-		"\\", "\\\\", "*", "\\*", "_", "\\_", "~", "\\~",
-		"`", "\\`", ">", "\\>", "|", "\\|",
-	).Replace(value)
+func upcomingContent(next *appbirthday.UpcomingBirthday) string {
+	if next == nil {
+		return "-# " + ptbr.BirthdayNoUpcoming
+	}
+	return fmt.Sprintf(ptbr.BirthdayUpcoming, next.UserID, next.OccursAt.Unix())
 }
 
 func pageButton(

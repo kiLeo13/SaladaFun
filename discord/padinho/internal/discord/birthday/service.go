@@ -10,5 +10,6 @@ import (
 // Service is the application capability consumed by birthday interactions.
 type Service interface {
 	Month(time.Month) ([]*entity.Birthday, error)
+	Next(time.Time) (*appbirthday.UpcomingBirthday, error)
 	Save(appbirthday.SaveInput) error
 }

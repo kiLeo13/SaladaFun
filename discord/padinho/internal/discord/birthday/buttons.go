@@ -23,10 +23,15 @@ func (h Handler) ChangePage(_ context.Context, request *discord.InteractionReque
 	if err != nil {
 		return err
 	}
+	next, err := h.service.Next(h.currentTime())
+	if err != nil {
+		return err
+	}
 	return request.Responder.Respond(pageResponse(
 		discordgo.InteractionResponseUpdateMessage,
 		month,
 		birthdays,
+		next,
 	))
 }
 
