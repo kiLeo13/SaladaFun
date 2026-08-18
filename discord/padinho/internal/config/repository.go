@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	AppToken          = "app.token"
-	BirthdayChannelID = "birthday.channel_id"
+	AppToken               = "app.token"
+	BirthdayChannelID      = "birthday.channel_id"
+	BirthdayDefaultMessage = "birthday.defaultMessage"
 )
 
 var ErrNotFound = errors.New("configuration value not found")
@@ -18,6 +19,12 @@ var ErrNotFound = errors.New("configuration value not found")
 type entry struct {
 	Name  string `gorm:"column:name;primaryKey;size:255"`
 	Value string `gorm:"column:value;not null"`
+}
+
+// BirthdayDefaultMessage returns the template used when a birthday has no
+// custom message.
+func (r *Repository) BirthdayDefaultMessage() (string, error) {
+	return r.Get(BirthdayDefaultMessage)
 }
 
 func (entry) TableName() string {

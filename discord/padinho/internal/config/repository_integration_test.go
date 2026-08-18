@@ -34,6 +34,16 @@ func TestRepositoryAgainstMySQL(t *testing.T) {
 	if err != nil || value != "token" {
 		t.Fatalf("Get() = %q, %v", value, err)
 	}
+	if err := transaction.Exec("DELETE FROM config WHERE name = ?", BirthdayDefaultMessage).Error; err != nil {
+		t.Fatalf("delete default birthday message: %v", err)
+	}
+	if err := transaction.Exec("INSERT INTO config (name, value) VALUES (?, ?)", BirthdayDefaultMessage, "Feliz aniversário, {mention}!").Error; err != nil {
+		t.Fatalf("insert default birthday message: %v", err)
+	}
+	value, err = repository.BirthdayDefaultMessage()
+	if err != nil || value != "Feliz aniversário, {mention}!" {
+		t.Fatalf("BirthdayDefaultMessage() = %q, %v", value, err)
+	}
 }
 
 func setLiveEnvironment(t *testing.T) {

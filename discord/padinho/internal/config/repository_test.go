@@ -33,6 +33,17 @@ func TestGetReturnsNotFound(t *testing.T) {
 	assertExpectations(t, mock)
 }
 
+func TestBirthdayDefaultMessage(t *testing.T) {
+	database, mock := mockDatabase(t)
+	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(BirthdayDefaultMessage, 1).
+		WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow("Feliz aniversário, {mention}!"))
+	value, err := New(database).BirthdayDefaultMessage()
+	if err != nil || value != "Feliz aniversário, {mention}!" {
+		t.Fatalf("BirthdayDefaultMessage() = %q, %v", value, err)
+	}
+	assertExpectations(t, mock)
+}
+
 func TestGetWrapsDatabaseError(t *testing.T) {
 	database, mock := mockDatabase(t)
 	want := errors.New("database unavailable")
