@@ -18,14 +18,16 @@ const (
 )
 
 var (
-	ErrInvalidUserID   = errors.New("invalid birthday user ID")
-	ErrInvalidName     = errors.New("invalid birthday name")
-	ErrInvalidDate     = errors.New("invalid birthday date")
-	ErrInvalidTimeZone = errors.New("invalid birthday time zone")
-	ErrInvalidMessage  = errors.New("invalid birthday message")
-	ErrInvalidMonth    = errors.New("invalid birthday month")
-	placeholderPattern = regexp.MustCompile(`\{[^{}]+}`)
-	allowedPlaceholder = map[string]struct{}{
+	ErrInvalidUserID    = errors.New("invalid birthday user ID")
+	ErrInvalidName      = errors.New("invalid birthday name")
+	ErrInvalidDate      = errors.New("invalid birthday date")
+	ErrInvalidTimeZone  = errors.New("invalid birthday time zone")
+	ErrInvalidMessage   = errors.New("invalid birthday message")
+	ErrInvalidMonth     = errors.New("invalid birthday month")
+	ErrInvalidUpdate    = errors.New("invalid birthday update")
+	ErrBirthdayNotFound = errors.New("birthday not found")
+	placeholderPattern  = regexp.MustCompile(`\{[^{}]+}`)
+	allowedPlaceholder  = map[string]struct{}{
 		"{age}": {}, "{name}": {}, "{mention}": {},
 	}
 )
@@ -37,6 +39,16 @@ type SaveInput struct {
 	Birthday time.Time
 	TimeZone string
 	Message  string
+}
+
+// UpdateInput changes exactly one mutable field on an existing birthday.
+// Nil fields are not changed; UserID is only the lookup key and is immutable.
+type UpdateInput struct {
+	UserID   uint64
+	Name     *string
+	Birthday *time.Time
+	TimeZone *string
+	Message  *string
 }
 
 // Announcement is a birthday notification ready for Discord rendering.
@@ -71,6 +83,21 @@ func (s *Service) Month(month time.Month) ([]*entity.Birthday, error) {
 		return nil, ErrInvalidMonth
 	}
 	return s.repository.ListByMonth(month)
+}
+
+// Birthday returns one user's registered birthday.
+func (s *Service) Birthday(userID uint64) (*entity.Birthday, error) {
+	if userID == 0 {
+		return nil, ErrInvalidUserID
+	}
+	birthday, err := s.repository.FindByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if birthday == nil {
+		return nil, ErrBirthdayNotFound
+	}
+	return birthday, nil
 }
 
 // Next returns the next birthday after now across every stored member.
@@ -121,6 +148,64 @@ func (s *Service) Save(input SaveInput) error {
 		TimeZone: input.TimeZone,
 		Message:  input.Message,
 	})
+}
+
+// Update validates and atomically changes one mutable birthday field.
+func (s *Service) Update(input UpdateInput) (*entity.Birthday, error) {
+	if input.UserID == 0 {
+		return nil, ErrInvalidUserID
+	}
+	if updateFieldCount(input) != 1 {
+		return nil, ErrInvalidUpdate
+	}
+
+	var updated bool
+	var err error
+	switch {
+	case input.Name != nil:
+		value := strings.TrimSpace(*input.Name)
+		if value == "" || utf8.RuneCountInString(value) > maximumNameLength {
+			return nil, ErrInvalidName
+		}
+		updated, err = s.repository.UpdateName(input.UserID, value)
+	case input.Birthday != nil:
+		value := date(*input.Birthday)
+		if input.Birthday.IsZero() || value.After(time.Now().UTC()) {
+			return nil, ErrInvalidDate
+		}
+		updated, err = s.repository.UpdateBirthday(input.UserID, value)
+	case input.TimeZone != nil:
+		value := strings.TrimSpace(*input.TimeZone)
+		if _, loadErr := time.LoadLocation(value); loadErr != nil {
+			return nil, fmt.Errorf("%w: %v", ErrInvalidTimeZone, loadErr)
+		}
+		updated, err = s.repository.UpdateTimeZone(input.UserID, value)
+	case input.Message != nil:
+		value := strings.TrimSpace(*input.Message)
+		if validationErr := validateMessage(value); validationErr != nil {
+			return nil, ErrInvalidMessage
+		}
+		updated, err = s.repository.UpdateMessage(input.UserID, value)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !updated {
+		return nil, ErrBirthdayNotFound
+	}
+	return s.Birthday(input.UserID)
+}
+
+func updateFieldCount(input UpdateInput) int {
+	count := 0
+	for _, present := range [...]bool{
+		input.Name != nil, input.Birthday != nil, input.TimeZone != nil, input.Message != nil,
+	} {
+		if present {
+			count++
+		}
+	}
+	return count
 }
 
 // Due returns birthdays whose local calendar date is today and has not been announced.

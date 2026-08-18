@@ -79,6 +79,89 @@ func TestSaveReturnsRepositoryError(t *testing.T) {
 	}
 }
 
+func TestBirthdayReturnsRegistrationAndErrors(t *testing.T) {
+	want := &entity.Birthday{UserID: 7, Name: "Leo"}
+	service := newService(&fakeRepository{found: want})
+	if got, err := service.Birthday(7); err != nil || got != want {
+		t.Fatalf("Birthday() = %#v, %v", got, err)
+	}
+	if _, err := service.Birthday(0); !errors.Is(err, ErrInvalidUserID) {
+		t.Fatalf("Birthday(0) error = %v", err)
+	}
+	if _, err := newService(&fakeRepository{}).Birthday(7); !errors.Is(err, ErrBirthdayNotFound) {
+		t.Fatalf("missing Birthday() error = %v", err)
+	}
+	wantErr := errors.New("find")
+	if _, err := newService(&fakeRepository{findErr: wantErr}).Birthday(7); !errors.Is(err, wantErr) {
+		t.Fatalf("Birthday() repository error = %v", err)
+	}
+}
+
+func TestUpdateValidatesAndChangesExactlyOneField(t *testing.T) {
+	dateValue := time.Date(1999, 4, 5, 13, 0, 0, 0, time.Local)
+	nameValue, zoneValue, messageValue := " Leo ", " America/Manaus ", " Olá, {name} "
+	tests := map[string]struct {
+		input appUpdateInput
+		want  any
+	}{
+		"name":     {appUpdateInput{name: &nameValue}, "Leo"},
+		"birthday": {appUpdateInput{birthday: &dateValue}, time.Date(1999, 4, 5, 0, 0, 0, 0, time.UTC)},
+		"timezone": {appUpdateInput{timeZone: &zoneValue}, "America/Manaus"},
+		"message":  {appUpdateInput{message: &messageValue}, "Olá, {name}"},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			repository := &fakeRepository{found: &entity.Birthday{UserID: 7}}
+			input := UpdateInput{UserID: 7, Name: test.input.name, Birthday: test.input.birthday, TimeZone: test.input.timeZone, Message: test.input.message}
+			got, err := newService(repository).Update(input)
+			if err != nil || got != repository.found || !reflect.DeepEqual(repository.updatedValue, test.want) {
+				t.Fatalf("Update() = %#v, %v; value = %#v", got, err, repository.updatedValue)
+			}
+		})
+	}
+}
+
+type appUpdateInput struct {
+	name     *string
+	birthday *time.Time
+	timeZone *string
+	message  *string
+}
+
+func TestUpdateRejectsInvalidAndMissingRecords(t *testing.T) {
+	name, second := "Leo", "Ana"
+	invalid := []struct {
+		name  string
+		input UpdateInput
+		want  error
+	}{
+		{"user", UpdateInput{Name: &name}, ErrInvalidUserID},
+		{"no field", UpdateInput{UserID: 7}, ErrInvalidUpdate},
+		{"multiple fields", UpdateInput{UserID: 7, Name: &name, Message: &second}, ErrInvalidUpdate},
+		{"name", UpdateInput{UserID: 7, Name: ptrString(" ")}, ErrInvalidName},
+		{"date", UpdateInput{UserID: 7, Birthday: &time.Time{}}, ErrInvalidDate},
+		{"timezone", UpdateInput{UserID: 7, TimeZone: ptrString("Mars/Olympus")}, ErrInvalidTimeZone},
+		{"message", UpdateInput{UserID: 7, Message: ptrString("{unknown}")}, ErrInvalidMessage},
+	}
+	for _, test := range invalid {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := newService(&fakeRepository{}).Update(test.input); !errors.Is(err, test.want) {
+				t.Fatalf("Update() error = %v, want %v", err, test.want)
+			}
+		})
+	}
+	if _, err := newService(&fakeRepository{updateFound: ptrBool(false)}).Update(UpdateInput{UserID: 7, Name: &name}); !errors.Is(err, ErrBirthdayNotFound) {
+		t.Fatalf("missing Update() error = %v", err)
+	}
+	wantErr := errors.New("update")
+	if _, err := newService(&fakeRepository{updateErr: wantErr}).Update(UpdateInput{UserID: 7, Name: &name}); !errors.Is(err, wantErr) {
+		t.Fatalf("Update() repository error = %v", err)
+	}
+}
+
+func ptrString(value string) *string { return &value }
+func ptrBool(value bool) *bool       { return &value }
+
 func TestDueUsesEachUsersLocalDateAndLedger(t *testing.T) {
 	repository := &fakeRepository{birthdays: []*entity.Birthday{
 		{UserID: 1, Name: "Leo", Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC), TimeZone: "Asia/Tokyo", Message: "Olá"},
@@ -218,6 +301,11 @@ type fakeRepository struct {
 	saveErr         error
 	listErr         error
 	announcementErr error
+	found           *entity.Birthday
+	findErr         error
+	updateFound     *bool
+	updateErr       error
+	updatedValue    any
 }
 
 type fakeDefaultMessageProvider struct {
@@ -240,9 +328,37 @@ func (r *fakeRepository) List() ([]*entity.Birthday, error) {
 	return r.birthdays, r.listErr
 }
 
+func (r *fakeRepository) FindByUserID(uint64) (*entity.Birthday, error) {
+	return r.found, r.findErr
+}
+
 func (r *fakeRepository) Save(birthday *entity.Birthday) error {
 	r.saved = birthday
 	return r.saveErr
+}
+
+func (r *fakeRepository) UpdateName(_ uint64, value string) (bool, error) {
+	return r.recordUpdate(value)
+}
+
+func (r *fakeRepository) UpdateBirthday(_ uint64, value time.Time) (bool, error) {
+	return r.recordUpdate(value)
+}
+
+func (r *fakeRepository) UpdateTimeZone(_ uint64, value string) (bool, error) {
+	return r.recordUpdate(value)
+}
+
+func (r *fakeRepository) UpdateMessage(_ uint64, value string) (bool, error) {
+	return r.recordUpdate(value)
+}
+
+func (r *fakeRepository) recordUpdate(value any) (bool, error) {
+	r.updatedValue = value
+	if r.updateErr != nil {
+		return false, r.updateErr
+	}
+	return r.updateFound == nil || *r.updateFound, nil
 }
 
 func (r *fakeRepository) WasAnnounced(userID uint64, _ time.Time) (bool, error) {
