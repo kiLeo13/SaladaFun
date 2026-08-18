@@ -10,8 +10,11 @@ require (
 	gorm.io/gorm v1.31.2
 )
 
+replace github.com/bwmarrin/discordgo => github.com/sajfer/discordgo v0.30.0
+
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
