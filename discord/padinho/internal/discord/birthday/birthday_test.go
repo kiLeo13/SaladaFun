@@ -162,6 +162,10 @@ func TestOpenModal(t *testing.T) {
 	if err != nil || responder.response.Type != discordgo.InteractionResponseModal || responder.response.Data.Title != ptbr.BirthdayAddModalTitle || len(responder.response.Data.Components) != 4 {
 		t.Fatalf("modal response = %#v, %v", responder.response, err)
 	}
+	timeZone := responder.response.Data.Components[2].(discordgo.Label).Component.(discordgo.SelectMenu)
+	if timeZone.CustomID != timeZoneInputID || len(timeZone.Options) != 3 || timeZone.Options[0].Label != ptbr.BirthdayTimeZoneBrasilia || timeZone.Options[0].Value != brasiliaTimeZone || timeZone.Options[1].Value != amazonasTimeZone || timeZone.Options[2].Value != utcTimeZone {
+		t.Fatalf("timezone select = %#v", timeZone)
+	}
 }
 
 func TestBirthdayManagementRequiresManageServer(t *testing.T) {
@@ -217,6 +221,27 @@ func TestSubmitBirthday(t *testing.T) {
 	}
 }
 
+func TestSubmitBirthdayReadsSelectedTimezone(t *testing.T) {
+	service := &fakeService{}
+	responder := &fakeResponder{}
+	request := modalRequest("123", map[string]string{
+		nameInputID: "Leo", birthdayInputID: "2000-03-04", messageInputID: "Olá, {mention}",
+	}, responder)
+	data := request.Interaction.ModalSubmitData()
+	data.Components = append(data.Components, discordgo.Label{
+		Label: ptbr.BirthdayTimeZoneLabel,
+		Component: discordgo.SelectMenu{
+			CustomID: timeZoneInputID,
+			Values:   []string{amazonasTimeZone},
+		},
+	})
+	request.Interaction.Data = data
+
+	if err := (Handler{service: service}).Submit(context.Background(), request); err != nil || service.saved.TimeZone != amazonasTimeZone {
+		t.Fatalf("Submit() error = %v, saved timezone = %q", err, service.saved.TimeZone)
+	}
+}
+
 func TestSubmitValidation(t *testing.T) {
 	tests := map[string]struct {
 		userID string
@@ -264,6 +289,16 @@ func TestModalValuesIgnoresUnknownComponents(t *testing.T) {
 	want := map[string]string{"pointer": "one", "value": "two"}
 	if got := modalValues(components); !reflect.DeepEqual(got, want) {
 		t.Fatalf("modalValues() = %#v", got)
+	}
+}
+
+func TestModalValuesReadsLabeledSelect(t *testing.T) {
+	components := []discordgo.MessageComponent{
+		discordgo.Label{Component: discordgo.SelectMenu{CustomID: timeZoneInputID, Values: []string{amazonasTimeZone}}},
+	}
+	want := map[string]string{timeZoneInputID: amazonasTimeZone}
+	if got := modalValues(components); !reflect.DeepEqual(got, want) {
+		t.Fatalf("modalValues() = %#v, want %#v", got, want)
 	}
 }
 
