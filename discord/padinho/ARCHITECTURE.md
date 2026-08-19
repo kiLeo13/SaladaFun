@@ -96,6 +96,9 @@ buttons carry only direction and current month in a stateless custom ID, so any
 member can browse the list. A magnifier accessory in the title section looks up
 the clicking member from the interaction actor and returns their full stored
 registration ephemerally; the route never accepts a target-user parameter. The
+private legacy embed reads the cached guild through the gateway, renders its name
+and icon in the footer, and falls back to localized text when the guild is not
+available in state. The
 `Adicionar` button and modal submission require
 Discord's `Manage Server` (`PermissionManageGuild`) permission. The birthday
 saves the member selected in the modal's required User Select, allowing a
@@ -110,7 +113,8 @@ same dashboard with either a not-found state or the chosen registration. User ID
 is rendered without an accessory; name, full date, raw IANA timezone, and custom
 message use Sections with pencil-button accessories. Each pencil opens one
 prefilled text-input modal whose stateless custom ID carries the validated field
-and target user. Successful submission performs a validated atomic update of
+and target user. The final dashboard Text Display labels its attached User Select
+as `Usuário`. Successful submission performs a validated atomic update of
 only that column in the existing `birthdays` table, reloads the row, and updates
 the source dashboard message. No edit table, schema migration, or expiring
 server-side interaction state is used.

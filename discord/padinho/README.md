@@ -20,10 +20,14 @@ requiring an IANA timezone string. Its date field accepts `DD/MM/AAAA`.
 Saving a birthday for another member returns an ephemeral confirmation
 mentioning that member; saving for yourself retains the personal confirmation.
 The title's magnifier opens an ephemeral view of the caller's stored full date,
-name, raw IANA timezone, and custom-message state. The public `Editar` button
+name, raw IANA timezone, and custom-message state. This private legacy embed
+uses the cached guild name and guild icon in its footer; when cache data is
+unavailable, it renders a localized fallback instead. The public `Editar` button
 opens an ephemeral dashboard only for administrators. Its User Select loads one
 existing registration into the same dashboard, where name, full date, timezone,
-and message each have a pencil that opens a prefilled one-field modal. Submitting
+and message each have a pencil that opens a prefilled one-field modal. The
+Components V2 dashboard ends with an `Usuário` label and the User Select.
+Submitting
 the modal atomically updates that column in `birthdays`, reloads the row, and
 replaces the same dashboard message. The Discord user ID is never editable.
 
