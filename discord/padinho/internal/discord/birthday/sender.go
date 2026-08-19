@@ -19,10 +19,12 @@ type Sender struct {
 	channelID string
 }
 
+// NewSender constructs a Discord birthday announcement sender for a channel.
 func NewSender(messenger Messenger, channelID string) *Sender {
 	return &Sender{messenger: messenger, channelID: channelID}
 }
 
+// Send expands birthday placeholders and delivers the resulting announcement.
 func (s *Sender) Send(announcement appbirthday.Announcement) error {
 	userID := strconv.FormatUint(announcement.UserID, 10)
 	mention := "<@" + userID + ">"
@@ -31,23 +33,12 @@ func (s *Sender) Send(announcement appbirthday.Announcement) error {
 		"{name}", announcement.Name,
 		"{mention}", mention,
 	).Replace(announcement.Message)
-	payload := announcementMessage(content, userID)
+	payload := announcementMessage(content)
 
 	return s.messenger.SendMessage(s.channelID, payload)
 }
 
-func announcementMessage(content string, userID string) *discordgo.MessageSend {
-	accent := birthdayAccentColor
-	container := discordgo.Container{
-		AccentColor: &accent,
-		Components: []discordgo.MessageComponent{
-			discordgo.TextDisplay{Content: content},
-		},
-	}
-
-	return &discordgo.MessageSend{
-		Flags:           discordgo.MessageFlagsIsComponentsV2,
-		AllowedMentions: &discordgo.MessageAllowedMentions{Users: []string{userID}},
-		Components:      []discordgo.MessageComponent{container},
-	}
+// announcementMessage builds a plain Discord message with default mention handling.
+func announcementMessage(content string) *discordgo.MessageSend {
+	return &discordgo.MessageSend{Content: content}
 }

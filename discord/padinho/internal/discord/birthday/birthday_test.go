@@ -357,7 +357,7 @@ func TestPageUsesBirthdayMentionsAndSeparators(t *testing.T) {
 	}
 }
 
-func TestSenderRendersAllowedMention(t *testing.T) {
+func TestSenderRendersPlainContentWithDefaultMentions(t *testing.T) {
 	messenger := &fakeMessenger{}
 	sender := NewSender(messenger, "channel")
 	err := sender.Send(appbirthday.Announcement{
@@ -367,13 +367,11 @@ func TestSenderRendersAllowedMention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if messenger.channelID != "channel" || messenger.message.Flags != discordgo.MessageFlagsIsComponentsV2 || !reflect.DeepEqual(messenger.message.AllowedMentions.Users, []string{"123"}) {
+	if messenger.channelID != "channel" || messenger.message.Content != "<@123>: Leo faz 26 anos!" {
 		t.Fatalf("message = %#v", messenger.message)
 	}
-	container := messenger.message.Components[0].(discordgo.Container)
-	text := container.Components[0].(discordgo.TextDisplay).Content
-	if text != "<@123>: Leo faz 26 anos!" {
-		t.Fatalf("content = %q", text)
+	if messenger.message.Flags != 0 || messenger.message.AllowedMentions != nil || len(messenger.message.Components) != 0 {
+		t.Fatalf("message should use default mention handling: %#v", messenger.message)
 	}
 }
 
