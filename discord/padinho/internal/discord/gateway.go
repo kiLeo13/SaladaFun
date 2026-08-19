@@ -79,6 +79,21 @@ func (g *Gateway) SendMessage(channelID string, message *discordgo.MessageSend) 
 	return nil
 }
 
+// Guild returns the cached guild data for an interaction's server.
+func (g *Gateway) Guild(guildID command.Snowflake) (*discordgo.Guild, error) {
+	if guildID == "" {
+		return nil, nil
+	}
+	guild, err := g.session.State.Guild(string(guildID))
+	if errors.Is(err, discordgo.ErrStateNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read guild state: %w", err)
+	}
+	return guild, nil
+}
+
 // CurrentVoiceChannel returns the channel that a member currently occupies.
 func (g *Gateway) CurrentVoiceChannel(guildID, userID command.Snowflake) (command.Snowflake, bool, error) {
 	state, err := g.session.State.VoiceState(string(guildID), string(userID))
