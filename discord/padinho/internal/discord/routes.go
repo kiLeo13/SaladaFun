@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	ErrRoutesFrozen    = errors.New("Discord routes are frozen")
-	ErrRoutesNotFrozen = errors.New("Discord routes are not frozen")
+	ErrRoutesFrozen    = errors.New("discord routes are frozen")
+	ErrRoutesNotFrozen = errors.New("discord routes are not frozen")
 	ErrUnknownRoute    = errors.New("unknown Discord interaction route")
 )
 
