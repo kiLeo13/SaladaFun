@@ -130,7 +130,8 @@ references rather than notifications.
 The standard-library scheduler runs the birthday job every minute. The service
 converts the current instant into each stored IANA timezone, so DST and
 quarter-hour offsets are handled by Go's embedded timezone database. A due
-announcement is sent through Components V2 and recorded in
+announcement is sent as plain Discord message content, using Discord's default
+mention behavior, and recorded in
 `birthday_announcements` only after successful Discord delivery. Sequential
 execution prevents a job from overlapping itself; the ledger prevents later
 checks from sending the same local-date birthday again.

@@ -13,7 +13,9 @@ before moves are requested from Discord.
 
 Both slash-command channel options are restricted to guild voice channels.
 Birthday announcements are evaluated every minute against each user's IANA
-timezone and delivered once per local calendar date. The add-birthday modal
+timezone and delivered once per local calendar date as plain Discord text;
+Discord applies its normal mention behavior and server/channel mention settings.
+The add-birthday modal
 lets a server manager select the member whose birthday is being registered and
 offers localized timezone choices for Brasília, Amazonas, and UTC instead of
 requiring an IANA timezone string. Its date field accepts `DD/MM/AAAA`.
