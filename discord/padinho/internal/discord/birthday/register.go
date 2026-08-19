@@ -17,8 +17,8 @@ const (
 )
 
 // Register declares every slash, component, and modal route for birthdays.
-func Register(routes *discord.Routes, service Service) {
-	handler := Handler{service: service}
+func Register(routes *discord.Routes, service Service, guilds GuildLookup) {
+	handler := Handler{service: service, guilds: guilds}
 	routes.Commands().Slash(commandName, ptbr.BirthdayCommandDescription, handler.List, monthOption())
 	routes.Component(pageRoute, handler.ChangePage)
 	routes.Component(addBirthdayRoute, handler.OpenModal)

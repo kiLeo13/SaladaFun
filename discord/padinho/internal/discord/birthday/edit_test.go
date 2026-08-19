@@ -21,20 +21,26 @@ func TestInspectShowsOnlyActorsFullRegistration(t *testing.T) {
 	registration := registeredBirthday()
 	service := &fakeService{birthday: registration}
 	responder := &fakeResponder{}
-	err := (Handler{service: service}).Inspect(context.Background(), &discord.InteractionRequest{
-		Actor: command.Actor{UserID: "123"}, Responder: responder,
+	guild := &discordgo.Guild{ID: "guild", Name: "Salada", Icon: "icon"}
+	lookup := &fakeGuildLookup{guild: guild}
+	err := (Handler{service: service, guilds: lookup}).Inspect(context.Background(), &discord.InteractionRequest{
+		Actor: command.Actor{UserID: "123"}, GuildID: "guild", Responder: responder,
 	})
-	if err != nil || service.birthdayUserID != 123 {
-		t.Fatalf("Inspect() error = %v, lookup = %d", err, service.birthdayUserID)
+	if err != nil || service.birthdayUserID != 123 || lookup.guildID != "guild" {
+		t.Fatalf("Inspect() error = %v, birthday lookup = %d, guild lookup = %q", err, service.birthdayUserID, lookup.guildID)
 	}
 	text := responseText(responder.response)
-	for _, want := range []string{"04/03/2000", "`America/Sao_Paulo`", "Olá, \\*Leo\\*", "`123`"} {
+	for _, want := range []string{"04/03/2000", "`America/Sao_Paulo`", "Olá, \\*Leo\\*", "Salada"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("inspection %q does not contain %q", text, want)
 		}
 	}
-	if responder.response.Data.Flags&(discordgo.MessageFlagsEphemeral|discordgo.MessageFlagsIsComponentsV2) != discordgo.MessageFlagsEphemeral|discordgo.MessageFlagsIsComponentsV2 {
+	if responder.response.Data.Flags != discordgo.MessageFlagsEphemeral || len(responder.response.Data.Embeds) != 1 {
 		t.Fatalf("inspection flags = %v", responder.response.Data.Flags)
+	}
+	footer := responder.response.Data.Embeds[0].Footer
+	if footer == nil || footer.Text != guild.Name || footer.IconURL != guild.IconURL("64") {
+		t.Fatalf("inspection footer = %#v", footer)
 	}
 }
 
@@ -44,7 +50,7 @@ func TestInspectHandlesDefaultMessageMissingRegistrationAndErrors(t *testing.T) 
 	responder := &fakeResponder{}
 	if err := (Handler{service: &fakeService{birthday: registration}}).Inspect(context.Background(), &discord.InteractionRequest{
 		Actor: command.Actor{UserID: "123"}, Responder: responder,
-	}); err != nil || !strings.Contains(responseText(responder.response), ptbr.BirthdayDefaultMessageValue) {
+	}); err != nil || !strings.Contains(responseText(responder.response), ptbr.BirthdayDefaultMessageValue) || !strings.Contains(responseText(responder.response), ptbr.BirthdayGuildUnknown) {
 		t.Fatalf("default inspection = %#v, %v", responder.response, err)
 	}
 
@@ -71,6 +77,12 @@ func TestInspectHandlesDefaultMessageMissingRegistrationAndErrors(t *testing.T) 
 		Actor: command.Actor{UserID: "123"}, Responder: &fakeResponder{},
 	}); !errors.Is(err, wantErr) {
 		t.Fatalf("Inspect() error = %v", err)
+	}
+	guildErr := errors.New("guild")
+	if err := (Handler{service: &fakeService{birthday: registration}, guilds: &fakeGuildLookup{err: guildErr}}).Inspect(context.Background(), &discord.InteractionRequest{
+		Actor: command.Actor{UserID: "123"}, GuildID: "guild", Responder: &fakeResponder{},
+	}); !errors.Is(err, guildErr) {
+		t.Fatalf("Inspect() guild error = %v", err)
 	}
 }
 
@@ -118,9 +130,13 @@ func TestSelectDashboardUserLoadsAndRendersEditableFields(t *testing.T) {
 		t.Fatalf("dashboard update = %#v", responder.response)
 	}
 	container := responder.response.Data.Components[0].(discordgo.Container)
-	fields := container.Components[len(container.Components)-5:]
+	fields := container.Components[2:7]
 	if fields[0].Type() != discordgo.TextDisplayComponent {
 		t.Fatalf("user ID field = %#v", fields[0])
+	}
+	lastLabel := container.Components[len(container.Components)-1].(discordgo.TextDisplay)
+	if lastLabel.Content != "### "+ptbr.BirthdayDashboardUserLabel {
+		t.Fatalf("dashboard user label = %#v", lastLabel)
 	}
 	wantFields := []string{editFieldName, editFieldBirthday, editFieldTimeZone, editFieldMessage}
 	for index, wantField := range wantFields {
@@ -192,7 +208,7 @@ func TestBirthdayComponentResponsesSerialize(t *testing.T) {
 	registration := registeredBirthday()
 	responses := map[string]*discordgo.InteractionResponse{
 		"page":       pageResponse(discordgo.InteractionResponseChannelMessageWithSource, time.March, []*entity.Birthday{registration}, nil),
-		"inspection": inspectionResponse(registration),
+		"inspection": inspectionResponse(registration, nil),
 		"dashboard":  dashboardResponse(discordgo.InteractionResponseUpdateMessage, registration.UserID, registration, ""),
 		"modal":      editModal(editFieldMessage, registration),
 	}
@@ -203,6 +219,18 @@ func TestBirthdayComponentResponsesSerialize(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakeGuildLookup struct {
+	guild   *discordgo.Guild
+	err     error
+	guildID command.Snowflake
+}
+
+// Guild returns the configured guild fixture for birthday interaction tests.
+func (l *fakeGuildLookup) Guild(guildID command.Snowflake) (*discordgo.Guild, error) {
+	l.guildID = guildID
+	return l.guild, l.err
 }
 
 func TestOpenEditModalPrefillsEachMutableField(t *testing.T) {

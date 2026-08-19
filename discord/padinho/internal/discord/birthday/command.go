@@ -20,6 +20,7 @@ var errInvalidMonth = errors.New("invalid birthday month")
 // Handler owns the cohesive /birthdays command, button, and modal flow.
 type Handler struct {
 	service Service
+	guilds  GuildLookup
 	now     func() time.Time
 }
 

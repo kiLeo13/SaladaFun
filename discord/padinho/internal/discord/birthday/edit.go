@@ -9,6 +9,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
@@ -34,7 +35,19 @@ func (h Handler) Inspect(_ context.Context, request *discord.InteractionRequest)
 	if err != nil {
 		return err
 	}
-	return request.Responder.Respond(inspectionResponse(birthday))
+	guild, err := h.guild(request.GuildID)
+	if err != nil {
+		return err
+	}
+	return request.Responder.Respond(inspectionResponse(birthday, guild))
+}
+
+// guild retrieves optional cached presentation data for an interaction guild.
+func (h Handler) guild(guildID command.Snowflake) (*discordgo.Guild, error) {
+	if h.guilds == nil {
+		return nil, nil
+	}
+	return h.guilds.Guild(guildID)
 }
 
 func (h Handler) OpenDashboard(_ context.Context, request *discord.InteractionRequest) error {

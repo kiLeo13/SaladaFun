@@ -9,8 +9,14 @@ import (
 	discordmove "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/move"
 )
 
+// Gateway exposes the Discord capabilities shared by command features.
+type Gateway interface {
+	discordbirthday.GuildLookup
+	discordmove.Service
+}
+
 // Register declares every Padinho command and related interaction route.
-func Register(routes *discord.Routes, birthdays discordbirthday.Service, moves discordmove.Service) {
-	discordbirthday.Register(routes, birthdays)
-	discordmove.Register(routes, moves)
+func Register(routes *discord.Routes, birthdays discordbirthday.Service, gateway Gateway) {
+	discordbirthday.Register(routes, birthdays, gateway)
+	discordmove.Register(routes, gateway)
 }

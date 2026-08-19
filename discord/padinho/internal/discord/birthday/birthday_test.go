@@ -22,7 +22,7 @@ func TestRegisterAndListStartsInJanuary(t *testing.T) {
 		UserID: 123, Birthday: time.Date(2000, 1, 2, 0, 0, 0, 0, time.UTC),
 	}}}
 	routes := discord.NewRoutes()
-	Register(routes, service)
+	Register(routes, service, nil)
 	if err := routes.Freeze(); err != nil {
 		t.Fatal(err)
 	}
@@ -409,10 +409,21 @@ func assertPage(t *testing.T, response *discordgo.InteractionResponse, responseT
 }
 
 func responseText(response *discordgo.InteractionResponse) string {
-	if response == nil || response.Data == nil || len(response.Data.Components) == 0 {
+	if response == nil || response.Data == nil {
 		return ""
 	}
 	var content strings.Builder
+	for _, embed := range response.Data.Embeds {
+		content.WriteString(embed.Title)
+		content.WriteString(embed.Description)
+		for _, field := range embed.Fields {
+			content.WriteString(field.Name)
+			content.WriteString(field.Value)
+		}
+		if embed.Footer != nil {
+			content.WriteString(embed.Footer.Text)
+		}
+	}
 	for _, component := range response.Data.Components {
 		collectResponseText(&content, component)
 	}
