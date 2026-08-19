@@ -20,3 +20,6 @@ under platform and project directories add rules for their scope.
   settings.
 - Do not perform Git operations that affect a remote unless explicitly asked.
 - Do not perform destructive operations.
+- Give every function at least basic documentation that explains its purpose.
+- Keep code professionally readable through clear names, coherent structure,
+  and focused responsibilities.
