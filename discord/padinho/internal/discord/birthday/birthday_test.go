@@ -347,7 +347,7 @@ func TestPageUsesBirthdayMentionsAndSeparators(t *testing.T) {
 		t.Fatalf("allowed mentions = %#v", response.Data.AllowedMentions)
 	}
 	container := response.Data.Components[0].(discordgo.Container)
-	if len(container.Components) != 5 || container.Components[1].Type() != discordgo.SeparatorComponent || container.Components[3].Type() != discordgo.SeparatorComponent {
+	if len(container.Components) != 4 || container.Components[2].Type() != discordgo.SeparatorComponent {
 		t.Fatalf("page components = %#v", container.Components)
 	}
 	heading := container.Components[0].(discordgo.Section)

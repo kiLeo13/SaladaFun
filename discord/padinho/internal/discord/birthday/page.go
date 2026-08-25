@@ -41,7 +41,6 @@ func pageContainer(month time.Month, birthdays []*entity.Birthday, next *appbirt
 		AccentColor: &accent,
 		Components: []discordgo.MessageComponent{
 			pageHeading(month),
-			discordgo.Separator{Divider: &divider},
 			discordgo.TextDisplay{Content: pageContent(birthdays)},
 			discordgo.Separator{Divider: &divider},
 			discordgo.TextDisplay{Content: upcomingContent(next)},
