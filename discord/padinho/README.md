@@ -11,6 +11,15 @@ every currently connected member from the chosen origin; if origin is omitted,
 it uses the caller's current voice channel. Destination capacity is not checked
 before moves are requested from Discord.
 
+Padinho also follows Mudae `$oc` (Ourochest) boards in real time. It replies
+below an identified board with distinct balanced, information-first,
+reward-first, and direct-red suggestions, then edits that reply after each
+reveal. Duplicate objectives are collapsed, so only genuinely different useful
+buttons are shown. The helper reply is deleted after five reveals, when Mudae
+disables the whole board, when the source message is deleted, or after three
+minutes without an update. Solving is local and does not call or scrape the
+Mudae Helper website.
+
 Both slash-command channel options are restricted to guild voice channels.
 Birthday announcements are evaluated every minute against each user's IANA
 timezone and delivered once per local calendar date as plain Discord text;
@@ -76,8 +85,8 @@ and `DB_NAME` directly and returns `*gorm.DB`. Optional pool limits use
 `DB_MAX_OPEN`, `DB_MAX_IDLE`, and `DB_MAX_LIFETIME`. There is no environment
 configuration struct and callers never provide a DSN.
 
-`cmd/padinho` passes GORM directly to `internal/config`, loads `app.token` and
-`birthday.channel_id`, and then constructs Discord. Padinho derives its
+`cmd/padinho` passes GORM directly to `internal/config`, loads `app.token`,
+`birthday.channel_id`, and the Mudae settings below, and then constructs Discord. Padinho derives its
 application ID after connecting and always synchronizes global commands; there
 are no Discord environment switches. When an announced birthday has no custom
 message, Padinho reads `birthday.defaultMessage` from `config` and applies
@@ -87,15 +96,40 @@ Schema creation and migration belong exclusively to the root
 [`database`](../../database/README.md) project. Build its self-contained Linux
 executable locally, upload it to the Padinho VM, and run it there before
 deploying code that requires a new schema. Compose never applies migrations.
-Insert `app.token`, `birthday.channel_id`, and `birthday.defaultMessage`
-through a trusted private database session before expecting the first birthday
-without a custom message to be announced.
+Insert the following values through a trusted private database session. Mudae's
+six values are custom emoji IDs only, without names or Discord `<:...:...>`
+markup:
+
+```text
+app.token
+birthday.channel_id
+birthday.defaultMessage
+bots.mudae.id
+bots.mudae.oc.emoji.blue
+bots.mudae.oc.emoji.teal
+bots.mudae.oc.emoji.green
+bots.mudae.oc.emoji.yellow
+bots.mudae.oc.emoji.orange
+bots.mudae.oc.emoji.red
+```
+
+Enable the privileged **Message Content Intent** for Padinho in Discord's
+Developer Portal. The gateway also requests `GUILD_MESSAGES`; both are needed
+to receive user commands and Mudae's message components.
+
+Padinho never infers `$oc` from an arbitrary 5-by-5 button grid and never adds
+a reaction as a confirmation step. It accepts an explicit Ourochest marker in
+Mudae's message, or correlates an otherwise ambiguous board with an exact
+recent `$oc`/`$ourochest` command in the same channel. Exact `$oh` and
+`$ouroharvest` commands are tracked separately and ignored. A numeric suffix
+from 1 through 10 correlates that many consecutive boards for Mudae's
+multi-play commands; unmatched correlations expire after 15 seconds.
 
 ## Verification and container
 
 ```sh
 go test -race ./...
-go test -cover ./internal/command ./internal/application/birthday ./internal/discord/birthday ./internal/job/...
+go test -cover ./internal/command ./internal/application/birthday ./internal/application/ourochest ./internal/discord/birthday ./internal/discord/ourochest ./internal/job/...
 docker build -f discord/padinho/Dockerfile -t salada:local .
 ```
 
