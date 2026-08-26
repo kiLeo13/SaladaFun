@@ -6,8 +6,11 @@
   native DiscordGo response; do not duplicate DiscordGo's response/component
   model in project-owned structs.
 - Register every command through the single composition root in
-  `internal/commands`. Feature registration functions may delegate from there;
-  do not create a second registry.
+  `internal/commands`. `discord.Routes` owns separate application-command and
+  literal message-command registries because their transport contracts differ;
+  freeze and dispatch both through the same routes and gateway lifecycle.
+  Feature registration functions may delegate from that composition root; do
+  not create an independent routes instance or command lifecycle.
 - Register stable component and modal routes with the same `discord.Routes`
   composition. Keep reconstructible state in validated `custom_id` parameters;
   add expiring server-side state only for flows that cannot be reconstructed.

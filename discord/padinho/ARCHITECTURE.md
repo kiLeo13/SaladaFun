@@ -30,7 +30,12 @@ registry -> command group -> subcommand group -> route -> handler
 ```
 
 `internal/discord.Routes` owns that command registry plus stable component and
-modal route maps. It freezes them as one composition and dispatches application
+modal route maps. It also owns a separate `messagecommand.Registry`, exposed as
+`routes.Messages()`, because literal message triggers do not share Discord
+application-command metadata or synchronization. A complete trigger such as
+`!ochelper` includes its prefix; exact first-token matching is case-insensitive,
+and arguments are normalized with `strings.Fields`. Routes freezes both
+registries as one composition and dispatches application
 commands, message components, and modal submissions from the same gateway.
 Component `custom_id` values use `route:param...`; handlers validate every
 parameter because client input is untrusted.
@@ -176,13 +181,25 @@ configuration or identity. Padinho requests `GUILD_MESSAGES` and the privileged
 `MESSAGE_CONTENT` intent because Discord otherwise omits the required message
 content and components.
 
-Game classification is conservative. An explicit `$oc`/Ourochest marker in
-Mudae's content, embeds, or component IDs is sufficient. Otherwise, the board
-must follow an exact `$oc` or `$ourochest` user command in the same channel
-within 15 seconds. `$oh`/`$ouroharvest` correlations are consumed but never
-solved. Optional play counts from 1 through 10 reserve that many sequential
-responses. Padinho does not inspect an arbitrary history window, guess from the
-grid shape alone, or use reactions as a human-in-the-loop mode switch.
+Game classification is conservative. Automatic help requires an exact `$oc` or
+`$ourochest` user command correlated to the Mudae board in the same channel
+within five seconds. Message references win when Mudae supplies one; otherwise
+the most recent compatible command handles bursts such as a failed `$oc`
+immediately followed by `$oh`. The known Portuguese no-uses and recharge
+responses cancel the failed `$oc` correlation. Strong `$oc`/`$oh` signatures
+that conflict with pending state cause the board to be ignored rather than
+guessed. `$oh`/`$ouroharvest` boards are recorded but never solved. Optional
+play counts from 1 through 10 reserve that many responses. Padinho does not
+inspect an arbitrary history window, guess from the grid shape alone, or use
+reactions as a human-in-the-loop mode switch.
+
+The correlated command stores its invoking user. `preferences.Service` treats a
+missing row or nullable `auto_mudae_oc` as the application default `true` and
+queries that effective setting before automatic startup. `!toggleochelper`
+persists its inverse. With automation disabled, the listener still records the
+verified board; replying with `!ochelper` fetches its current Discord payload,
+revalidates the configured Mudae author and exact 5×5 shape, rejects known `$oh`
+or completed games, and starts the same actor from the mid-game snapshot.
 
 The application solver models the fixed Ourochest geometry exactly: two orange
 spheres are orthogonally adjacent to red, three yellow spheres are diagonal,
@@ -220,6 +237,14 @@ GORM directly, and owns the `app.token`, `birthday.channel_id`,
 `birthday.defaultMessage`, `bots.mudae.id`, and six
 `bots.mudae.oc.emoji.*` keys. Neither layer passes contexts through
 synchronous startup queries.
+
+The generic `users_preferences` table uses the Discord user snowflake as its
+primary key. Module columns such as nullable `auto_mudae_oc` retain three
+states: explicit enabled, explicit disabled, and `NULL` for the module-owned
+default. `created_at` and `updated_at` are Unix UTC milliseconds, matching the
+other application tables. The MySQL repository performs the toggle atomically;
+the application layer, rather than persistence or a SQL default, decides what
+`NULL` means.
 
 The root `database` Go module exclusively owns Goose, the migration executable,
 and SQL history. Its SQL files are embedded in a self-contained executable that

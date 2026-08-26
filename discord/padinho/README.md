@@ -20,6 +20,11 @@ disables the whole board, when the source message is deleted, or after three
 minutes without an update. Solving is local and does not call or scrape the
 Mudae Helper website.
 
+Automatic help defaults to enabled per Discord user. `!toggleochelper` toggles
+only that automatic trigger and persists the choice; it does not disable the
+solver. A user can reply to an active Mudae `$oc` board with `!ochelper` at any
+time to start manual assistance from the board's current state.
+
 Both slash-command channel options are restricted to guild voice channels.
 Birthday announcements are evaluated every minute against each user's IANA
 timezone and delivered once per local calendar date as plain Discord text;
@@ -54,7 +59,7 @@ All commands and their related component/modal routes are registered once in
 
 ```go
 routes := discord.NewRoutes()
-commands.Register(routes, birthdayService)
+commands.Register(routes, birthdayService, gateway, ouroChestListener)
 if err := routes.Freeze(); err != nil {
     return err
 }
@@ -96,6 +101,8 @@ Schema creation and migration belong exclusively to the root
 [`database`](../../database/README.md) project. Build its self-contained Linux
 executable locally, upload it to the Padinho VM, and run it there before
 deploying code that requires a new schema. Compose never applies migrations.
+Apply `00002_user_preferences.sql` before deploying this version; automatic
+preference reads and `!toggleochelper` require `users_preferences`.
 Insert the following values through a trusted private database session. Mudae's
 six values are custom emoji IDs only, without names or Discord `<:...:...>`
 markup:
@@ -118,12 +125,20 @@ Developer Portal. The gateway also requests `GUILD_MESSAGES`; both are needed
 to receive user commands and Mudae's message components.
 
 Padinho never infers `$oc` from an arbitrary 5-by-5 button grid and never adds
-a reaction as a confirmation step. It accepts an explicit Ourochest marker in
-Mudae's message, or correlates an otherwise ambiguous board with an exact
-recent `$oc`/`$ourochest` command in the same channel. Exact `$oh` and
-`$ouroharvest` commands are tracked separately and ignored. A numeric suffix
-from 1 through 10 correlates that many consecutive boards for Mudae's
-multi-play commands; unmatched correlations expire after 15 seconds.
+a reaction as a confirmation step. Automatic assistance requires correlation
+with an exact recent `$oc`/`$ourochest` command and therefore has an invoking
+user whose preference can be respected. Exact `$oh` and `$ouroharvest`
+commands are tracked separately and ignored. A numeric suffix from 1 through
+10 correlates that many consecutive boards. Correlations expire after five
+seconds. Mudae responses reporting that the user has no `$oc` available or is
+waiting for its recharge cancel the failed correlation before a subsequent
+`$oh` board can consume it.
+
+Message-command triggers include their prefix in the registered literal. They
+are case-insensitive, must be the first complete whitespace-separated token,
+and currently expose `!toggleochelper` and `!ochelper`. Arguments use Go's
+`strings.Fields` behavior, so repeated spaces and tabs do not create empty
+values.
 
 ## Verification and container
 
