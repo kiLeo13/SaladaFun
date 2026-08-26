@@ -46,6 +46,8 @@ func (g *Gateway) Run(ctx context.Context) error {
 		ctx:    ctx,
 	}
 	g.session.AddHandler(handler.handle)
+	messageHandler := &messageCommandHandler{routes: g.routes, logger: g.logger, ctx: ctx}
+	g.session.AddHandler(messageHandler.handle)
 	for _, subscriber := range g.subscribers {
 		subscriber.Subscribe(ctx, g.session)
 	}
@@ -131,6 +133,15 @@ func (g *Gateway) DeleteMessage(channelID, messageID string) error {
 		return fmt.Errorf("delete Discord message: %w", err)
 	}
 	return nil
+}
+
+// LoadMessage retrieves the current Discord payload for a referenced message.
+func (g *Gateway) LoadMessage(channelID, messageID string) (*discordgo.Message, error) {
+	message, err := g.session.ChannelMessage(channelID, messageID)
+	if err != nil {
+		return nil, fmt.Errorf("load Discord message: %w", err)
+	}
+	return message, nil
 }
 
 // Guild returns the cached guild data for an interaction's server.

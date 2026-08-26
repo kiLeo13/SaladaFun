@@ -161,6 +161,32 @@ func TestReplyLifecycleWrapsDiscordErrors(t *testing.T) {
 		!strings.Contains(err.Error(), "delete Discord message") {
 		t.Fatalf("DeleteMessage() error = %v", err)
 	}
+	if _, err := gateway.LoadMessage("channel", "source"); err == nil ||
+		!strings.Contains(err.Error(), "load Discord message") {
+		t.Fatalf("LoadMessage() error = %v", err)
+	}
+}
+
+func TestLoadMessageReturnsCurrentDiscordPayload(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method != http.MethodGet || request.URL.Path != "/channels/channel/messages/source" {
+			t.Fatalf("request = %s %s", request.Method, request.URL.Path)
+		}
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"id":"source","channel_id":"channel","guild_id":"guild","content":"$oc"}`))
+	}))
+	defer server.Close()
+	originalChannels := discordgo.EndpointChannels
+	discordgo.EndpointChannels = server.URL + "/channels/"
+	t.Cleanup(func() { discordgo.EndpointChannels = originalChannels })
+	gateway, err := New("token", NewRoutes(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	message, err := gateway.LoadMessage("channel", "source")
+	if err != nil || message.ID != "source" || message.Content != "$oc" {
+		t.Fatalf("LoadMessage() = %#v, %v", message, err)
+	}
 }
 
 type stubSubscriber struct{}
