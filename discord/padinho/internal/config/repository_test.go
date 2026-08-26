@@ -44,6 +44,39 @@ func TestBirthdayDefaultMessage(t *testing.T) {
 	assertExpectations(t, mock)
 }
 
+func TestMudaeOC(t *testing.T) {
+	database, mock := mockDatabase(t)
+	want := MudaeOCSettings{
+		BotID: "100", BlueEmojiID: "101", TealEmojiID: "102", GreenEmojiID: "103",
+		YellowEmojiID: "104", OrangeEmojiID: "105", RedEmojiID: "106",
+	}
+	values := []struct{ name, value string }{
+		{MudaeBotID, want.BotID}, {MudaeOCBlueEmojiID, want.BlueEmojiID},
+		{MudaeOCTealEmojiID, want.TealEmojiID}, {MudaeOCGreenEmojiID, want.GreenEmojiID},
+		{MudaeOCYellowEmojiID, want.YellowEmojiID}, {MudaeOCOrangeEmojiID, want.OrangeEmojiID},
+		{MudaeOCRedEmojiID, want.RedEmojiID},
+	}
+	for _, value := range values {
+		mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(value.name, 1).
+			WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow(value.value))
+	}
+	got, err := New(database).MudaeOC()
+	if err != nil || got != want {
+		t.Fatalf("MudaeOC() = %#v, %v", got, err)
+	}
+	assertExpectations(t, mock)
+}
+
+func TestMudaeOCReturnsFirstReadError(t *testing.T) {
+	database, mock := mockDatabase(t)
+	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(MudaeBotID, 1).
+		WillReturnRows(sqlmock.NewRows([]string{"value"}))
+	if _, err := New(database).MudaeOC(); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("MudaeOC() error = %v", err)
+	}
+	assertExpectations(t, mock)
+}
+
 func TestGetWrapsDatabaseError(t *testing.T) {
 	database, mock := mockDatabase(t)
 	want := errors.New("database unavailable")

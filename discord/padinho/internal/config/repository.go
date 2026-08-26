@@ -12,9 +12,27 @@ const (
 	AppToken               = "app.token"
 	BirthdayChannelID      = "birthday.channel_id"
 	BirthdayDefaultMessage = "birthday.defaultMessage"
+	MudaeBotID             = "bots.mudae.id"
+	MudaeOCBlueEmojiID     = "bots.mudae.oc.emoji.blue"
+	MudaeOCTealEmojiID     = "bots.mudae.oc.emoji.teal"
+	MudaeOCGreenEmojiID    = "bots.mudae.oc.emoji.green"
+	MudaeOCYellowEmojiID   = "bots.mudae.oc.emoji.yellow"
+	MudaeOCOrangeEmojiID   = "bots.mudae.oc.emoji.orange"
+	MudaeOCRedEmojiID      = "bots.mudae.oc.emoji.red"
 )
 
 var ErrNotFound = errors.New("configuration value not found")
+
+// MudaeOCSettings contains the bot and custom-emoji IDs required by the $oc listener.
+type MudaeOCSettings struct {
+	BotID         string
+	BlueEmojiID   string
+	TealEmojiID   string
+	GreenEmojiID  string
+	YellowEmojiID string
+	OrangeEmojiID string
+	RedEmojiID    string
+}
 
 type entry struct {
 	Name  string `gorm:"column:name;primaryKey;size:255"`
@@ -25,6 +43,31 @@ type entry struct {
 // custom message.
 func (r *Repository) BirthdayDefaultMessage() (string, error) {
 	return r.Get(BirthdayDefaultMessage)
+}
+
+// MudaeOC returns the complete required configuration for the $oc listener.
+func (r *Repository) MudaeOC() (MudaeOCSettings, error) {
+	settings := MudaeOCSettings{}
+	values := []struct {
+		name        string
+		destination *string
+	}{
+		{MudaeBotID, &settings.BotID},
+		{MudaeOCBlueEmojiID, &settings.BlueEmojiID},
+		{MudaeOCTealEmojiID, &settings.TealEmojiID},
+		{MudaeOCGreenEmojiID, &settings.GreenEmojiID},
+		{MudaeOCYellowEmojiID, &settings.YellowEmojiID},
+		{MudaeOCOrangeEmojiID, &settings.OrangeEmojiID},
+		{MudaeOCRedEmojiID, &settings.RedEmojiID},
+	}
+	for _, value := range values {
+		loaded, err := r.Get(value.name)
+		if err != nil {
+			return MudaeOCSettings{}, err
+		}
+		*value.destination = loaded
+	}
+	return settings, nil
 }
 
 func (entry) TableName() string {

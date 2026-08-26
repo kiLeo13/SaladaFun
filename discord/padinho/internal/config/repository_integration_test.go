@@ -44,6 +44,23 @@ func TestRepositoryAgainstMySQL(t *testing.T) {
 	if err != nil || value != "Feliz aniversário, {mention}!" {
 		t.Fatalf("BirthdayDefaultMessage() = %q, %v", value, err)
 	}
+	mudaeValues := []struct{ name, value string }{
+		{MudaeBotID, "100"}, {MudaeOCBlueEmojiID, "101"}, {MudaeOCTealEmojiID, "102"},
+		{MudaeOCGreenEmojiID, "103"}, {MudaeOCYellowEmojiID, "104"},
+		{MudaeOCOrangeEmojiID, "105"}, {MudaeOCRedEmojiID, "106"},
+	}
+	for _, item := range mudaeValues {
+		if err := transaction.Exec("DELETE FROM config WHERE name = ?", item.name).Error; err != nil {
+			t.Fatalf("delete Mudae configuration %s: %v", item.name, err)
+		}
+		if err := transaction.Exec("INSERT INTO config (name, value) VALUES (?, ?)", item.name, item.value).Error; err != nil {
+			t.Fatalf("insert Mudae configuration %s: %v", item.name, err)
+		}
+	}
+	settings, err := repository.MudaeOC()
+	if err != nil || settings.BotID != "100" || settings.RedEmojiID != "106" {
+		t.Fatalf("MudaeOC() = %#v, %v", settings, err)
+	}
 }
 
 func setLiveEnvironment(t *testing.T) {
