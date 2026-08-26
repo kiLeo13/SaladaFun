@@ -3,10 +3,11 @@
 ## Startup and shutdown
 
 `cmd/padinho` is the visible composition root. It opens a bounded `*gorm.DB`,
-retrieves `app.token` and `birthday.channel_id` through the `config` repository,
-constructs the birthday repository/service, registers and freezes all Discord
-routes, and starts the gateway plus recurring-job scheduler. Missing or empty
-runtime configuration fails before Discord connects.
+retrieves `app.token`, `birthday.channel_id`, the Mudae bot ID, and six Mudae
+custom emoji IDs through the `config` repository, constructs the application
+services and Discord listeners, registers and freezes all Discord routes, and
+starts the gateway plus recurring-job scheduler. Missing, empty, non-numeric,
+or duplicate Mudae identifiers fail before Discord connects.
 
 ## Command boundary
 
@@ -152,13 +153,69 @@ UTC. The DiscordGo dependency is replaced with the `sajfer/discordgo` v0.30.0
 fork until the upstream dependency exposes these modal component and
 submitted-select value types.
 
+## Mudae Ourochest helper
+
+```text
+Discord create/update events -> discord/ourochest session actor
+                                      |
+                                      v
+                         application/ourochest solver
+                                      |
+                                      v
+                            gateway reply lifecycle
+```
+
+The listener accepts messages only from the configured `bots.mudae.id` and
+parses exactly five action rows containing five buttons each. The six semantic
+colors are mapped from custom emoji IDs stored under
+`bots.mudae.oc.emoji.{blue,teal,green,yellow,orange,red}`. Emoji names are not
+configuration or identity. Padinho requests `GUILD_MESSAGES` and the privileged
+`MESSAGE_CONTENT` intent because Discord otherwise omits the required message
+content and components.
+
+Game classification is conservative. An explicit `$oc`/Ourochest marker in
+Mudae's content, embeds, or component IDs is sufficient. Otherwise, the board
+must follow an exact `$oc` or `$ourochest` user command in the same channel
+within 15 seconds. `$oh`/`$ouroharvest` correlations are consumed but never
+solved. Optional play counts from 1 through 10 reserve that many sequential
+responses. Padinho does not inspect an arbitrary history window, guess from the
+grid shape alone, or use reactions as a human-in-the-loop mode switch.
+
+The application solver models the fixed Ourochest geometry exactly: two orange
+spheres are orthogonally adjacent to red, three yellow spheres are diagonal,
+four green spheres share red's row or column, teal is otherwise aligned by row,
+column, or diagonal, and blue is unaligned. Red cannot occupy the center. For
+each possible red position, the solver counts compatible unseen placements
+with binomial coefficients and divides by the total placements for that red
+position. This preserves a uniform prior over red locations instead of
+incorrectly favoring locations merely because they have more possible color
+layouts.
+
+Every enabled unknown button is evaluated over all possible next colors. The
+solver derives its exact immediate red probability, expected sphere value,
+Shannon information gain, and expected remaining red candidates. It emits the
+distinct winners for a normalized equal-regret balanced objective,
+information-first play, reward-first play, and direct-red probability. This is
+a one-reveal lookahead recalculated after every update; it is not an unbounded
+multi-turn search. Initial symmetry uses the same position preference as the
+reference helper.
+
+Each Mudae message owns a small actor that serializes solving and REST edits,
+so updates for separate boards can proceed independently without racing the
+same helper message. Repeated, stale, and out-of-order snapshots are ignored.
+The actor deletes its reply after five reveals, an all-disabled board, source
+deletion, context shutdown, or three idle minutes. All replies suppress allowed
+mentions and use a soft Discord message reference. No external solver endpoint
+or website scraping participates in this flow.
+
 ## Persistence and deployment
 
 `internal/database.Open()` privately reads the small `DB_*` bootstrap contract
 and returns `*gorm.DB`; credentials are never retained in a general application
 configuration object. `internal/config` maps `config(name, value)`, receives
-GORM directly, and owns the `app.token`, `birthday.channel_id`, and
-`birthday.defaultMessage` keys. Neither layer passes contexts through
+GORM directly, and owns the `app.token`, `birthday.channel_id`,
+`birthday.defaultMessage`, `bots.mudae.id`, and six
+`bots.mudae.oc.emoji.*` keys. Neither layer passes contexts through
 synchronous startup queries.
 
 The root `database` Go module exclusively owns Goose, the migration executable,
