@@ -12,9 +12,15 @@ import (
 
 // Gateway owns Padinho's Discord session, registration, and interaction adapter.
 type Gateway struct {
-	session *discordgo.Session
-	routes  *Routes
-	logger  *slog.Logger
+	session     *discordgo.Session
+	routes      *Routes
+	logger      *slog.Logger
+	subscribers []Subscriber
+}
+
+// Subscriber registers cohesive feature listeners on Padinho's Discord session.
+type Subscriber interface {
+	Subscribe(context.Context, *discordgo.Session)
 }
 
 // New constructs a Discord gateway without opening a network connection.
@@ -23,7 +29,8 @@ func New(token string, routes *Routes, logger *slog.Logger) (*Gateway, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create Discord session: %w", err)
 	}
-	session.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildVoiceStates
+	session.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildVoiceStates |
+		discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
 	return &Gateway{
 		session: session,
 		routes:  routes,
@@ -39,6 +46,9 @@ func (g *Gateway) Run(ctx context.Context) error {
 		ctx:    ctx,
 	}
 	g.session.AddHandler(handler.handle)
+	for _, subscriber := range g.subscribers {
+		subscriber.Subscribe(ctx, g.session)
+	}
 	if err := g.session.Open(); err != nil {
 		return fmt.Errorf("open Discord gateway: %w", err)
 	}
@@ -48,6 +58,15 @@ func (g *Gateway) Run(ctx context.Context) error {
 		return err
 	}
 	<-ctx.Done()
+	return nil
+}
+
+// AddSubscriber registers a feature listener before the gateway is opened.
+func (g *Gateway) AddSubscriber(subscriber Subscriber) error {
+	if subscriber == nil {
+		return errors.New("Discord subscriber is nil")
+	}
+	g.subscribers = append(g.subscribers, subscriber)
 	return nil
 }
 
@@ -75,6 +94,41 @@ func (g *Gateway) synchronizeCommands() error {
 func (g *Gateway) SendMessage(channelID string, message *discordgo.MessageSend) error {
 	if _, err := g.session.ChannelMessageSendComplex(channelID, message); err != nil {
 		return fmt.Errorf("send Discord message: %w", err)
+	}
+	return nil
+}
+
+// SendReply sends a non-mentioning reply and returns the created message ID.
+func (g *Gateway) SendReply(channelID, guildID, sourceMessageID, content string) (string, error) {
+	failIfMissing := false
+	message, err := g.session.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
+		Content:         content,
+		AllowedMentions: &discordgo.MessageAllowedMentions{},
+		Reference: &discordgo.MessageReference{
+			Type: discordgo.MessageReferenceTypeDefault, MessageID: sourceMessageID,
+			ChannelID: channelID, GuildID: guildID, FailIfNotExists: &failIfMissing,
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("send Discord reply: %w", err)
+	}
+	return message.ID, nil
+}
+
+// EditMessage replaces the content of one Padinho-owned Discord message.
+func (g *Gateway) EditMessage(channelID, messageID, content string) error {
+	edit := discordgo.NewMessageEdit(channelID, messageID).SetContent(content)
+	edit.AllowedMentions = &discordgo.MessageAllowedMentions{}
+	if _, err := g.session.ChannelMessageEditComplex(edit); err != nil {
+		return fmt.Errorf("edit Discord message: %w", err)
+	}
+	return nil
+}
+
+// DeleteMessage removes one Padinho-owned Discord message.
+func (g *Gateway) DeleteMessage(channelID, messageID string) error {
+	if err := g.session.ChannelMessageDelete(channelID, messageID); err != nil {
+		return fmt.Errorf("delete Discord message: %w", err)
 	}
 	return nil
 }
