@@ -46,6 +46,7 @@ const (
 	BirthdayManageServerRequired  = "Você precisa da permissão Gerenciar servidor para adicionar aniversários."
 	BirthdayInvalidInteraction    = "Este botão não é mais válido. Execute /birthdays novamente."
 	GenericInteractionError       = "Algo deu errado ao processar essa interação."
+	GenericMessageCommandError    = "Algo deu errado ao processar esse comando."
 	MoveAllCommandDescription     = "Move todos de um canal de voz para outro"
 	MoveAllDestinationDescription = "Canal de voz de destino"
 	MoveAllOriginDescription      = "Canal de voz de origem"
@@ -65,6 +66,15 @@ const (
 	OuroChestCandidateFooter      = "\n\n-# %d posição(ões) possível(is) para o vermelho."
 	OuroChestNoSuggestion         = "Não há um botão seguro disponível para recomendar."
 	OuroChestInconsistent         = "Não consegui reconciliar as cores deste tabuleiro; não vou arriscar um palpite."
+	OuroChestToggleUsage          = "Use `!toggleochelper` sem argumentos."
+	OuroChestAutomaticEnabled     = "Assistência automática do `$oc` ativada. `!ochelper` continua disponível a qualquer momento."
+	OuroChestAutomaticDisabled    = "Assistência automática do `$oc` desativada. Responda ao tabuleiro com `!ochelper` quando quiser ajuda."
+	OuroChestManualUsage          = "Responda a um tabuleiro do Mudae usando `!ochelper`."
+	OuroChestManualNotMudae       = "A mensagem respondida não foi enviada pelo Mudae."
+	OuroChestManualNotBoard       = "A mensagem respondida não contém um tabuleiro 5×5 válido."
+	OuroChestManualNotOC          = "Não consegui confirmar que essa mensagem é um tabuleiro de `$oc`."
+	OuroChestManualFinished       = "Esse tabuleiro de `$oc` já terminou."
+	OuroChestManualActive         = "A assistência desse tabuleiro já está ativa."
 )
 
 var MonthNames = [...]string{
