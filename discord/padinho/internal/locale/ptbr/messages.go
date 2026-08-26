@@ -54,6 +54,17 @@ const (
 	MoveAllInvalidDestination     = "O canal de destino precisa ser um canal de voz."
 	MoveAllSameChannel            = "Os canais de origem e destino precisam ser diferentes."
 	MoveAllStarted                = "Movendo %d membro(s)."
+	OuroChestBalancedTitle        = "🎯 **Equilibrada — botão %d** (linha %d, coluna %d)"
+	OuroChestInformationTitle     = "🔎 **Mais informação — botão %d** (linha %d, coluna %d)"
+	OuroChestRewardTitle          = "💰 **Maior retorno — botão %d** (linha %d, coluna %d)"
+	OuroChestRedTitle             = "🔴 **Chance imediata — botão %d** (linha %d, coluna %d)"
+	OuroChestBalancedReason       = "Melhor compromisso: %s%% vermelho · %s bits de informação · EV %s esferas."
+	OuroChestInformationReason    = "Maior redução de incerteza: %s bits · restam %s posições em média."
+	OuroChestRewardReason         = "Maior valor imediato: EV %s esferas · %s%% vermelho."
+	OuroChestRedReason            = "Maior chance de vermelho agora: %s%% · %s bits de informação."
+	OuroChestCandidateFooter      = "\n\n-# %d posição(ões) possível(is) para o vermelho."
+	OuroChestNoSuggestion         = "Não há um botão seguro disponível para recomendar."
+	OuroChestInconsistent         = "Não consegui reconciliar as cores deste tabuleiro; não vou arriscar um palpite."
 )
 
 var MonthNames = [...]string{
