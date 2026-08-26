@@ -15,6 +15,7 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/database"
 	padinhodiscord "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
+	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/job"
 	birthdayjob "github.com/kiLeo13/SaladaFun/discord/padinho/internal/job/birthday"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/persistence/mysql"
@@ -48,6 +49,10 @@ func main() {
 	if channelID == "" {
 		fail(logger, errors.New("birthday.channel_id is empty"))
 	}
+	mudaeSettings, err := configRepo.MudaeOC()
+	if err != nil {
+		fail(logger, err)
+	}
 
 	// Services
 	birthdayService := appbirthday.NewService(birthdayRepo, configRepo)
@@ -56,6 +61,22 @@ func main() {
 	routes := padinhodiscord.NewRoutes()
 	gateway, err := padinhodiscord.New(token, routes, logger)
 	if err != nil {
+		fail(logger, err)
+	}
+	ouroChestListener, err := discordourochest.New(
+		mudaeSettings.BotID,
+		discordourochest.EmojiIDs{
+			Blue: mudaeSettings.BlueEmojiID, Teal: mudaeSettings.TealEmojiID,
+			Green: mudaeSettings.GreenEmojiID, Yellow: mudaeSettings.YellowEmojiID,
+			Orange: mudaeSettings.OrangeEmojiID, Red: mudaeSettings.RedEmojiID,
+		},
+		gateway,
+		logger,
+	)
+	if err != nil {
+		fail(logger, err)
+	}
+	if err := gateway.AddSubscriber(ouroChestListener); err != nil {
 		fail(logger, err)
 	}
 	commands.Register(routes, birthdayService, gateway)
