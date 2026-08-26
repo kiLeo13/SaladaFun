@@ -51,8 +51,3 @@ Verify the independent migration project with the same Go baseline:
 cd database
 go test -race ./...
 ```
-
-## License
-
-This repository does not currently include a license. Add an explicit license
-before distributing or accepting contributions under defined reuse terms.
