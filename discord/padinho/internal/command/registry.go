@@ -78,7 +78,9 @@ func NewRegistry() *Registry {
 
 // Use appends registry-wide middleware.
 func (r *Registry) Use(middleware ...Middleware) {
-	r.mutate(func() { r.middleware = append(r.middleware, middleware...) })
+	r.lockForMutation()
+	defer r.mu.Unlock()
+	r.middleware = append(r.middleware, middleware...)
 }
 
 // Slash registers a top-level leaf slash command.
@@ -95,7 +97,9 @@ func (r *Registry) Slash(
 		handler:     handler,
 		options:     snapshotOptions(options),
 	}
-	r.mutate(func() { r.roots = append(r.roots, declaration) })
+	r.lockForMutation()
+	defer r.mu.Unlock()
+	r.roots = append(r.roots, declaration)
 	return &Route{
 		registry:   r,
 		middleware: &declaration.middleware,
@@ -108,7 +112,9 @@ func (r *Registry) Group(name, description string) *CommandGroup {
 		name:        name,
 		description: description,
 	}
-	r.mutate(func() { r.roots = append(r.roots, declaration) })
+	r.lockForMutation()
+	defer r.mu.Unlock()
+	r.roots = append(r.roots, declaration)
 	return &CommandGroup{
 		registry:    r,
 		declaration: declaration,
@@ -123,7 +129,9 @@ type Route struct {
 
 // Use appends command-level middleware.
 func (r *Route) Use(middleware ...Middleware) *Route {
-	r.registry.mutate(func() { *r.middleware = append(*r.middleware, middleware...) })
+	r.registry.lockForMutation()
+	defer r.registry.mu.Unlock()
+	*r.middleware = append(*r.middleware, middleware...)
 	return r
 }
 
@@ -136,9 +144,9 @@ type CommandGroup struct {
 
 // Use appends middleware inherited by every route in the command group.
 func (g *CommandGroup) Use(middleware ...Middleware) *CommandGroup {
-	g.registry.mutate(func() {
-		g.declaration.middleware = append(g.declaration.middleware, middleware...)
-	})
+	g.registry.lockForMutation()
+	defer g.registry.mu.Unlock()
+	g.declaration.middleware = append(g.declaration.middleware, middleware...)
 	return g
 }
 
@@ -155,9 +163,9 @@ func (g *CommandGroup) Sub(
 		handler:     handler,
 		options:     snapshotOptions(options),
 	}
-	g.registry.mutate(func() {
-		g.declaration.subcommands = append(g.declaration.subcommands, declaration)
-	})
+	g.registry.lockForMutation()
+	defer g.registry.mu.Unlock()
+	g.declaration.subcommands = append(g.declaration.subcommands, declaration)
 	return &Route{
 		registry:   g.registry,
 		middleware: &declaration.middleware,
@@ -171,9 +179,9 @@ func (g *CommandGroup) Group(name, description string) *SubcommandGroup {
 		name:        name,
 		description: description,
 	}
-	g.registry.mutate(func() {
-		g.declaration.groups = append(g.declaration.groups, declaration)
-	})
+	g.registry.lockForMutation()
+	defer g.registry.mu.Unlock()
+	g.declaration.groups = append(g.declaration.groups, declaration)
 	return &SubcommandGroup{
 		registry:    g.registry,
 		root:        g.declaration,
@@ -190,9 +198,9 @@ type SubcommandGroup struct {
 
 // Use appends middleware inherited by every subcommand in this subgroup.
 func (g *SubcommandGroup) Use(middleware ...Middleware) *SubcommandGroup {
-	g.registry.mutate(func() {
-		g.declaration.middleware = append(g.declaration.middleware, middleware...)
-	})
+	g.registry.lockForMutation()
+	defer g.registry.mu.Unlock()
+	g.declaration.middleware = append(g.declaration.middleware, middleware...)
 	return g
 }
 
@@ -209,24 +217,25 @@ func (g *SubcommandGroup) Sub(
 		handler:     handler,
 		options:     snapshotOptions(options),
 	}
-	g.registry.mutate(func() {
-		g.declaration.subcommands = append(g.declaration.subcommands, declaration)
-	})
+	g.registry.lockForMutation()
+	defer g.registry.mu.Unlock()
+	g.declaration.subcommands = append(g.declaration.subcommands, declaration)
 	return &Route{
 		registry:   g.registry,
 		middleware: &declaration.middleware,
 	}
 }
 
-func (r *Registry) mutate(mutation func()) {
+// lockForMutation acquires the declaration lock and rejects post-freeze changes.
+func (r *Registry) lockForMutation() {
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	if r.frozen {
+		r.mu.Unlock()
 		panic(ErrRegistryFrozen)
 	}
-	mutation()
 }
 
+// snapshotOptions converts mutable option builders into independent definitions.
 func snapshotOptions(options []Option) []OptionDefinition {
 	result := make([]OptionDefinition, len(options))
 	for index, option := range options {

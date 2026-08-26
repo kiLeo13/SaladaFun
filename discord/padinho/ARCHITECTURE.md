@@ -22,6 +22,9 @@ each root according to its route shape. Focused compilation helpers snapshot
 definitions and compose the matching dispatch entry without obscuring the
 top-level lifecycle:
 
+Registration methods acquire the declaration lock directly, making their
+state changes explicit while rejecting every post-freeze mutation.
+
 ```text
 registry -> command group -> subcommand group -> route -> handler
 ```
