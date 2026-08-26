@@ -94,6 +94,11 @@ func TestRoutesPropagateCommandFreezeAndMappingErrors(t *testing.T) {
 	if err := invalid.Freeze(); err == nil {
 		t.Fatal("invalid command registry froze")
 	}
+	invalidMessage := NewRoutes()
+	invalidMessage.Messages().Command("bad trigger", nil)
+	if err := invalidMessage.Freeze(); err == nil {
+		t.Fatal("invalid message command registry froze")
+	}
 	routes := NewRoutes()
 	if err := routes.Freeze(); err != nil {
 		t.Fatal(err)

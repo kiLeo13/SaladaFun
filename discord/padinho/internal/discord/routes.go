@@ -9,6 +9,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/messagecommand"
 )
 
 var (
@@ -44,6 +45,7 @@ type InteractionHandler func(context.Context, *InteractionRequest) error
 type Routes struct {
 	mu         sync.RWMutex
 	commands   *command.Registry
+	messages   *messagecommand.Registry
 	components map[string]InteractionHandler
 	modals     map[string]InteractionHandler
 	frozen     bool
@@ -52,9 +54,15 @@ type Routes struct {
 func NewRoutes() *Routes {
 	return &Routes{
 		commands:   command.NewRegistry(),
+		messages:   messagecommand.NewRegistry(),
 		components: make(map[string]InteractionHandler),
 		modals:     make(map[string]InteractionHandler),
 	}
+}
+
+// Messages returns the unique prefix-agnostic message-command registry.
+func (r *Routes) Messages() *messagecommand.Registry {
+	return r.messages
 }
 
 // Commands returns the unique slash-command registry.
@@ -99,6 +107,9 @@ func (r *Routes) Freeze() error {
 		return nil
 	}
 	if err := r.commands.Freeze(); err != nil {
+		return err
+	}
+	if err := r.messages.Freeze(); err != nil {
 		return err
 	}
 	r.frozen = true
