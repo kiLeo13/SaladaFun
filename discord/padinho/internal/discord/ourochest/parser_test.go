@@ -32,7 +32,8 @@ func TestClassifyBoardMessage(t *testing.T) {
 		message *discordgo.Message
 		want    gameKind
 	}{
-		{&discordgo.Message{Content: "Find the red sphere"}, gameOC},
+		{&discordgo.Message{Content: "$oc Find the red sphere"}, gameOC},
+		{&discordgo.Message{Content: "Find the red sphere"}, gameUnknown},
 		{&discordgo.Message{Embeds: []*discordgo.MessageEmbed{{Title: "$oh sphere harvest"}}}, gameOH},
 		{testBoardMessage("board", "", "oc:cell"), gameOC},
 		{testBoardMessage("board", "", "oh:cell"), gameOH},
@@ -42,6 +43,20 @@ func TestClassifyBoardMessage(t *testing.T) {
 		if got := classifyBoardMessage(test.message); got != test.want {
 			t.Fatalf("case %d classification = %d, want %d", index, got, test.want)
 		}
+	}
+}
+
+func TestRecognizeOCUnavailableMessages(t *testing.T) {
+	for _, content := range []string{
+		"Você não tem $oc suficientes de hoje. Tempo de espera até o recarregamento: 7h 10 min.",
+		"VOCÊ NÃO TEM NENHUM $OC DISPONÍVEL! Você precisa de Diamante IV.",
+	} {
+		if !isOCUnavailable(&discordgo.Message{Content: content}) {
+			t.Fatalf("isOCUnavailable(%q) = false", content)
+		}
+	}
+	if isOCUnavailable(&discordgo.Message{Content: "Você não tem nenhum $oh disponível"}) {
+		t.Fatal("$oh failure recognized as $oc")
 	}
 }
 

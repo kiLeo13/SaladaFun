@@ -26,6 +26,8 @@ type pendingCommand struct {
 	kind      gameKind
 	remaining int
 	recorded  time.Time
+	userID    uint64
+	messageID string
 }
 
 type boardSnapshot struct {
@@ -60,7 +62,7 @@ func parseCommand(content string) (gameKind, int, bool) {
 // classifyBoardMessage extracts an explicit game signature from Mudae's payload.
 func classifyBoardMessage(message *discordgo.Message) gameKind {
 	text := strings.ToLower(messageText(message))
-	oc := containsAny(text, "$oc", "ourochest", "red sphere", "esfera vermelha", "esfera roja", "sphère rouge")
+	oc := containsAny(text, "$oc", "ourochest")
 	oh := containsAny(text, "$oh", "ouroharvest", "sphere harvest", "colheita de esferas")
 
 	componentIDs := strings.ToLower(componentCustomIDs(message.Components))
@@ -73,6 +75,15 @@ func classifyBoardMessage(message *discordgo.Message) gameKind {
 		return gameOC
 	}
 	return gameOH
+}
+
+// isOCUnavailable recognizes Mudae responses that consume no Ourochest board.
+func isOCUnavailable(message *discordgo.Message) bool {
+	text := strings.ToLower(messageText(message))
+	return containsAny(text,
+		"você não tem $oc suficientes de hoje",
+		"você não tem nenhum $oc disponível",
+	)
 }
 
 // parseBoard flattens exactly five rows of five buttons and maps configured emojis.
