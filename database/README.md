@@ -79,3 +79,10 @@ dates use MySQL `DATE`; timezone values are IANA names such as
 `America/Sao_Paulo`; Discord snowflakes use `BIGINT UNSIGNED`; and audit times
 use Unix milliseconds in unsigned big integers. The announcement table is a
 per-user, per-local-date delivery ledger with cascading cleanup.
+
+Migration `00002_user_preferences.sql` adds the shared `users_preferences`
+table. Each Discord user has at most one row. Feature-owned Boolean columns such
+as `auto_mudae_oc` are nullable so `NULL` can retain that feature's application
+default without forcing unrelated modules to populate every preference. Its
+audit timestamps use the same Unix-millisecond convention as the initial
+schema.
