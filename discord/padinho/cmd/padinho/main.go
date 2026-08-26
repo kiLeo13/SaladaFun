@@ -10,6 +10,7 @@ import (
 	"time"
 
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
+	apppreferences "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/preferences"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/commands"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/config"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/database"
@@ -34,6 +35,7 @@ func main() {
 	// Repositories
 	configRepo := config.New(db)
 	birthdayRepo := mysql.NewBirthdayRepository(db)
+	preferencesRepo := mysql.NewUserPreferencesRepository(db)
 
 	token, err := configRepo.Get(config.AppToken)
 	if err != nil {
@@ -56,6 +58,7 @@ func main() {
 
 	// Services
 	birthdayService := appbirthday.NewService(birthdayRepo, configRepo)
+	preferencesService := apppreferences.NewService(preferencesRepo)
 
 	// Discord
 	routes := padinhodiscord.NewRoutes()
@@ -71,6 +74,8 @@ func main() {
 			Orange: mudaeSettings.OrangeEmojiID, Red: mudaeSettings.RedEmojiID,
 		},
 		gateway,
+		preferencesService,
+		gateway,
 		logger,
 	)
 	if err != nil {
@@ -79,7 +84,7 @@ func main() {
 	if err := gateway.AddSubscriber(ouroChestListener); err != nil {
 		fail(logger, err)
 	}
-	commands.Register(routes, birthdayService, gateway)
+	commands.Register(routes, birthdayService, gateway, ouroChestListener)
 	if err := routes.Freeze(); err != nil {
 		fail(logger, err)
 	}

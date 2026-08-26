@@ -7,6 +7,7 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
 	discordmove "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/move"
+	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
 )
 
 // Gateway exposes the Discord capabilities shared by command features.
@@ -16,7 +17,13 @@ type Gateway interface {
 }
 
 // Register declares every Padinho command and related interaction route.
-func Register(routes *discord.Routes, birthdays discordbirthday.Service, gateway Gateway) {
+func Register(
+	routes *discord.Routes,
+	birthdays discordbirthday.Service,
+	gateway Gateway,
+	ouroChest *discordourochest.Listener,
+) {
 	discordbirthday.Register(routes, birthdays, gateway)
 	discordmove.Register(routes, gateway)
+	discordourochest.Register(routes.Messages(), ouroChest)
 }
