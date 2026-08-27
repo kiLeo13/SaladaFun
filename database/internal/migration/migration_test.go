@@ -16,8 +16,8 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 2 {
-		t.Fatalf("embedded migrations = %d, want 2", len(files))
+	if len(files) != 3 {
+		t.Fatalf("embedded migrations = %d, want 3", len(files))
 	}
 }
 
@@ -115,8 +115,8 @@ func TestUpAgainstMySQL(t *testing.T) {
 	}
 	if _, err := transaction.Exec(`
 		INSERT INTO users_preferences
-			(user_id, auto_mudae_oc, created_at, updated_at)
-		VALUES (?, ?, ?, ?)`, userID, nil, 3, 3,
+			(user_id, auto_mudae_oc, auto_mudae_oq, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?)`, userID, nil, nil, 3, 3,
 	); err != nil {
 		t.Fatalf("insert nullable user preferences: %v", err)
 	}
@@ -125,6 +125,10 @@ func TestUpAgainstMySQL(t *testing.T) {
 		"SELECT auto_mudae_oc FROM users_preferences WHERE user_id = ?", userID,
 	).Scan(&autoMudaeOC); err != nil || autoMudaeOC.Valid {
 		t.Fatalf("nullable auto_mudae_oc = %#v, error = %v", autoMudaeOC, err)
+	}
+	var autoMudaeOQ sql.NullBool
+	if err := transaction.QueryRow("SELECT auto_mudae_oq FROM users_preferences WHERE user_id = ?", userID).Scan(&autoMudaeOQ); err != nil || autoMudaeOQ.Valid {
+		t.Fatalf("nullable auto_mudae_oq = %#v, error = %v", autoMudaeOQ, err)
 	}
 }
 
