@@ -48,6 +48,9 @@ func TestRepositoryAgainstMySQL(t *testing.T) {
 		{MudaeBotID, "100"}, {MudaeOCBlueEmojiID, "101"}, {MudaeOCTealEmojiID, "102"},
 		{MudaeOCGreenEmojiID, "103"}, {MudaeOCYellowEmojiID, "104"},
 		{MudaeOCOrangeEmojiID, "105"}, {MudaeOCRedEmojiID, "106"},
+		{MudaeOQPurpleEmojiID, "107"}, {MudaeOHCoveredEmojiID, "108"},
+		{MudaeOHDarkEmojiID, "109"}, {MudaeOHLightEmojiID, "110"},
+		{MudaeOHWhiteEmojiID, "111"},
 	}
 	for _, item := range mudaeValues {
 		if err := transaction.Exec("DELETE FROM config WHERE name = ?", item.name).Error; err != nil {
@@ -60,6 +63,10 @@ func TestRepositoryAgainstMySQL(t *testing.T) {
 	settings, err := repository.MudaeOC()
 	if err != nil || settings.BotID != "100" || settings.RedEmojiID != "106" {
 		t.Fatalf("MudaeOC() = %#v, %v", settings, err)
+	}
+	harvest, err := repository.MudaeOH()
+	if err != nil || harvest.CoveredEmojiID != "108" || harvest.WhiteEmojiID != "111" {
+		t.Fatalf("MudaeOH() = %#v, %v", harvest, err)
 	}
 }
 
