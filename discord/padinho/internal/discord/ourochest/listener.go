@@ -22,8 +22,8 @@ const (
 
 // Messenger owns the reply lifecycle required by the $oc feature.
 type Messenger interface {
-	SendReply(channelID, guildID, sourceMessageID, content string) (string, error)
-	EditMessage(channelID, messageID, content string) error
+	SendReply(channelID, guildID, sourceMessageID string, components []discordgo.MessageComponent) (string, error)
+	EditMessage(channelID, messageID string, components []discordgo.MessageComponent) error
 	DeleteMessage(channelID, messageID string) error
 }
 
@@ -398,18 +398,18 @@ func (l *Listener) runGame(ctx context.Context, game *gameSession, initial board
 			return true
 		}
 		result, err := appourochest.Solve(snapshot.board, snapshot.unavailable)
-		content := ""
+		var components []discordgo.MessageComponent
 		if err != nil {
-			content = ptbr.OuroChestInconsistent
+			components = renderStatus(ptbr.OuroChestInconsistent)
 			l.logger.Warn("ourochest board is inconsistent", "message_id", game.sourceID, "error", err)
 		} else {
-			content = renderRecommendations(result)
+			components = renderRecommendations(result)
 		}
 		creating := helperID == ""
 		if creating {
-			helperID, err = l.messenger.SendReply(game.channelID, game.guildID, game.sourceID, content)
+			helperID, err = l.messenger.SendReply(game.channelID, game.guildID, game.sourceID, components)
 		} else {
-			err = l.messenger.EditMessage(game.channelID, helperID, content)
+			err = l.messenger.EditMessage(game.channelID, helperID, components)
 		}
 		if err != nil {
 			l.logger.Error("ourochest helper publish failed", "message_id", game.sourceID, "error", err)

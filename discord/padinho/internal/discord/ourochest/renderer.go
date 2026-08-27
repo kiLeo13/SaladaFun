@@ -4,42 +4,44 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bwmarrin/discordgo"
 	appourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/ourochest"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/theme"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-// renderRecommendations produces a compact explanation for every distinct objective winner.
-func renderRecommendations(result appourochest.Result) string {
+// renderRecommendations produces a Components V2 container for the top-ranked move.
+func renderRecommendations(result appourochest.Result) []discordgo.MessageComponent {
 	if len(result.Recommendations) == 0 {
-		return ptbr.OuroChestNoSuggestion
+		return renderStatus(ptbr.OuroChestNoSuggestion)
 	}
-	var content strings.Builder
-	for index, recommendation := range result.Recommendations {
-		if index > 0 {
-			content.WriteString("\n\n")
-		}
-		row := recommendation.Position/appourochest.BoardWidth + 1
-		column := recommendation.Position%appourochest.BoardWidth + 1
-		content.WriteString(fmt.Sprintf(recommendationTitle(recommendation.Kind), recommendation.Position+1, row, column))
-		content.WriteByte('\n')
-		content.WriteString(recommendationReason(recommendation))
-	}
-	content.WriteString(fmt.Sprintf(ptbr.OuroChestCandidateFooter, result.CandidateCount))
-	return content.String()
+	recommendation := result.Recommendations[0]
+	row := recommendation.Position/appourochest.BoardWidth + 1
+	column := recommendation.Position%appourochest.BoardWidth + 1
+	return helperContainer(
+		fmt.Sprintf(ptbr.OuroChestRecommendedTitle, recommendation.Position+1),
+		fmt.Sprintf(ptbr.OuroChestRecommendedSubtitle, row, column, recommendationReason(recommendation)),
+	)
 }
 
-// recommendationTitle returns the localized heading for one strategy objective.
-func recommendationTitle(kind appourochest.RecommendationKind) string {
-	switch kind {
-	case appourochest.Information:
-		return ptbr.OuroChestInformationTitle
-	case appourochest.Reward:
-		return ptbr.OuroChestRewardTitle
-	case appourochest.DirectRed:
-		return ptbr.OuroChestRedTitle
-	default:
-		return ptbr.OuroChestBalancedTitle
+// renderStatus presents a non-recommendation helper state with the same visual treatment.
+func renderStatus(content string) []discordgo.MessageComponent {
+	return helperContainer(content, "")
+}
+
+// helperContainer builds the shared helper layout and automatic-assistance hint.
+func helperContainer(title, subtitle string) []discordgo.MessageComponent {
+	divider := true
+	components := []discordgo.MessageComponent{discordgo.TextDisplay{Content: title}}
+	if subtitle != "" {
+		components = append(components, discordgo.TextDisplay{Content: subtitle})
 	}
+	components = append(components,
+		discordgo.Separator{Divider: &divider},
+		discordgo.TextDisplay{Content: ptbr.OuroChestDisableHint},
+	)
+	accent := theme.AccentColor
+	return []discordgo.MessageComponent{discordgo.Container{AccentColor: &accent, Components: components}}
 }
 
 // recommendationReason explains the metric that made one button useful.

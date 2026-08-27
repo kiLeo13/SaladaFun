@@ -100,11 +100,12 @@ func (g *Gateway) SendMessage(channelID string, message *discordgo.MessageSend) 
 	return nil
 }
 
-// SendReply sends a non-mentioning reply and returns the created message ID.
-func (g *Gateway) SendReply(channelID, guildID, sourceMessageID, content string) (string, error) {
+// SendReply sends a non-mentioning Components V2 reply and returns its message ID.
+func (g *Gateway) SendReply(channelID, guildID, sourceMessageID string, components []discordgo.MessageComponent) (string, error) {
 	failIfMissing := false
 	message, err := g.session.ChannelMessageSendComplex(channelID, &discordgo.MessageSend{
-		Content:         content,
+		Components:      components,
+		Flags:           discordgo.MessageFlagsIsComponentsV2,
 		AllowedMentions: &discordgo.MessageAllowedMentions{},
 		Reference: &discordgo.MessageReference{
 			Type: discordgo.MessageReferenceTypeDefault, MessageID: sourceMessageID,
@@ -117,9 +118,11 @@ func (g *Gateway) SendReply(channelID, guildID, sourceMessageID, content string)
 	return message.ID, nil
 }
 
-// EditMessage replaces the content of one Padinho-owned Discord message.
-func (g *Gateway) EditMessage(channelID, messageID, content string) error {
-	edit := discordgo.NewMessageEdit(channelID, messageID).SetContent(content)
+// EditMessage replaces the components of one Padinho-owned Discord message.
+func (g *Gateway) EditMessage(channelID, messageID string, components []discordgo.MessageComponent) error {
+	edit := discordgo.NewMessageEdit(channelID, messageID)
+	edit.Components = &components
+	edit.Flags = discordgo.MessageFlagsIsComponentsV2
 	edit.AllowedMentions = &discordgo.MessageAllowedMentions{}
 	if _, err := g.session.ChannelMessageEditComplex(edit); err != nil {
 		return fmt.Errorf("edit Discord message: %w", err)
