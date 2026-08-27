@@ -8,6 +8,7 @@ import (
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
 	discordmove "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/move"
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
+	discordouroharvest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroharvest"
 	discordouroquest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroquest"
 )
 
@@ -24,9 +25,11 @@ func Register(
 	gateway Gateway,
 	ouroChest *discordourochest.Listener,
 	ouroQuest *discordouroquest.Listener,
+	ouroHarvest *discordouroharvest.Listener,
 ) {
 	discordbirthday.Register(routes, birthdays, gateway)
 	discordmove.Register(routes, gateway)
 	discordourochest.Register(routes.Messages(), ouroChest)
 	discordouroquest.Register(routes.Messages(), ouroQuest)
+	discordouroharvest.Register(routes.Messages(), ouroHarvest)
 }

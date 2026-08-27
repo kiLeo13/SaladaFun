@@ -17,6 +17,7 @@ import (
 	padinhodiscord "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
+	discordouroharvest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroharvest"
 	discordouroquest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroquest"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/job"
 	birthdayjob "github.com/kiLeo13/SaladaFun/discord/padinho/internal/job/birthday"
@@ -52,7 +53,7 @@ func main() {
 	if channelID == "" {
 		fail(logger, errors.New("birthday.channel_id is empty"))
 	}
-	mudaeSettings, err := configRepo.MudaeOQ()
+	mudaeSettings, err := configRepo.MudaeOH()
 	if err != nil {
 		fail(logger, err)
 	}
@@ -101,7 +102,25 @@ func main() {
 	if err := gateway.AddSubscriber(ouroQuestListener); err != nil {
 		fail(logger, err)
 	}
-	commands.Register(routes, birthdayService, gateway, ouroChestListener, ouroQuestListener)
+	ouroHarvestListener, err := discordouroharvest.New(
+		mudaeSettings.BotID,
+		discordouroharvest.EmojiIDs{
+			Covered: mudaeSettings.CoveredEmojiID, Blue: mudaeSettings.BlueEmojiID,
+			Teal: mudaeSettings.TealEmojiID, Green: mudaeSettings.GreenEmojiID,
+			Yellow: mudaeSettings.YellowEmojiID, Orange: mudaeSettings.OrangeEmojiID,
+			Red: mudaeSettings.RedEmojiID, Purple: mudaeSettings.PurpleEmojiID,
+			Dark: mudaeSettings.DarkEmojiID, Light: mudaeSettings.LightEmojiID,
+			White: mudaeSettings.WhiteEmojiID,
+		},
+		gateway, preferencesService, gateway, logger,
+	)
+	if err != nil {
+		fail(logger, err)
+	}
+	if err := gateway.AddSubscriber(ouroHarvestListener); err != nil {
+		fail(logger, err)
+	}
+	commands.Register(routes, birthdayService, gateway, ouroChestListener, ouroQuestListener, ouroHarvestListener)
 	if err := routes.Freeze(); err != nil {
 		fail(logger, err)
 	}
