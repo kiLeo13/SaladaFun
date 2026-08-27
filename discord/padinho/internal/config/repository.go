@@ -19,6 +19,7 @@ const (
 	MudaeOCYellowEmojiID   = "bots.mudae.oc.emoji.yellow"
 	MudaeOCOrangeEmojiID   = "bots.mudae.oc.emoji.orange"
 	MudaeOCRedEmojiID      = "bots.mudae.oc.emoji.red"
+	MudaeOQPurpleEmojiID   = "bots.mudae.oq.emoji.purple"
 )
 
 var ErrNotFound = errors.New("configuration value not found")
@@ -34,9 +35,28 @@ type MudaeOCSettings struct {
 	RedEmojiID    string
 }
 
+// MudaeOQSettings contains the shared sphere and purple emoji IDs required by $oq.
+type MudaeOQSettings struct {
+	MudaeOCSettings
+	PurpleEmojiID string
+}
+
 type entry struct {
 	Name  string `gorm:"column:name;primaryKey;size:255"`
 	Value string `gorm:"column:value;not null"`
+}
+
+// MudaeOQ returns the complete required configuration for the $oq listener.
+func (r *Repository) MudaeOQ() (MudaeOQSettings, error) {
+	shared, err := r.MudaeOC()
+	if err != nil {
+		return MudaeOQSettings{}, err
+	}
+	purple, err := r.Get(MudaeOQPurpleEmojiID)
+	if err != nil {
+		return MudaeOQSettings{}, err
+	}
+	return MudaeOQSettings{MudaeOCSettings: shared, PurpleEmojiID: purple}, nil
 }
 
 // BirthdayDefaultMessage returns the template used when a birthday has no

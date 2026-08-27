@@ -67,6 +67,19 @@ func TestMudaeOC(t *testing.T) {
 	assertExpectations(t, mock)
 }
 
+func TestMudaeOQ(t *testing.T) {
+	database, mock := mockDatabase(t)
+	values := []struct{ name, value string }{{MudaeBotID, "100"}, {MudaeOCBlueEmojiID, "101"}, {MudaeOCTealEmojiID, "102"}, {MudaeOCGreenEmojiID, "103"}, {MudaeOCYellowEmojiID, "104"}, {MudaeOCOrangeEmojiID, "105"}, {MudaeOCRedEmojiID, "106"}, {MudaeOQPurpleEmojiID, "107"}}
+	for _, value := range values {
+		mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(value.name, 1).WillReturnRows(sqlmock.NewRows([]string{"value"}).AddRow(value.value))
+	}
+	got, err := New(database).MudaeOQ()
+	if err != nil || got.BotID != "100" || got.PurpleEmojiID != "107" {
+		t.Fatalf("MudaeOQ() = %#v, %v", got, err)
+	}
+	assertExpectations(t, mock)
+}
+
 func TestMudaeOCReturnsFirstReadError(t *testing.T) {
 	database, mock := mockDatabase(t)
 	mock.ExpectQuery(regexp.QuoteMeta(selectValueQuery)).WithArgs(MudaeBotID, 1).
