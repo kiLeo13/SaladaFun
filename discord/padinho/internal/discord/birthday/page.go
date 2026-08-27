@@ -8,12 +8,13 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/theme"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const birthdayAccentColor = 0xFC2D87
+const birthdayAccentColor = theme.AccentColor
 
 func pageResponse(
 	responseType discordgo.InteractionResponseType,
