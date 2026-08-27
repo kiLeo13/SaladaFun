@@ -99,11 +99,13 @@ func TestReplyLifecycleUsesSafeDiscordPayloads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	helperID, err := gateway.SendReply("channel", "guild", "source", "suggestion")
+	components := []discordgo.MessageComponent{discordgo.TextDisplay{Content: "suggestion"}}
+	helperID, err := gateway.SendReply("channel", "guild", "source", components)
 	if err != nil || helperID != "helper" {
 		t.Fatalf("SendReply() = %q, %v", helperID, err)
 	}
-	if err := gateway.EditMessage("channel", helperID, "updated"); err != nil {
+	updated := []discordgo.MessageComponent{discordgo.TextDisplay{Content: "updated"}}
+	if err := gateway.EditMessage("channel", helperID, updated); err != nil {
 		t.Fatal(err)
 	}
 	if err := gateway.DeleteMessage("channel", helperID); err != nil {
@@ -117,18 +119,31 @@ func TestReplyLifecycleUsesSafeDiscordPayloads(t *testing.T) {
 	var body struct {
 		AllowedMentions discordgo.MessageAllowedMentions `json:"allowed_mentions"`
 		Reference       discordgo.MessageReference       `json:"message_reference"`
+		Flags           discordgo.MessageFlags           `json:"flags"`
+		Components      []json.RawMessage                `json:"components"`
 	}
 	if err := json.Unmarshal(create.body, &body); err != nil {
 		t.Fatal(err)
 	}
 	if len(body.AllowedMentions.Parse) != 0 || body.Reference.MessageID != "source" ||
 		body.Reference.ChannelID != "channel" || body.Reference.GuildID != "guild" ||
-		body.Reference.FailIfNotExists == nil || *body.Reference.FailIfNotExists {
+		body.Reference.FailIfNotExists == nil || *body.Reference.FailIfNotExists ||
+		body.Flags != discordgo.MessageFlagsIsComponentsV2 || len(body.Components) != 1 {
 		t.Fatalf("unsafe reply payload = %#v", body)
 	}
 	edit := <-requests
 	if edit.method != http.MethodPatch || edit.path != "/channels/channel/messages/helper" {
 		t.Fatalf("edit request = %s %s", edit.method, edit.path)
+	}
+	var editBody struct {
+		Flags      discordgo.MessageFlags `json:"flags"`
+		Components []json.RawMessage      `json:"components"`
+	}
+	if err := json.Unmarshal(edit.body, &editBody); err != nil {
+		t.Fatal(err)
+	}
+	if editBody.Flags != discordgo.MessageFlagsIsComponentsV2 || len(editBody.Components) != 1 {
+		t.Fatalf("edit payload = %#v", editBody)
 	}
 	remove := <-requests
 	if remove.method != http.MethodDelete || remove.path != "/channels/channel/messages/helper" {
@@ -149,11 +164,12 @@ func TestReplyLifecycleWrapsDiscordErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := gateway.SendReply("channel", "guild", "source", "suggestion"); err == nil ||
+	components := []discordgo.MessageComponent{discordgo.TextDisplay{Content: "suggestion"}}
+	if _, err := gateway.SendReply("channel", "guild", "source", components); err == nil ||
 		!strings.Contains(err.Error(), "send Discord reply") {
 		t.Fatalf("SendReply() error = %v", err)
 	}
-	if err := gateway.EditMessage("channel", "helper", "updated"); err == nil ||
+	if err := gateway.EditMessage("channel", "helper", components); err == nil ||
 		!strings.Contains(err.Error(), "edit Discord message") {
 		t.Fatalf("EditMessage() error = %v", err)
 	}
