@@ -19,6 +19,11 @@ disables the whole board, when the source message is deleted, or after three
 minutes without an update. Solving is local and does not call or scrape the
 Mudae Helper website.
 
+Padinho also follows exactly correlated Mudae `$oq` boards. Its local solver
+filters all 12,650 possible four-purple layouts and uses bounded expectimax to
+maximize expected sphere payout. `!toggleoqhelper` controls automatic help per
+user, while `!oqhelper` starts it manually on a replied-to board.
+
 Automatic help defaults to enabled per Discord user. `!toggleochelper` toggles
 only that automatic trigger and persists the choice; it does not disable the
 solver. A user can reply to an active Mudae `$oc` board with `!ochelper` at any
@@ -100,10 +105,10 @@ Schema creation and migration belong exclusively to the root
 [`database`](../../database/README.md) project. Build its self-contained Linux
 executable locally, upload it to the Padinho VM, and run it there before
 deploying code that requires a new schema. Compose never applies migrations.
-Apply `00002_user_preferences.sql` before deploying this version; automatic
-preference reads and `!toggleochelper` require `users_preferences`.
+Apply `00002_user_preferences.sql` and
+`00003_user_preferences_ouroquest.sql` before deploying this version.
 Insert the following values through a trusted private database session. Mudae's
-six values are custom emoji IDs only, without names or Discord `<:...:...>`
+emoji values are custom emoji IDs only, without names or Discord `<:...:...>`
 markup:
 
 ```text
@@ -117,6 +122,7 @@ bots.mudae.oc.emoji.green
 bots.mudae.oc.emoji.yellow
 bots.mudae.oc.emoji.orange
 bots.mudae.oc.emoji.red
+bots.mudae.oq.emoji.purple
 ```
 
 Enable the privileged **Message Content Intent** for Padinho in Discord's
@@ -135,7 +141,8 @@ waiting for its recharge cancel the failed correlation before a subsequent
 
 Message-command triggers include their prefix in the registered literal. They
 are case-insensitive, must be the first complete whitespace-separated token,
-and currently expose `!toggleochelper` and `!ochelper`. Arguments use Go's
+and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`, and
+`!oqhelper`. Arguments use Go's
 `strings.Fields` behavior, so repeated spaces and tabs do not create empty
 values.
 
