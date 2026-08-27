@@ -46,6 +46,13 @@ func (r *UserPreferencesRepository) ToggleAutoMudaeOQ(userID uint64, defaultValu
 	})
 }
 
+// ToggleAutoMudaeOH atomically inverts the explicit or effective default setting.
+func (r *UserPreferencesRepository) ToggleAutoMudaeOH(userID uint64, defaultValue bool) (bool, error) {
+	return r.toggleBoolean(userID, defaultValue, "auto_mudae_oh", func(preferences *entity.UserPreferences) *bool {
+		return preferences.AutoMudaeOH
+	})
+}
+
 // toggleBoolean performs the shared nullable-boolean MySQL upsert operation.
 func (r *UserPreferencesRepository) toggleBoolean(userID uint64, defaultValue bool, column string, selected func(*entity.UserPreferences) *bool) (bool, error) {
 	now := time.Now().UTC().UnixMilli()

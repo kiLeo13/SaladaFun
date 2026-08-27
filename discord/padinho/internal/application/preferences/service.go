@@ -14,11 +14,27 @@ const DefaultAutoMudaeOC = true
 // DefaultAutoMudaeOQ is the effective automatic-assistance setting when no choice exists.
 const DefaultAutoMudaeOQ = true
 
+// DefaultAutoMudaeOH is the effective automatic-assistance setting when no choice exists.
+const DefaultAutoMudaeOH = true
+
 // Repository persists generic user preferences without deciding module defaults.
 type Repository interface {
 	FindUserPreferences(userID uint64) (*entity.UserPreferences, error)
 	ToggleAutoMudaeOC(userID uint64, defaultValue bool) (bool, error)
 	ToggleAutoMudaeOQ(userID uint64, defaultValue bool) (bool, error)
+	ToggleAutoMudaeOH(userID uint64, defaultValue bool) (bool, error)
+}
+
+// AutoMudaeOH reports whether automatic Ouroharvest assistance is enabled.
+func (s *Service) AutoMudaeOH(userID uint64) (bool, error) {
+	preferences, err := s.repository.FindUserPreferences(userID)
+	if err != nil {
+		return false, fmt.Errorf("read user preferences: %w", err)
+	}
+	if preferences == nil || preferences.AutoMudaeOH == nil {
+		return DefaultAutoMudaeOH, nil
+	}
+	return *preferences.AutoMudaeOH, nil
 }
 
 // AutoMudaeOQ reports whether automatic Ouroquest assistance is enabled.
@@ -46,6 +62,17 @@ func (s *Service) ToggleAutoMudaeOQ(userID uint64) (bool, error) {
 	enabled, err := s.repository.ToggleAutoMudaeOQ(userID, DefaultAutoMudaeOQ)
 	if err != nil {
 		return false, fmt.Errorf("toggle automatic Mudae Ouroquest preference: %w", err)
+	}
+	return enabled, nil
+}
+
+// ToggleAutoMudaeOH atomically inverts the user's effective automatic setting.
+func (s *Service) ToggleAutoMudaeOH(userID uint64) (bool, error) {
+	s.toggleMu.Lock()
+	defer s.toggleMu.Unlock()
+	enabled, err := s.repository.ToggleAutoMudaeOH(userID, DefaultAutoMudaeOH)
+	if err != nil {
+		return false, fmt.Errorf("toggle automatic Mudae Ouroharvest preference: %w", err)
 	}
 	return enabled, nil
 }

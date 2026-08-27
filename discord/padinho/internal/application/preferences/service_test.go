@@ -49,6 +49,25 @@ func TestAutoMudaeOQResolvesMissingNullableAndExplicitValues(t *testing.T) {
 	}
 }
 
+func TestAutoMudaeOHResolvesMissingNullableAndExplicitValues(t *testing.T) {
+	enabled, disabled := true, false
+	for _, test := range []struct {
+		name        string
+		preferences *entity.UserPreferences
+		want        bool
+	}{
+		{"missing", nil, true}, {"nullable", &entity.UserPreferences{}, true}, {"enabled", &entity.UserPreferences{AutoMudaeOH: &enabled}, true}, {"disabled", &entity.UserPreferences{AutoMudaeOH: &disabled}, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repository := &preferenceRepositoryStub{preferences: test.preferences}
+			got, err := NewService(repository).AutoMudaeOH(123)
+			if err != nil || got != test.want {
+				t.Fatalf("AutoMudaeOH() = %t, %v", got, err)
+			}
+		})
+	}
+}
+
 func TestPreferenceServiceWrapsRepositoryErrorsAndToggles(t *testing.T) {
 	want := errors.New("database unavailable")
 	repository := &preferenceRepositoryStub{err: want}
@@ -64,6 +83,12 @@ func TestPreferenceServiceWrapsRepositoryErrorsAndToggles(t *testing.T) {
 	}
 	if _, err := service.ToggleAutoMudaeOQ(1); !errors.Is(err, want) {
 		t.Fatalf("ToggleAutoMudaeOQ() error = %v", err)
+	}
+	if _, err := service.AutoMudaeOH(1); !errors.Is(err, want) {
+		t.Fatalf("AutoMudaeOH() error = %v", err)
+	}
+	if _, err := service.ToggleAutoMudaeOH(1); !errors.Is(err, want) {
+		t.Fatalf("ToggleAutoMudaeOH() error = %v", err)
 	}
 	repository.err = nil
 	repository.toggle = false
@@ -92,5 +117,9 @@ func (r *preferenceRepositoryStub) ToggleAutoMudaeOC(userID uint64, defaultValue
 }
 
 func (r *preferenceRepositoryStub) ToggleAutoMudaeOQ(userID uint64, defaultValue bool) (bool, error) {
+	return r.ToggleAutoMudaeOC(userID, defaultValue)
+}
+
+func (r *preferenceRepositoryStub) ToggleAutoMudaeOH(userID uint64, defaultValue bool) (bool, error) {
 	return r.ToggleAutoMudaeOC(userID, defaultValue)
 }

@@ -56,6 +56,18 @@ func TestUserPreferencesRepositoryTogglesOuroquestAtomically(t *testing.T) {
 	assertPreferenceExpectations(t, mock)
 }
 
+func TestUserPreferencesRepositoryTogglesOuroharvestAtomically(t *testing.T) {
+	database, mock := preferenceMockDatabase(t)
+	repository := NewUserPreferencesRepository(database)
+	mock.ExpectExec("INSERT INTO users_preferences").WithArgs(uint64(1), false, sqlmock.AnyArg(), sqlmock.AnyArg(), true).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectQuery("SELECT .*users_preferences").WithArgs(uint64(1), 1).WillReturnRows(sqlmock.NewRows([]string{"user_id", "auto_mudae_oh", "created_at", "updated_at"}).AddRow(1, false, 10, 20))
+	enabled, err := repository.ToggleAutoMudaeOH(1, true)
+	if err != nil || enabled {
+		t.Fatalf("ToggleAutoMudaeOH() = %t, %v", enabled, err)
+	}
+	assertPreferenceExpectations(t, mock)
+}
+
 func TestUserPreferencesRepositoryWrapsDatabaseFailures(t *testing.T) {
 	want := errors.New("database unavailable")
 	database, mock := preferenceMockDatabase(t)
