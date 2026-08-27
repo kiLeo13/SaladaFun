@@ -20,7 +20,7 @@ func TestListenerCorrelatesOCAndPublishesUpdates(t *testing.T) {
 	board := testBoardMessage("board", "", "grid-cell")
 	listener.handleMessageCreate(nil, &discordgo.MessageCreate{Message: board})
 	sent := receiveCall(t, messenger.sent)
-	if sent.sourceID != "board" || !strings.Contains(sent.content, "Equilibrada") {
+	if sent.sourceID != "board" || !strings.Contains(sent.content, "Clique no botão") {
 		t.Fatalf("sent = %#v", sent)
 	}
 
@@ -409,21 +409,21 @@ func (l *fakeMessageLoader) LoadMessage(_, messageID string) (*discordgo.Message
 	return l.messages[messageID], nil
 }
 
-func (m *fakeMessenger) SendReply(channelID, guildID, sourceMessageID, content string) (string, error) {
+func (m *fakeMessenger) SendReply(channelID, guildID, sourceMessageID string, components []discordgo.MessageComponent) (string, error) {
 	m.mu.Lock()
 	m.nextID++
 	messageID := fmt.Sprintf("helper-%d", m.nextID)
 	err := m.sendErr
 	m.mu.Unlock()
-	m.sent <- messageCall{channelID: channelID, guildID: guildID, sourceID: sourceMessageID, messageID: messageID, content: content}
+	m.sent <- messageCall{channelID: channelID, guildID: guildID, sourceID: sourceMessageID, messageID: messageID, content: componentText(components)}
 	return messageID, err
 }
 
-func (m *fakeMessenger) EditMessage(channelID, messageID, content string) error {
+func (m *fakeMessenger) EditMessage(channelID, messageID string, components []discordgo.MessageComponent) error {
 	m.mu.Lock()
 	err := m.editErr
 	m.mu.Unlock()
-	m.edited <- messageCall{channelID: channelID, messageID: messageID, content: content}
+	m.edited <- messageCall{channelID: channelID, messageID: messageID, content: componentText(components)}
 	return err
 }
 
