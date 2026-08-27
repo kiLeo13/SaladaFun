@@ -8,6 +8,7 @@ import (
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
 	discordmove "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/move"
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
+	discordouroquest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroquest"
 )
 
 // Gateway exposes the Discord capabilities shared by command features.
@@ -22,8 +23,10 @@ func Register(
 	birthdays discordbirthday.Service,
 	gateway Gateway,
 	ouroChest *discordourochest.Listener,
+	ouroQuest *discordouroquest.Listener,
 ) {
 	discordbirthday.Register(routes, birthdays, gateway)
 	discordmove.Register(routes, gateway)
 	discordourochest.Register(routes.Messages(), ouroChest)
+	discordouroquest.Register(routes.Messages(), ouroQuest)
 }
