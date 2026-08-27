@@ -34,11 +34,25 @@ func (r *UserPreferencesRepository) FindUserPreferences(userID uint64) (*entity.
 
 // ToggleAutoMudaeOC atomically inverts the explicit or effective default setting.
 func (r *UserPreferencesRepository) ToggleAutoMudaeOC(userID uint64, defaultValue bool) (bool, error) {
+	return r.toggleBoolean(userID, defaultValue, "auto_mudae_oc", func(preferences *entity.UserPreferences) *bool {
+		return preferences.AutoMudaeOC
+	})
+}
+
+// ToggleAutoMudaeOQ atomically inverts the explicit or effective default setting.
+func (r *UserPreferencesRepository) ToggleAutoMudaeOQ(userID uint64, defaultValue bool) (bool, error) {
+	return r.toggleBoolean(userID, defaultValue, "auto_mudae_oq", func(preferences *entity.UserPreferences) *bool {
+		return preferences.AutoMudaeOQ
+	})
+}
+
+// toggleBoolean performs the shared nullable-boolean MySQL upsert operation.
+func (r *UserPreferencesRepository) toggleBoolean(userID uint64, defaultValue bool, column string, selected func(*entity.UserPreferences) *bool) (bool, error) {
 	now := time.Now().UTC().UnixMilli()
 	firstValue := !defaultValue
-	query := "INSERT INTO users_preferences (user_id, auto_mudae_oc, created_at, updated_at) " +
+	query := "INSERT INTO users_preferences (user_id, " + column + ", created_at, updated_at) " +
 		"VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE " +
-		"auto_mudae_oc = NOT COALESCE(auto_mudae_oc, ?), updated_at = VALUES(updated_at)"
+		column + " = NOT COALESCE(" + column + ", ?), updated_at = VALUES(updated_at)"
 	result := r.db.Exec(query, userID, firstValue, now, now, defaultValue)
 	if result.Error != nil {
 		return false, fmt.Errorf("toggle user preference: %w", result.Error)
@@ -47,8 +61,8 @@ func (r *UserPreferencesRepository) ToggleAutoMudaeOC(userID uint64, defaultValu
 	if err != nil {
 		return false, err
 	}
-	if preferences == nil || preferences.AutoMudaeOC == nil {
+	if preferences == nil || selected(preferences) == nil {
 		return false, errors.New("toggled user preference was not persisted")
 	}
-	return *preferences.AutoMudaeOC, nil
+	return *selected(preferences), nil
 }

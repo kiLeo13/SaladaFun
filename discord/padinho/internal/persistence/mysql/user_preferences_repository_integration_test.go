@@ -36,4 +36,8 @@ func TestUserPreferencesRepositoryAgainstMySQL(t *testing.T) {
 	if err != nil || !enabled {
 		t.Fatalf("second ToggleAutoMudaeOC() = %t, %v", enabled, err)
 	}
+	enabled, err = repository.ToggleAutoMudaeOQ(userID, true)
+	if err != nil || enabled {
+		t.Fatalf("first ToggleAutoMudaeOQ() = %t, %v", enabled, err)
+	}
 }
