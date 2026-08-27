@@ -3,8 +3,8 @@
 ## Startup and shutdown
 
 `cmd/padinho` is the visible composition root. It opens a bounded `*gorm.DB`,
-retrieves `app.token`, `birthday.channel_id`, the Mudae bot ID, and six Mudae
-custom emoji IDs through the `config` repository, constructs the application
+retrieves `app.token`, `birthday.channel_id`, the Mudae bot ID, and the required
+Mudae custom emoji IDs through the `config` repository, constructs the application
 services and Discord listeners, registers and freezes all Discord routes, and
 starts the gateway plus recurring-job scheduler. Missing, empty, non-numeric,
 or duplicate Mudae identifiers fail before Discord connects.
@@ -251,6 +251,41 @@ searches two plies for large early posteriors and deepens as filtering makes
 that safe for realtime updates. The actor uses the same Components V2 reply
 lifecycle as Ourochest and never calls an external solver.
 
+## Mudae Ouroharvest helper
+
+`discord/ouroharvest` correlates exact `$oh` or `$ouroharvest` commands for two
+seconds and additionally requires the stable localized five-click, two-minute,
+blue-reveals-three, and cyan-reveals-one instruction signature. This content
+signature is authoritative for the game kind; a preceding `$oc` command or an
+arbitrary 5×5 component grid is insufficient. The nullable `auto_mudae_oh`
+preference defaults to enabled. `!toggleohhelper` disables only automatic
+activation, and `!ohhelper` manually starts a verified replied-to board.
+
+The transport parser requires all 25 button emojis to match configured custom
+IDs. Enabled buttons form a compressed, position-independent state; disabled
+non-purple buttons count paid actions, disabled covered buttons record a found
+`$oc`, and stable `spD`-to-`spP` result text refunds dark-purple clicks. Purple
+is always recommended before a paid decision. The physical position is chosen
+only after the application policy selects an action type.
+
+`application/ouroharvest` evaluates expected final sphere points with a bounded
+Bellman policy. It searches two actions while four or five paid clicks remain,
+uses a deterministic EV rollout for the unsearched tail, and solves all
+remaining outcomes exactly once three clicks remain. Its state contains paid
+clicks, covered count, blue/cyan/dark counts, deterministic-color counts, and
+whether the hidden `$oc` was found. Published empirical sphere rates are
+versioned in code; omitted cascade combinations below `1e-5` total individual
+probability are renormalized, keeping realtime cost bounded well below the
+container's memory limit. Direct covered clicks preserve the approximately 2%
+unassigned `$oc` probability, whereas blue/cyan cascades condition on sphere
+colors. Dark outcomes include blue/cyan cascades and purple click refunds.
+
+One actor per Mudae message serializes solving and helper writes. The single
+Components V2 recommendation reports the selected button, action type, expected
+final SP, EV margin, and `$oc` probability when relevant. It uses the shared
+birthday accent and is deleted on completion, deletion, shutdown, or the
+135-second game timeout. No external solver is used at runtime.
+
 ## Persistence and deployment
 
 `internal/database.Open()` privately reads the small `DB_*` bootstrap contract
@@ -258,12 +293,12 @@ and returns `*gorm.DB`; credentials are never retained in a general application
 configuration object. `internal/config` maps `config(name, value)`, receives
 GORM directly, and owns the `app.token`, `birthday.channel_id`,
 `birthday.defaultMessage`, `bots.mudae.id`, six `bots.mudae.oc.emoji.*` keys,
-and `bots.mudae.oq.emoji.purple`. Neither layer passes contexts through
+`bots.mudae.oq.emoji.purple`, and four `bots.mudae.oh.emoji.*` keys. Neither layer passes contexts through
 synchronous startup queries.
 
 The generic `users_preferences` table uses the Discord user snowflake as its
-primary key. Module columns such as nullable `auto_mudae_oc` and
-`auto_mudae_oq` retain three
+primary key. Module columns such as nullable `auto_mudae_oc`, `auto_mudae_oq`,
+and `auto_mudae_oh` retain three
 states: explicit enabled, explicit disabled, and `NULL` for the module-owned
 default. `created_at` and `updated_at` are Unix UTC milliseconds, matching the
 other application tables. The MySQL repository performs the toggle atomically;

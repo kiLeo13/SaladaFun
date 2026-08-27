@@ -24,6 +24,15 @@ filters all 12,650 possible four-purple layouts and uses bounded expectimax to
 maximize expected sphere payout. `!toggleoqhelper` controls automatic help per
 user, while `!oqhelper` starts it manually on a replied-to board.
 
+Padinho follows `$oh`/`$ouroharvest` boards only when the exact command is
+correlated within two seconds and Mudae's instructions contain the stable
+five-click, two-minute, blue-reveals-three, and cyan-reveals-one signature. Its
+local stochastic policy models covered, blue, cyan, dark, deterministic, and
+free purple outcomes. It searches two paid clicks early, solves the final three
+clicks completely, and uses a deterministic EV rollout beyond the early search
+horizon. `!toggleohhelper` controls automatic help and `!ohhelper` starts the
+same solver manually on a replied-to verified board.
+
 Automatic help defaults to enabled per Discord user. `!toggleochelper` toggles
 only that automatic trigger and persists the choice; it does not disable the
 solver. A user can reply to an active Mudae `$oc` board with `!ochelper` at any
@@ -63,7 +72,7 @@ All commands and their related component/modal routes are registered once in
 
 ```go
 routes := discord.NewRoutes()
-commands.Register(routes, birthdayService, gateway, ouroChestListener)
+commands.Register(routes, birthdayService, gateway, ouroChestListener, ouroQuestListener, ouroHarvestListener)
 if err := routes.Freeze(); err != nil {
     return err
 }
@@ -106,7 +115,8 @@ Schema creation and migration belong exclusively to the root
 executable locally, upload it to the Padinho VM, and run it there before
 deploying code that requires a new schema. Compose never applies migrations.
 Apply `00002_user_preferences.sql` and
-`00003_user_preferences_ouroquest.sql` before deploying this version.
+`00003_user_preferences_ouroquest.sql`, then
+`00004_user_preferences_ouroharvest.sql` before deploying this version.
 Insert the following values through a trusted private database session. Mudae's
 emoji values are custom emoji IDs only, without names or Discord `<:...:...>`
 markup:
@@ -123,6 +133,10 @@ bots.mudae.oc.emoji.yellow
 bots.mudae.oc.emoji.orange
 bots.mudae.oc.emoji.red
 bots.mudae.oq.emoji.purple
+bots.mudae.oh.emoji.covered
+bots.mudae.oh.emoji.dark
+bots.mudae.oh.emoji.light
+bots.mudae.oh.emoji.white
 ```
 
 Enable the privileged **Message Content Intent** for Padinho in Discord's
@@ -139,10 +153,18 @@ seconds. Mudae responses reporting that the user has no `$oc` available or is
 waiting for its recharge cancel the failed correlation before a subsequent
 `$oh` board can consume it.
 
+The Ouroharvest helper separately uses a two-second correlation and the strong
+message signature above, so a nearby failed `$oc` cannot claim a `$oh` board.
+Its probability model is versioned in code from the published Sphere Harvest
+sample rates. The roughly 2% probability mass not assigned to sphere colors is
+the direct covered-cell `$oc` outcome; cascade reveals condition on ordinary
+sphere colors because they skip the hidden `$oc`. Runtime solving never calls
+the external reference solver.
+
 Message-command triggers include their prefix in the registered literal. They
 are case-insensitive, must be the first complete whitespace-separated token,
-and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`, and
-`!oqhelper`. Arguments use Go's
+and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`,
+`!oqhelper`, `!toggleohhelper`, and `!ohhelper`. Arguments use Go's
 `strings.Fields` behavior, so repeated spaces and tabs do not create empty
 values.
 
