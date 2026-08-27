@@ -220,6 +220,13 @@ a one-reveal lookahead recalculated after every update; it is not an unbounded
 multi-turn search. Initial symmetry uses the same position preference as the
 reference helper.
 
+The Discord presentation exposes only the first, balanced winner. It is a
+Components V2 container using the shared birthday accent color, with the button
+number as its heading, the row, column, probability, information, and expected
+value as secondary text, followed by a divider and the automatic-helper opt-out
+command. The additional objective winners remain internal solver output and do
+not add competing instructions to the chat.
+
 Each Mudae message owns a small actor that serializes solving and REST edits,
 so updates for separate boards can proceed independently without racing the
 same helper message. Repeated, stale, and out-of-order snapshots are ignored.
