@@ -86,3 +86,7 @@ as `auto_mudae_oc` are nullable so `NULL` can retain that feature's application
 default without forcing unrelated modules to populate every preference. Its
 audit timestamps use the same Unix-millisecond convention as the initial
 schema.
+
+Migration `00003_user_preferences_ouroquest.sql` adds nullable
+`auto_mudae_oq`; `NULL` preserves the Ouroquest module's enabled-by-default
+automatic-assistance behavior.
