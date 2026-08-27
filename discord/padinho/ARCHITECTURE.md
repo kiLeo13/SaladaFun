@@ -235,18 +235,35 @@ deletion, context shutdown, or three idle minutes. All replies suppress allowed
 mentions and use a soft Discord message reference. No external solver endpoint
 or website scraping participates in this flow.
 
+## Mudae Ouroquest helper
+
+`discord/ouroquest` independently correlates exact `$oq` or `$ouroquest`
+commands for two seconds, so adjacent `$oc` and `$oh` traffic cannot claim its
+anonymous 5×5 grid. The nullable `auto_mudae_oq` preference defaults to enabled;
+`!toggleoqhelper` changes automatic activation and `!oqhelper` manually starts
+a verified Mudae board.
+
+`application/ouroquest` enumerates all `C(25,4) = 12,650` equally likely target
+layouts. Blue through orange encode zero through four purple neighbors in the
+eight-cell neighborhood. Exact filtering feeds a bounded expectimax policy
+that maximizes sphere payout, then completion probability and information. It
+searches two plies for large early posteriors and deepens as filtering makes
+that safe for realtime updates. The actor uses the same Components V2 reply
+lifecycle as Ourochest and never calls an external solver.
+
 ## Persistence and deployment
 
 `internal/database.Open()` privately reads the small `DB_*` bootstrap contract
 and returns `*gorm.DB`; credentials are never retained in a general application
 configuration object. `internal/config` maps `config(name, value)`, receives
 GORM directly, and owns the `app.token`, `birthday.channel_id`,
-`birthday.defaultMessage`, `bots.mudae.id`, and six
-`bots.mudae.oc.emoji.*` keys. Neither layer passes contexts through
+`birthday.defaultMessage`, `bots.mudae.id`, six `bots.mudae.oc.emoji.*` keys,
+and `bots.mudae.oq.emoji.purple`. Neither layer passes contexts through
 synchronous startup queries.
 
 The generic `users_preferences` table uses the Discord user snowflake as its
-primary key. Module columns such as nullable `auto_mudae_oc` retain three
+primary key. Module columns such as nullable `auto_mudae_oc` and
+`auto_mudae_oq` retain three
 states: explicit enabled, explicit disabled, and `NULL` for the module-owned
 default. `created_at` and `updated_at` are Unix UTC milliseconds, matching the
 other application tables. The MySQL repository performs the toggle atomically;
