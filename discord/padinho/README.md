@@ -12,10 +12,9 @@ it uses the caller's current voice channel. Destination capacity is not checked
 before moves are requested from Discord.
 
 Padinho also follows Mudae `$oc` (Ourochest) boards in real time. It replies
-below an identified board with distinct balanced, information-first,
-reward-first, and direct-red suggestions, then edits that reply after each
-reveal. Duplicate objectives are collapsed, so only genuinely different useful
-buttons are shown. The helper reply is deleted after five reveals, when Mudae
+below an identified board with the top-ranked button in a Components V2
+container, including its probability and scoring explanation, then edits that
+reply after each reveal. The helper reply is deleted after five reveals, when Mudae
 disables the whole board, when the source message is deleted, or after three
 minutes without an update. Solving is local and does not call or scrape the
 Mudae Helper website.
