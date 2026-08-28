@@ -90,3 +90,7 @@ schema.
 Migration `00003_user_preferences_ouroquest.sql` adds nullable
 `auto_mudae_oq`; `NULL` preserves the Ouroquest module's enabled-by-default
 automatic-assistance behavior.
+
+Migration `00005_remove_ouroharvest_preference.sql` removes the abandoned
+`auto_mudae_oh` column. Migration `00004` remains in the ordered history so
+databases that previously applied it can safely advance to the final schema.

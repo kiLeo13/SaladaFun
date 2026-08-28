@@ -16,8 +16,8 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 4 {
-		t.Fatalf("embedded migrations = %d, want 4", len(files))
+	if len(files) != 5 {
+		t.Fatalf("embedded migrations = %d, want 5", len(files))
 	}
 }
 
@@ -115,8 +115,8 @@ func TestUpAgainstMySQL(t *testing.T) {
 	}
 	if _, err := transaction.Exec(`
 		INSERT INTO users_preferences
-			(user_id, auto_mudae_oc, auto_mudae_oq, auto_mudae_oh, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)`, userID, nil, nil, nil, 3, 3,
+			(user_id, auto_mudae_oc, auto_mudae_oq, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?)`, userID, nil, nil, 3, 3,
 	); err != nil {
 		t.Fatalf("insert nullable user preferences: %v", err)
 	}
@@ -130,9 +130,15 @@ func TestUpAgainstMySQL(t *testing.T) {
 	if err := transaction.QueryRow("SELECT auto_mudae_oq FROM users_preferences WHERE user_id = ?", userID).Scan(&autoMudaeOQ); err != nil || autoMudaeOQ.Valid {
 		t.Fatalf("nullable auto_mudae_oq = %#v, error = %v", autoMudaeOQ, err)
 	}
-	var autoMudaeOH sql.NullBool
-	if err := transaction.QueryRow("SELECT auto_mudae_oh FROM users_preferences WHERE user_id = ?", userID).Scan(&autoMudaeOH); err != nil || autoMudaeOH.Valid {
-		t.Fatalf("nullable auto_mudae_oh = %#v, error = %v", autoMudaeOH, err)
+	var ouroharvestColumnCount int
+	if err := transaction.QueryRow(`
+		SELECT COUNT(*)
+		FROM information_schema.columns
+		WHERE table_schema = DATABASE()
+			AND table_name = 'users_preferences'
+			AND column_name = 'auto_mudae_oh'`,
+	).Scan(&ouroharvestColumnCount); err != nil || ouroharvestColumnCount != 0 {
+		t.Fatalf("auto_mudae_oh columns = %d, error = %v", ouroharvestColumnCount, err)
 	}
 }
 
