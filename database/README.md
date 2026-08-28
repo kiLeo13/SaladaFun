@@ -90,8 +90,3 @@ schema.
 Migration `00003_user_preferences_ouroquest.sql` adds nullable
 `auto_mudae_oq`; `NULL` preserves the Ouroquest module's enabled-by-default
 automatic-assistance behavior.
-
-Migration `00004_user_preferences_ouroharvest.sql` adds nullable
-`auto_mudae_oh`; `NULL` preserves the Ouroharvest module's enabled-by-default
-automatic-assistance behavior while `!toggleohhelper` stores an explicit
-choice.
