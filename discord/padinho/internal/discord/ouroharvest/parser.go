@@ -56,11 +56,6 @@ func parseBoard(message *discordgo.Message, colors map[string]appouroharvest.Col
 		}
 		addEnabledColor(&snapshot.state, color)
 	}
-	if allDisabled {
-		snapshot.fingerprint = fingerprint.String()
-		snapshot.terminal = true
-		return snapshot, true
-	}
 	refunds := len(darkPurplePattern.FindAllString(messageText(message), -1))
 	if refunds > disabledDark {
 		refunds = disabledDark
