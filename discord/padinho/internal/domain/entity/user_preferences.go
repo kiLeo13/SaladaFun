@@ -5,7 +5,6 @@ type UserPreferences struct {
 	UserID      uint64 `gorm:"column:user_id;primaryKey;autoIncrement:false"`
 	AutoMudaeOC *bool  `gorm:"column:auto_mudae_oc"`
 	AutoMudaeOQ *bool  `gorm:"column:auto_mudae_oq"`
-	AutoMudaeOH *bool  `gorm:"column:auto_mudae_oh"`
 	CreatedAt   int64  `gorm:"column:created_at;autoCreateTime:milli"`
 	UpdatedAt   int64  `gorm:"column:updated_at;autoUpdateTime:milli"`
 }
