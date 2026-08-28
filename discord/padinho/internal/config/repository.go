@@ -20,10 +20,6 @@ const (
 	MudaeOCOrangeEmojiID   = "bots.mudae.oc.emoji.orange"
 	MudaeOCRedEmojiID      = "bots.mudae.oc.emoji.red"
 	MudaeOQPurpleEmojiID   = "bots.mudae.oq.emoji.purple"
-	MudaeOHCoveredEmojiID  = "bots.mudae.oh.emoji.covered"
-	MudaeOHDarkEmojiID     = "bots.mudae.oh.emoji.dark"
-	MudaeOHLightEmojiID    = "bots.mudae.oh.emoji.light"
-	MudaeOHWhiteEmojiID    = "bots.mudae.oh.emoji.white"
 )
 
 var ErrNotFound = errors.New("configuration value not found")
@@ -45,15 +41,6 @@ type MudaeOQSettings struct {
 	PurpleEmojiID string
 }
 
-// MudaeOHSettings contains all shared and Harvest-only sphere emoji IDs.
-type MudaeOHSettings struct {
-	MudaeOQSettings
-	CoveredEmojiID string
-	DarkEmojiID    string
-	LightEmojiID   string
-	WhiteEmojiID   string
-}
-
 type entry struct {
 	Name  string `gorm:"column:name;primaryKey;size:255"`
 	Value string `gorm:"column:value;not null"`
@@ -70,32 +57,6 @@ func (r *Repository) MudaeOQ() (MudaeOQSettings, error) {
 		return MudaeOQSettings{}, err
 	}
 	return MudaeOQSettings{MudaeOCSettings: shared, PurpleEmojiID: purple}, nil
-}
-
-// MudaeOH returns the complete required configuration for all sphere helpers.
-func (r *Repository) MudaeOH() (MudaeOHSettings, error) {
-	shared, err := r.MudaeOQ()
-	if err != nil {
-		return MudaeOHSettings{}, err
-	}
-	settings := MudaeOHSettings{MudaeOQSettings: shared}
-	values := []struct {
-		name        string
-		destination *string
-	}{
-		{MudaeOHCoveredEmojiID, &settings.CoveredEmojiID},
-		{MudaeOHDarkEmojiID, &settings.DarkEmojiID},
-		{MudaeOHLightEmojiID, &settings.LightEmojiID},
-		{MudaeOHWhiteEmojiID, &settings.WhiteEmojiID},
-	}
-	for _, value := range values {
-		loaded, err := r.Get(value.name)
-		if err != nil {
-			return MudaeOHSettings{}, err
-		}
-		*value.destination = loaded
-	}
-	return settings, nil
 }
 
 // BirthdayDefaultMessage returns the template used when a birthday has no
