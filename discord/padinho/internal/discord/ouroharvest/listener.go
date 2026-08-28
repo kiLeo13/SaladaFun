@@ -172,33 +172,12 @@ func (l *Listener) handleMessageUpdate(_ *discordgo.Session, event *discordgo.Me
 	if event == nil || event.Message == nil || len(event.Components) == 0 {
 		return
 	}
-	l.mu.Lock()
-	game := l.games[event.ID]
-	_, remembered := l.boards[event.ID]
-	l.mu.Unlock()
-	if game == nil && !remembered {
-		return
-	}
-	message := event.Message
-	if game != nil {
-		loaded, err := l.messages.LoadMessage(event.ChannelID, event.ID)
-		if err != nil {
-			l.logger.Warn("load complete Ouroharvest update", "message_id", event.ID, "error", err)
-		} else if loaded != nil {
-			message = loaded
-			if message.ChannelID == "" {
-				message.ChannelID = event.ChannelID
-			}
-			if message.GuildID == "" {
-				message.GuildID = event.GuildID
-			}
-		}
-	}
-	snapshot, ok := parseBoard(message, l.emojiColors)
+	snapshot, ok := parseBoard(event.Message, l.emojiColors)
 	if !ok {
 		return
 	}
 	l.mu.Lock()
+	game := l.games[event.ID]
 	if snapshot.terminal {
 		delete(l.boards, event.ID)
 	}
