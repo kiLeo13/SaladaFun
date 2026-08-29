@@ -54,6 +54,37 @@ func TestQuoteRepositoryRandomPropagatesDatabaseFailure(t *testing.T) {
 	assertQuoteExpectations(t, mock)
 }
 
+func TestQuoteRepositoryFindsDisabledQuoteByID(t *testing.T) {
+	database, mock := quoteMockDatabase(t)
+	repository := NewQuoteRepository(database)
+	mock.ExpectQuery("SELECT .* FROM `quotes` WHERE id = .* LIMIT .* ").
+		WithArgs(uint64(45), 1).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "author_id", "original_quote", "translated_quote", "source_url", "enabled", "created_at", "updated_at",
+		}).AddRow(45, 10, "Disabled quote", nil, nil, false, 1, 2))
+	mock.ExpectQuery("SELECT .* FROM `quote_authors` WHERE `quote_authors`.`id` = .* ").
+		WithArgs(uint64(10)).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "discord_user_id", "created_at", "updated_at"}).AddRow(10, "John Lennon", nil, 1, 2))
+	quote, err := repository.FindByID(45)
+	if err != nil || quote == nil || quote.ID != 45 || quote.Enabled || quote.Author.Name != "John Lennon" {
+		t.Fatalf("FindByID() = %#v, %v", quote, err)
+	}
+	assertQuoteExpectations(t, mock)
+}
+
+func TestQuoteRepositoryFindByIDReturnsNilForMissingQuote(t *testing.T) {
+	database, mock := quoteMockDatabase(t)
+	repository := NewQuoteRepository(database)
+	mock.ExpectQuery("SELECT .* FROM `quotes` WHERE id = .* LIMIT .* ").
+		WithArgs(uint64(45), 1).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}))
+	quote, err := repository.FindByID(45)
+	if err != nil || quote != nil {
+		t.Fatalf("FindByID() = %#v, %v", quote, err)
+	}
+	assertQuoteExpectations(t, mock)
+}
+
 func TestQuoteEntityTableNames(t *testing.T) {
 	if table := (entity.Quote{}).TableName(); table != "quotes" {
 		t.Fatalf("Quote table = %q", table)

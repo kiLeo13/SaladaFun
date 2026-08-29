@@ -6,8 +6,12 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 )
 
-// ErrNoQuotes indicates that no enabled quote is available to publish.
-var ErrNoQuotes = errors.New("no enabled quotes available")
+var (
+	// ErrNoQuotes indicates that no enabled quote is available to publish.
+	ErrNoQuotes = errors.New("no enabled quotes available")
+	// ErrQuoteNotFound indicates that no quote exists for a requested ID.
+	ErrQuoteNotFound = errors.New("quote not found")
+)
 
 // Service selects publishable quotes for Discord features.
 type Service struct {
@@ -27,6 +31,18 @@ func (s *Service) Random() (*entity.Quote, error) {
 	}
 	if quote == nil {
 		return nil, ErrNoQuotes
+	}
+	return quote, nil
+}
+
+// FindByID returns one quote regardless of its enabled state.
+func (s *Service) FindByID(id uint64) (*entity.Quote, error) {
+	quote, err := s.repository.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if quote == nil {
+		return nil, ErrQuoteNotFound
 	}
 	return quote, nil
 }

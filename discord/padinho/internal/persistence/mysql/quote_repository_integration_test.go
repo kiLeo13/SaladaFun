@@ -24,14 +24,20 @@ func TestQuoteRepositoryAgainstMySQL(t *testing.T) {
 		t.Fatalf("create author: %v", err)
 	}
 	translation := "Citação de teste"
-	if err := transaction.Create(&entity.Quote{
+	stored := &entity.Quote{
 		AuthorID: author.ID, Author: author, OriginalQuote: "Test quote",
-		TranslatedQuote: &translation, Enabled: true,
-	}).Error; err != nil {
+		TranslatedQuote: &translation, Enabled: false,
+	}
+	if err := transaction.Create(stored).Error; err != nil {
 		t.Fatalf("create quote: %v", err)
 	}
-	quote, err := NewQuoteRepository(transaction).Random()
-	if err != nil || quote == nil || !quote.Enabled || quote.Author.ID == 0 || quote.Author.Name == "" {
-		t.Fatalf("Random() = %#v, %v", quote, err)
+	repository := NewQuoteRepository(transaction)
+	quote, err := repository.FindByID(stored.ID)
+	if err != nil || quote == nil || quote.Enabled || quote.Author.ID != author.ID || quote.Author.Name == "" {
+		t.Fatalf("FindByID() = %#v, %v", quote, err)
+	}
+	missing, err := repository.FindByID(0)
+	if err != nil || missing != nil {
+		t.Fatalf("missing FindByID() = %#v, %v", missing, err)
 	}
 }

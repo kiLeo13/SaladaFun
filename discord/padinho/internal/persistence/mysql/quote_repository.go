@@ -19,8 +19,18 @@ func NewQuoteRepository(db *gorm.DB) *QuoteRepository {
 
 // Random returns one uniformly random enabled quote, or nil when none exist.
 func (r *QuoteRepository) Random() (*entity.Quote, error) {
+	return r.find(r.db.Where("enabled = ?", true).Order("RAND()"))
+}
+
+// FindByID returns one quote by primary key regardless of its enabled state.
+func (r *QuoteRepository) FindByID(id uint64) (*entity.Quote, error) {
+	return r.find(r.db.Where("id = ?", id))
+}
+
+// find loads one quote and its canonical author from a prepared query.
+func (r *QuoteRepository) find(query *gorm.DB) (*entity.Quote, error) {
 	var quote entity.Quote
-	err := r.db.Where("enabled = ?", true).Order("RAND()").Preload("Author").Take(&quote).Error
+	err := query.Preload("Author").Take(&quote).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

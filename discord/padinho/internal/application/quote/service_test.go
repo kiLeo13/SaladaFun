@@ -31,6 +31,27 @@ func TestServiceRandomPropagatesRepositoryFailure(t *testing.T) {
 	}
 }
 
+func TestServiceFindsQuoteByIDRegardlessOfEnabledState(t *testing.T) {
+	stored := &entity.Quote{ID: 45, Enabled: false}
+	service := NewService(&fakeRepository{quote: stored})
+	quote, err := service.FindByID(45)
+	if err != nil || quote != stored {
+		t.Fatalf("FindByID() = %#v, %v", quote, err)
+	}
+}
+
+func TestServiceFindByIDRejectsMissingQuoteAndPropagatesFailures(t *testing.T) {
+	service := NewService(&fakeRepository{})
+	if _, err := service.FindByID(45); !errors.Is(err, ErrQuoteNotFound) {
+		t.Fatalf("missing FindByID() error = %v", err)
+	}
+	want := errors.New("database unavailable")
+	service = NewService(&fakeRepository{err: want})
+	if _, err := service.FindByID(45); !errors.Is(err, want) {
+		t.Fatalf("failed FindByID() error = %v", err)
+	}
+}
+
 type fakeRepository struct {
 	quote *entity.Quote
 	err   error
@@ -38,5 +59,10 @@ type fakeRepository struct {
 
 // Random returns the configured fake result.
 func (r *fakeRepository) Random() (*entity.Quote, error) {
+	return r.quote, r.err
+}
+
+// FindByID returns the configured fake result.
+func (r *fakeRepository) FindByID(uint64) (*entity.Quote, error) {
 	return r.quote, r.err
 }
