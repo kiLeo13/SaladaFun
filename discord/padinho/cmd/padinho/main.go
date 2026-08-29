@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
 	apppreferences "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/preferences"
@@ -23,7 +22,7 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/persistence/mysql"
 )
 
-const birthdayCheckInterval = time.Minute
+const birthdayCheckSchedule = "0 * * * *"
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
@@ -110,7 +109,7 @@ func main() {
 	birthdaySender := discordbirthday.NewSender(gateway, channelID)
 	birthdayJob := birthdayjob.New(birthdayService, birthdaySender)
 	scheduler := job.NewScheduler(logger)
-	if err := scheduler.Every(birthdayCheckInterval, birthdayJob.Run); err != nil {
+	if err := scheduler.Schedule(birthdayCheckSchedule, birthdayJob.Run); err != nil {
 		fail(logger, err)
 	}
 
