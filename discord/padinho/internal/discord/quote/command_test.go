@@ -13,7 +13,7 @@ import (
 func TestQuoteCommandPublishesTranslatedQuoteWithNamedAuthor(t *testing.T) {
 	translated := "O tempo não foi desperdiçado."
 	registry := messagecommand.NewRegistry()
-	Register(registry, &fakeService{quote: &entity.Quote{
+	Register(registry, &fakeService{random: &entity.Quote{
 		OriginalQuote: "Time was not wasted.", TranslatedQuote: &translated,
 		Author: entity.QuoteAuthor{Name: "John Lennon"},
 	}})
@@ -30,7 +30,7 @@ func TestQuoteCommandPublishesTranslatedQuoteWithNamedAuthor(t *testing.T) {
 func TestQuoteCommandPublishesOriginalQuoteAndMentionsLinkedUser(t *testing.T) {
 	userID := uint64(123456789012345678)
 	responder := &fakeResponder{}
-	err := handle(context.Background(), &messagecommand.Request{Responder: responder}, &fakeService{quote: &entity.Quote{
+	err := handle(context.Background(), &messagecommand.Request{Responder: responder}, &fakeService{random: &entity.Quote{
 		OriginalQuote: "Linha um\nLinha dois", Author: entity.QuoteAuthor{DiscordUserID: &userID},
 	}})
 	if err != nil || responder.content != "> Linha um\n> Linha dois\n— <@123456789012345678>" || !responder.userMentions {
@@ -38,31 +38,39 @@ func TestQuoteCommandPublishesOriginalQuoteAndMentionsLinkedUser(t *testing.T) {
 	}
 }
 
-func TestQuoteCommandRejectsArgumentsAndEmptyCatalog(t *testing.T) {
-	for name, request := range map[string]*messagecommand.Request{
-		"arguments": {Arguments: []string{"extra"}, Responder: &fakeResponder{}},
-		"empty":     {Responder: &fakeResponder{}},
-	} {
-		t.Run(name, func(t *testing.T) {
-			responder := request.Responder.(*fakeResponder)
-			service := &fakeService{}
-			if name == "empty" {
-				service.err = appquote.ErrNoQuotes
-			}
-			if err := handle(context.Background(), request, service); err != nil || responder.content == "" {
-				t.Fatalf("handle() = %v, %#v", err, responder)
-			}
-		})
+func TestQuoteCommandIgnoresInvalidIDsAndEmptyCatalog(t *testing.T) {
+	for _, arguments := range [][]string{{"not-a-number"}, {"0"}, {"-1"}} {
+		responder := &fakeResponder{}
+		service := &fakeService{random: &entity.Quote{OriginalQuote: "Random", Author: entity.QuoteAuthor{Name: "Author"}}}
+		if err := handle(context.Background(), &messagecommand.Request{Arguments: arguments, Responder: responder}, service); err != nil || responder.content == "" || service.requestedID != 0 {
+			t.Fatalf("invalid ID %q = %v, %#v", arguments, err, responder)
+		}
+	}
+	responder := &fakeResponder{}
+	if err := handle(context.Background(), &messagecommand.Request{Responder: responder}, &fakeService{randomErr: appquote.ErrNoQuotes}); err != nil || responder.content == "" {
+		t.Fatalf("empty catalog = %v, %#v", err, responder)
+	}
+}
+
+func TestQuoteCommandFindsDisabledQuoteByValidIDAndReportsMissingID(t *testing.T) {
+	responder := &fakeResponder{}
+	service := &fakeService{byID: &entity.Quote{ID: 45, OriginalQuote: "Disabled", Enabled: false, Author: entity.QuoteAuthor{Name: "Author"}}}
+	if err := handle(context.Background(), &messagecommand.Request{Arguments: []string{"45", "ignored"}, Responder: responder}, service); err != nil || service.requestedID != 45 || responder.content != "> Disabled\n— Author" {
+		t.Fatalf("valid ID = %v, %#v, %#v", err, responder, service)
+	}
+	responder = &fakeResponder{}
+	if err := handle(context.Background(), &messagecommand.Request{Arguments: []string{"46"}, Responder: responder}, &fakeService{findErr: appquote.ErrQuoteNotFound}); err != nil || responder.content == "" {
+		t.Fatalf("missing ID = %v, %#v", err, responder)
 	}
 }
 
 func TestQuoteCommandPropagatesFailuresAndRejectsUnsupportedMentionResponder(t *testing.T) {
 	want := errors.New("database unavailable")
-	if err := handle(context.Background(), &messagecommand.Request{Responder: &fakeResponder{}}, &fakeService{err: want}); !errors.Is(err, want) {
+	if err := handle(context.Background(), &messagecommand.Request{Responder: &fakeResponder{}}, &fakeService{randomErr: want}); !errors.Is(err, want) {
 		t.Fatalf("database failure = %v", err)
 	}
 	userID := uint64(1)
-	if err := handle(context.Background(), &messagecommand.Request{Responder: replyOnlyResponder{}}, &fakeService{quote: &entity.Quote{
+	if err := handle(context.Background(), &messagecommand.Request{Responder: replyOnlyResponder{}}, &fakeService{random: &entity.Quote{
 		OriginalQuote: "Test", Author: entity.QuoteAuthor{DiscordUserID: &userID},
 	}}); err == nil {
 		t.Fatal("unsupported mention responder error = nil")
@@ -70,13 +78,22 @@ func TestQuoteCommandPropagatesFailuresAndRejectsUnsupportedMentionResponder(t *
 }
 
 type fakeService struct {
-	quote *entity.Quote
-	err   error
+	random      *entity.Quote
+	randomErr   error
+	byID        *entity.Quote
+	findErr     error
+	requestedID uint64
 }
 
 // Random returns the configured fake selection result.
 func (s *fakeService) Random() (*entity.Quote, error) {
-	return s.quote, s.err
+	return s.random, s.randomErr
+}
+
+// FindByID records the requested ID and returns the configured fake result.
+func (s *fakeService) FindByID(id uint64) (*entity.Quote, error) {
+	s.requestedID = id
+	return s.byID, s.findErr
 }
 
 type fakeResponder struct {
