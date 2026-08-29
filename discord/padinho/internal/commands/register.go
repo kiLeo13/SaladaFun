@@ -9,6 +9,7 @@ import (
 	discordmove "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/move"
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
 	discordouroquest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroquest"
+	discordquote "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/quote"
 )
 
 // Gateway exposes the Discord capabilities shared by command features.
@@ -21,12 +22,14 @@ type Gateway interface {
 func Register(
 	routes *discord.Routes,
 	birthdays discordbirthday.Service,
+	quotes discordquote.Service,
 	gateway Gateway,
 	ouroChest *discordourochest.Listener,
 	ouroQuest *discordouroquest.Listener,
 ) {
 	discordbirthday.Register(routes, birthdays, gateway)
 	discordmove.Register(routes, gateway)
+	discordquote.Register(routes.Messages(), quotes)
 	discordourochest.Register(routes.Messages(), ouroChest)
 	discordouroquest.Register(routes.Messages(), ouroQuest)
 }

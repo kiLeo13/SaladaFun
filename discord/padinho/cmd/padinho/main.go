@@ -10,6 +10,7 @@ import (
 
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
 	apppreferences "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/preferences"
+	appquote "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/quote"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/commands"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/config"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/database"
@@ -36,6 +37,7 @@ func main() {
 	configRepo := config.New(db)
 	birthdayRepo := mysql.NewBirthdayRepository(db)
 	preferencesRepo := mysql.NewUserPreferencesRepository(db)
+	quoteRepo := mysql.NewQuoteRepository(db)
 
 	token, err := configRepo.Get(config.AppToken)
 	if err != nil {
@@ -59,6 +61,7 @@ func main() {
 	// Services
 	birthdayService := appbirthday.NewService(birthdayRepo, configRepo)
 	preferencesService := apppreferences.NewService(preferencesRepo)
+	quoteService := appquote.NewService(quoteRepo)
 
 	// Discord
 	routes := padinhodiscord.NewRoutes()
@@ -100,7 +103,7 @@ func main() {
 	if err := gateway.AddSubscriber(ouroQuestListener); err != nil {
 		fail(logger, err)
 	}
-	commands.Register(routes, birthdayService, gateway, ouroChestListener, ouroQuestListener)
+	commands.Register(routes, birthdayService, quoteService, gateway, ouroChestListener, ouroQuestListener)
 	if err := routes.Freeze(); err != nil {
 		fail(logger, err)
 	}
