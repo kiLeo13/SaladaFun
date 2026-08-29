@@ -40,6 +40,29 @@ commands, message components, and modal submissions from the same gateway.
 Component `custom_id` values use `route:param...`; handlers validate every
 parameter because client input is untrusted.
 
+## Quote feature
+
+```text
+discord/quote message handler -> application/quote service
+                                      |
+                                      v
+                         persistence/mysql repository -> GORM
+```
+
+`!quote` is an exact, no-argument literal message command. The repository uses
+`WHERE enabled = TRUE ORDER BY RAND() LIMIT 1`, which is uniform and appropriate
+for the current catalog size. It joins the canonical author through GORM
+preloading and returns an empty result when no enabled rows exist; the
+application service turns that into a typed empty-catalog error.
+
+The handler prefers `translated_quote` and otherwise sends `original_quote` in
+exactly two lines: a Markdown block quote and an em-dash attribution. A normal
+author uses its canonical name. An author with `discord_user_id` is rendered as
+`<@snowflake>` and sends through the dedicated user-only mention responder.
+Its Discord `allowed_mentions` payload has only `users` in `parse`; role,
+`@everyone`, and reply-author mentions remain disabled. `source_url` is
+provenance for imports and is intentionally excluded from that fixed format.
+
 String command options may declare fixed `OptionChoice` values in the
 framework-neutral definition. The Discord adapter compiles those values into
 Discord's native dropdown choices, keeping command metadata separate from
@@ -270,6 +293,13 @@ default. `created_at` and `updated_at` are Unix UTC milliseconds, matching the
 other application tables. The MySQL repository performs the toggle atomically;
 the application layer, rather than persistence or a SQL default, decides what
 `NULL` means.
+
+`quote_authors` contains one canonical author name and an optional, unique
+Discord snowflake. It is not a foreign key to a Discord-user table because none
+exists in this application. `quotes` references its author, stores original
+text, an optional Portuguese translation, an optional source URL, and an
+enabled flag. Imports must map alternate raw spellings to the chosen canonical
+author ID before inserting; no author-alias table exists.
 
 The root `database` Go module exclusively owns Goose, the migration executable,
 and SQL history. Its SQL files are embedded in a self-contained executable that

@@ -24,6 +24,14 @@ filters all 12,650 possible four-purple layouts and uses bounded expectimax to
 maximize expected sphere payout. `!toggleoqhelper` controls automatic help per
 user, while `!oqhelper` starts it manually on a replied-to board.
 
+`!quote` replies with one enabled random quote from the local catalog. It uses
+the Brazilian Portuguese translation when present and otherwise the original
+text, in the exact form `> quote` followed by `— author`. An author linked to a
+Discord user is rendered as that user mention. The quote reply enables only
+user mentions; role, `@everyone`, and reply-author mentions remain disabled.
+Source URLs are retained for provenance but deliberately are not rendered in
+the command's two-line response.
+
 Automatic help defaults to enabled per Discord user. `!toggleochelper` toggles
 only that automatic trigger and persists the choice; it does not disable the
 solver. A user can reply to an active Mudae `$oc` board with `!ochelper` at any
@@ -65,7 +73,7 @@ All commands and their related component/modal routes are registered once in
 
 ```go
 routes := discord.NewRoutes()
-commands.Register(routes, birthdayService, gateway, ouroChestListener)
+commands.Register(routes, birthdayService, quoteService, gateway, ouroChestListener)
 if err := routes.Freeze(); err != nil {
     return err
 }
@@ -144,7 +152,7 @@ waiting for its recharge cancel the failed correlation before a subsequent
 Message-command triggers include their prefix in the registered literal. They
 are case-insensitive, must be the first complete whitespace-separated token,
 and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`, and
-`!oqhelper`. Arguments use Go's
+`!oqhelper`, and `!quote`. `!quote` takes no arguments. Arguments use Go's
 `strings.Fields` behavior, so repeated spaces and tabs do not create empty
 values.
 
