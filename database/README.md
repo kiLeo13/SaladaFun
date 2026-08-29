@@ -94,3 +94,11 @@ automatic-assistance behavior.
 Migration `00005_remove_ouroharvest_preference.sql` removes the abandoned
 `auto_mudae_oh` column. Migration `00004` remains in the ordered history so
 databases that previously applied it can safely advance to the final schema.
+
+Migration `00006_quotes.sql` adds `quote_authors` and `quotes` for Padinho's
+random quote command. Authors have one canonical name and may optionally map to
+one Discord snowflake; this is an identity attribute, not a foreign key to a
+shared users table. Quotes retain their original text, an optional Brazilian
+Portuguese translation, optional provenance URL, and an enabled flag so a quote
+can be withheld without deleting it. Importers must resolve spelling variants
+to a canonical author before inserting quotes.

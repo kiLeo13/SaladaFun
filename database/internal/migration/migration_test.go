@@ -16,8 +16,8 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 5 {
-		t.Fatalf("embedded migrations = %d, want 5", len(files))
+	if len(files) != 6 {
+		t.Fatalf("embedded migrations = %d, want 6", len(files))
 	}
 }
 
@@ -139,6 +139,63 @@ func TestUpAgainstMySQL(t *testing.T) {
 			AND column_name = 'auto_mudae_oh'`,
 	).Scan(&ouroharvestColumnCount); err != nil || ouroharvestColumnCount != 0 {
 		t.Fatalf("auto_mudae_oh columns = %d, error = %v", ouroharvestColumnCount, err)
+	}
+	result, err := transaction.Exec(`
+		INSERT INTO quote_authors (name, discord_user_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, "John Lennon", nil, 4, 4,
+	)
+	if err != nil {
+		t.Fatalf("insert quote author: %v", err)
+	}
+	authorID, err := result.LastInsertId()
+	if err != nil {
+		t.Fatalf("quote author ID: %v", err)
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO quotes
+			(author_id, original_quote, translated_quote, source_url, enabled, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		authorID, "Time you enjoy wasting, was not wasted.",
+		"O tempo que você gosta de desperdiçar não foi desperdiçado.",
+		"https://example.test/quotes/190", true, 5, 5,
+	); err != nil {
+		t.Fatalf("insert quote: %v", err)
+	}
+	var quoteAuthor string
+	var translated sql.NullString
+	if err := transaction.QueryRow(`
+		SELECT quote_authors.name, quotes.translated_quote
+		FROM quotes
+		JOIN quote_authors ON quote_authors.id = quotes.author_id
+		WHERE quote_authors.id = ?`, authorID,
+	).Scan(&quoteAuthor, &translated); err != nil || quoteAuthor != "John Lennon" || !translated.Valid {
+		t.Fatalf("stored quote = %q, %#v, error = %v", quoteAuthor, translated, err)
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO quote_authors (name, discord_user_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, "John Lennon", nil, 6, 6,
+	); err == nil {
+		t.Fatal("duplicate quote author name was accepted")
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO quote_authors (name, discord_user_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, "Padinho", userID, 7, 7,
+	); err != nil {
+		t.Fatalf("insert Discord quote author: %v", err)
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO quote_authors (name, discord_user_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, "Padinho duplicate", userID, 8, 8,
+	); err == nil {
+		t.Fatal("duplicate Discord quote author was accepted")
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO quotes
+			(author_id, original_quote, translated_quote, source_url, enabled, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		uint64(0), "Orphan quote", nil, nil, false, 9, 9,
+	); err == nil {
+		t.Fatal("orphan quote was accepted")
 	}
 }
 
