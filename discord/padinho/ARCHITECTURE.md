@@ -49,11 +49,14 @@ discord/quote message handler -> application/quote service
                          persistence/mysql repository -> GORM
 ```
 
-`!quote` is an exact, no-argument literal message command. The repository uses
-`WHERE enabled = TRUE ORDER BY RAND() LIMIT 1`, which is uniform and appropriate
-for the current catalog size. It joins the canonical author through GORM
-preloading and returns an empty result when no enabled rows exist; the
-application service turns that into a typed empty-catalog error.
+`!quote [id]` treats a positive decimal first argument as an exact quote ID.
+That path does not filter `enabled`, so an operator can retrieve a disabled
+quote by ID; an unknown valid ID becomes a typed not-found error. Any missing,
+zero, negative, or malformed first argument uses `WHERE enabled = TRUE ORDER BY
+RAND() LIMIT 1`, which is uniform and appropriate for the current catalog size.
+It joins the canonical author through GORM preloading and returns an empty
+result when no enabled rows exist; the application service turns that into a
+typed empty-catalog error.
 
 The handler prefers `translated_quote` and otherwise sends `original_quote` in
 exactly two lines: a Markdown block quote and an em-dash attribution. A normal
