@@ -73,6 +73,18 @@ func newMessageResponder(session *discordgo.Session, message *discordgo.Message)
 
 // Reply sends one non-mentioning soft reply to the command message.
 func (r *messageResponder) Reply(content string) error {
+	return r.reply(content, &discordgo.MessageAllowedMentions{})
+}
+
+// ReplyWithUserMentions sends one reply that permits only user mentions.
+func (r *messageResponder) ReplyWithUserMentions(content string) error {
+	return r.reply(content, &discordgo.MessageAllowedMentions{
+		Parse: []discordgo.AllowedMentionType{discordgo.AllowedMentionTypeUsers},
+	})
+}
+
+// reply sends one non-mentioning or user-mentioning soft reply to the command message.
+func (r *messageResponder) reply(content string, allowedMentions *discordgo.MessageAllowedMentions) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.didRespond {
@@ -81,7 +93,7 @@ func (r *messageResponder) Reply(content string) error {
 	failIfMissing := false
 	_, err := r.session.ChannelMessageSendComplex(r.message.ChannelID, &discordgo.MessageSend{
 		Content:         content,
-		AllowedMentions: &discordgo.MessageAllowedMentions{},
+		AllowedMentions: allowedMentions,
 		Reference: &discordgo.MessageReference{
 			Type: discordgo.MessageReferenceTypeDefault, MessageID: r.message.ID,
 			ChannelID: r.message.ChannelID, GuildID: r.message.GuildID, FailIfNotExists: &failIfMissing,

@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -153,6 +154,39 @@ func TestMessageResponderAllowsOnlyOneReply(t *testing.T) {
 	}
 	if err := responder.Reply("second"); err == nil {
 		t.Fatal("second Reply() error = nil")
+	}
+}
+
+func TestMessageResponderAllowsOnlyUserMentionsWhenRequested(t *testing.T) {
+	bodies := make(chan map[string]any, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			t.Errorf("decode body: %v", err)
+		}
+		bodies <- body
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"id":"reply","channel_id":"channel"}`))
+	}))
+	defer server.Close()
+	originalChannels := discordgo.EndpointChannels
+	discordgo.EndpointChannels = server.URL + "/channels/"
+	t.Cleanup(func() { discordgo.EndpointChannels = originalChannels })
+	session, err := discordgo.New("Bot token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	responder := newMessageResponder(session, &discordgo.Message{ID: "command", ChannelID: "channel", GuildID: "guild"})
+	if err := responder.ReplyWithUserMentions("> Test\n— <@123>"); err != nil {
+		t.Fatal(err)
+	}
+	allowedMentions, ok := (<-bodies)["allowed_mentions"].(map[string]any)
+	if !ok {
+		t.Fatal("allowed_mentions is missing")
+	}
+	parse, ok := allowedMentions["parse"].([]any)
+	if !ok || len(parse) != 1 || parse[0] != "users" || allowedMentions["replied_user"] != false {
+		t.Fatalf("allowed_mentions = %#v", allowedMentions)
 	}
 }
 

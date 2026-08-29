@@ -26,6 +26,12 @@ type Responder interface {
 	Reply(content string) error
 }
 
+// UserMentionResponder sends one reply that permits user mentions only.
+// Roles and @everyone remain disabled by the Discord transport.
+type UserMentionResponder interface {
+	ReplyWithUserMentions(content string) error
+}
+
 // Request contains normalized data for one registered message command.
 type Request struct {
 	Actor        command.Actor
