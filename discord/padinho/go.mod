@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/go-sql-driver/mysql v1.10.0
+	github.com/robfig/cron/v3 v3.0.1
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.31.2
 )
