@@ -136,14 +136,15 @@ that member plus the local-date start with Discord's relative timestamp syntax.
 Allowed mentions remain disabled for page browsing, so these are visible member
 references rather than notifications.
 
-The standard-library scheduler runs the birthday job every minute. The service
-converts the current instant into each stored IANA timezone, so DST and
-quarter-hour offsets are handled by Go's embedded timezone database. A due
-announcement is sent as plain Discord message content, using Discord's default
-mention behavior, and recorded in
-`birthday_announcements` only after successful Discord delivery. Sequential
-execution prevents a job from overlapping itself; the ledger prevents later
-checks from sending the same local-date birthday again.
+The cron-backed scheduler runs the birthday job at every UTC hour boundary with
+the standard expression `0 * * * *`; it is therefore aligned to wall-clock
+time rather than the process start time. The birthday UI offers only the
+hour-aligned Brasília, Amazonas, and UTC timezones, so each local midnight is
+checked exactly at its corresponding UTC hour. A due announcement is sent as
+plain Discord message content, using Discord's default mention behavior, and
+recorded in `birthday_announcements` only after successful Discord delivery.
+Cron skips an invocation when that same job is still running, and the ledger
+prevents later checks from sending the same local-date birthday again.
 
 Birthday messages are trimmed before storage. An empty stored `message` remains
 empty rather than receiving a copied default. When the announcement selector

@@ -30,9 +30,11 @@ solver. A user can reply to an active Mudae `$oc` board with `!ochelper` at any
 time to start manual assistance from the board's current state.
 
 Both slash-command channel options are restricted to guild voice channels.
-Birthday announcements are evaluated every minute against each user's IANA
-timezone and delivered once per local calendar date as plain Discord text;
-Discord applies its normal mention behavior and server/channel mention settings.
+Birthday announcements are evaluated at every UTC hour boundary with the cron
+expression `0 * * * *`. This precisely covers the UI's three hour-aligned
+timezone choices—Brasília, Amazonas, and UTC—and delivers each announcement
+once per local calendar date as plain Discord text. Discord applies its normal
+mention behavior and server/channel mention settings.
 The add-birthday modal
 lets a server manager select the member whose birthday is being registered and
 offers localized timezone choices for Brasília, Amazonas, and UTC instead of
