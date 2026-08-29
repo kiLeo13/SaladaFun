@@ -47,6 +47,8 @@ const (
 	BirthdayInvalidInteraction    = "Este botão não é mais válido. Execute /birthdays novamente."
 	GenericInteractionError       = "Algo deu errado ao processar essa interação."
 	GenericMessageCommandError    = "Algo deu errado ao processar esse comando."
+	QuoteUsage                    = "Use `!quote` sem argumentos."
+	QuoteEmpty                    = "Ainda não há citações disponíveis."
 	MoveAllCommandDescription     = "Move todos de um canal de voz para outro"
 	MoveAllDestinationDescription = "Canal de voz de destino"
 	MoveAllOriginDescription      = "Canal de voz de origem"
