@@ -13,7 +13,7 @@ func TestRenderSanitizesNamesAndUsesSingularFooter(t *testing.T) {
 	components := render(tree, map[uint64]string{1: "Mike```\nignored"})
 	container := components[0].(discordgo.Container)
 	body := container.Components[1].(discordgo.TextDisplay).Content
-	if container.AccentColor != nil || len(container.Components) != 2 || !strings.Contains(body, "Mike''' ignored") || strings.Count(body, "```") != 2 || !strings.Contains(body, "-# 1 conta total") {
+	if container.AccentColor != nil || len(container.Components) != 2 || !strings.Contains(body, "Mike''' ignored") || strings.Count(body, "```") != 2 || !strings.Contains(body, "-# 1 conta total.") {
 		t.Fatalf("rendered components = %#v", components)
 	}
 }
@@ -29,7 +29,7 @@ func TestTreeContentTruncatesLongTreesWithEllipsis(t *testing.T) {
 		names[userID] = strings.Repeat("A", 40)
 	}
 	content := treeContent(tree, names, 100)
-	if !strings.Contains(content, "...") || !strings.Contains(content, "-# 99 contas totais") {
+	if !strings.Contains(content, "...") || !strings.Contains(content, "-# Contas totais: 99.") {
 		t.Fatalf("truncated content = %q", content)
 	}
 }

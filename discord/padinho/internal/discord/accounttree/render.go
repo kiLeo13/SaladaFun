@@ -27,10 +27,7 @@ func render(tree *appaccounttree.Tree, names map[uint64]string) []discordgo.Mess
 func treeContent(tree *appaccounttree.Tree, names map[uint64]string, budget int) string {
 	footer := accountCountFooter(tree.Count)
 	suffix := "\n```\n" + footer
-	available := budget - utf8.RuneCountInString("```\n") - utf8.RuneCountInString(suffix)
-	if available < 0 {
-		available = 0
-	}
+	available := max(budget-utf8.RuneCountInString("```\n")-utf8.RuneCountInString(suffix), 0)
 	lines := []string{safeName(names[tree.Root.UserID])}
 	appendChildren(tree.Root, 1, names, &lines)
 	visible := lines
