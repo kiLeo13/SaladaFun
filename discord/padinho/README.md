@@ -34,6 +34,16 @@ enables only user mentions; role, `@everyone`, and reply-author mentions remain
 disabled. Source URLs are retained for provenance but deliberately are not
 rendered in the command's two-line response.
 
+`!childrentree [@user-or-id]` displays the complete linked-account hierarchy
+rooted above the supplied account; without an argument it uses the invoking
+member. Only its first argument is interpreted, so trailing words are ignored.
+The command accepts a raw Discord snowflake or mention markup by extracting its
+numeric ID and looking up the matching guild member. Its non-pinging Components
+V2 reply uses one unaccented container with a title mention and a compact
+code-block hierarchy plus the full account count. The hierarchy query is one
+inline MySQL `WITH RECURSIVE` statement through GORM; it creates no persistent
+database object.
+
 Automatic help defaults to enabled per Discord user. `!toggleochelper` toggles
 only that automatic trigger and persists the choice; it does not disable the
 solver. A user can reply to an active Mudae `$oc` board with `!ochelper` at any
@@ -158,6 +168,10 @@ and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`, and
 it is a positive decimal quote ID; otherwise it is ignored. Arguments use Go's
 `strings.Fields` behavior, so repeated spaces and tabs do not create empty
 values.
+
+When a message command accepts a Discord entity argument, it extracts the
+numeric snowflake and resolves the expected entity by ID. This accepts both
+mentions and raw IDs without relying on the event's mention collection.
 
 ## Verification and container
 

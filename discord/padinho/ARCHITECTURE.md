@@ -66,6 +66,39 @@ Its Discord `allowed_mentions` payload has only `users` in `parse`; role,
 `@everyone`, and reply-author mentions remain disabled. `source_url` is
 provenance for imports and is intentionally excluded from that fixed format.
 
+## Discord account hierarchy
+
+```text
+discord/accounttree message command -> application/accounttree service
+                                               |
+                                               v
+                             persistence/mysql recursive GORM query -> MySQL
+```
+
+`!childrentree [@user-or-id]` uses the invoking member when no argument is
+given. When present, only its first whitespace-separated argument matters; its
+first positive decimal snowflake is extracted from raw-ID or Discord-mention
+markup, then resolved as a guild member by ID. An invalid identifier and an
+unresolved member receive separate localized replies. Every entity-like message
+command argument follows this numeric-ID resolution rule rather than trusting a
+Discord mention collection.
+
+The MySQL repository executes one inline `WITH RECURSIVE` statement. It walks
+the requested row's parents to the root, then walks all descendants from that
+root, so asking for a leaf still renders the complete hierarchy. The statement
+is issued through `gorm.DB.Raw` and creates no database object. Application code
+validates the resulting flat rows into one rooted tree and rejects malformed or
+cyclic selections. An absent table row becomes a one-account tree.
+
+The reply is one non-pinging Components V2 container with no accent color and
+exactly two Text Displays: a title mentioning the resolved root and a plain
+Markdown code block using compact `|__` indentation followed by the localized
+total-account footer. Guild display names are resolved by ID; a stale descendant
+falls back to its snowflake rather than disappearing. Names are sanitized before
+being inserted into the code block. Tree rendering sorts siblings by display
+name and enforces a conservative 4,000-rune message-text budget; it keeps whole
+lines and appends `...` while the footer still reports the complete count.
+
 String command options may declare fixed `OptionChoice` values in the
 framework-neutral definition. The Discord adapter compiles those values into
 Discord's native dropdown choices, keeping command metadata separate from
