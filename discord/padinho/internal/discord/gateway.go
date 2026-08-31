@@ -163,11 +163,11 @@ func (g *Gateway) Guild(guildID command.Snowflake) (*discordgo.Guild, error) {
 	return guild, nil
 }
 
-// GuildMemberDisplayName returns a member's guild display name by Discord ID.
-func (g *Gateway) GuildMemberDisplayName(guildID, userID command.Snowflake) (string, bool, error) {
+// GuildMemberUsername returns a member's Discord username by Discord ID.
+func (g *Gateway) GuildMemberUsername(guildID, userID command.Snowflake) (string, bool, error) {
 	member, err := g.session.State.Member(string(guildID), string(userID))
 	if err == nil {
-		return member.DisplayName(), true, nil
+		return usernameForMember(member)
 	}
 	if !errors.Is(err, discordgo.ErrStateNotFound) {
 		return "", false, fmt.Errorf("read guild member state: %w", err)
@@ -180,7 +180,15 @@ func (g *Gateway) GuildMemberDisplayName(guildID, userID command.Snowflake) (str
 		}
 		return "", false, fmt.Errorf("load guild member: %w", err)
 	}
-	return member.DisplayName(), true, nil
+	return usernameForMember(member)
+}
+
+// usernameForMember extracts the stable Discord username from a member payload.
+func usernameForMember(member *discordgo.Member) (string, bool, error) {
+	if member == nil || member.User == nil || member.User.Username == "" {
+		return "", false, errors.New("Discord guild member has no username")
+	}
+	return member.User.Username, true, nil
 }
 
 // CurrentVoiceChannel returns the channel that a member currently occupies.

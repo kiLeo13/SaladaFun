@@ -93,7 +93,7 @@ cyclic selections. An absent table row becomes a one-account tree.
 The reply is one non-pinging Components V2 container with no accent color and
 exactly two Text Displays: a title mentioning the resolved root and a plain
 Markdown code block using compact `|__` indentation followed by the localized
-total-account footer. Guild display names are resolved by ID; a stale descendant
+total-account footer. Discord usernames are resolved by ID; a stale descendant
 falls back to its snowflake rather than disappearing. Names are sanitized before
 being inserted into the code block. Tree rendering sorts siblings by display
 name and enforces a conservative 4,000-rune message-text budget; it keeps whole
@@ -172,7 +172,7 @@ Discord's `Manage Server` (`PermissionManageGuild`) permission. The birthday
 saves the member selected in the modal's required User Select, allowing a
 manager to register a birthday for another server member. All visible copy
 except command names lives in the typed `internal/locale` packages. Allowed
-mentions are explicitly restricted, and display names are Markdown-escaped.
+mentions are explicitly restricted, and usernames are Markdown-escaped.
 
 The public `Editar` button opens one ephemeral Components V2 dashboard, but the
 button, target selector, field buttons, and modal submissions each independently

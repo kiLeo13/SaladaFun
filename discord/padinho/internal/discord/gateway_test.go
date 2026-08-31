@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 )
 
 func TestNewRequestsRequiredGatewayIntents(t *testing.T) {
@@ -58,6 +59,25 @@ func TestGuildReadsCachedGuildAndHandlesMissingGuild(t *testing.T) {
 	missing, err := gateway.Guild("missing")
 	if err != nil || missing != nil {
 		t.Fatalf("missing Guild() = %#v, %v", missing, err)
+	}
+}
+
+func TestGuildMemberUsernameUsesDiscordUsernameInsteadOfGuildNickname(t *testing.T) {
+	gateway, err := New("token", NewRoutes(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := gateway.session.State.GuildAdd(&discordgo.Guild{ID: "guild"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := gateway.session.State.MemberAdd(&discordgo.Member{
+		GuildID: "guild", Nick: "Guild nickname", User: &discordgo.User{ID: "user", Username: "discord_username"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	username, found, err := gateway.GuildMemberUsername(command.Snowflake("guild"), command.Snowflake("user"))
+	if err != nil || !found || username != "discord_username" {
+		t.Fatalf("GuildMemberUsername() = %q, %t, %v", username, found, err)
 	}
 }
 

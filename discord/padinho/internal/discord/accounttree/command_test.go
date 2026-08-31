@@ -36,7 +36,7 @@ func TestCommandUsesFirstArgumentAndRendersRootTree(t *testing.T) {
 	}
 	title := container.Components[0].(discordgo.TextDisplay).Content
 	body := container.Components[1].(discordgo.TextDisplay).Content
-	if title != "## Árvore de <@100>" || !strings.Contains(body, "Mike\n|__ Amanda\n|__ Lucas") || !strings.Contains(body, "-# 3 contas totais") {
+	if title != "## 🌳 Árvore de <@100>" || !strings.Contains(body, "Mike\n|__ Amanda\n|__ Lucas") || !strings.Contains(body, "-# Contas totais: 3.") {
 		t.Fatalf("rendered content = %q / %q", title, body)
 	}
 }
@@ -95,8 +95,8 @@ type fakeMembers struct {
 	err   error
 }
 
-// GuildMemberDisplayName returns the configured name when present.
-func (m fakeMembers) GuildMemberDisplayName(_ command.Snowflake, userID command.Snowflake) (string, bool, error) {
+// GuildMemberUsername returns the configured username when present.
+func (m fakeMembers) GuildMemberUsername(_ command.Snowflake, userID command.Snowflake) (string, bool, error) {
 	if m.err != nil {
 		return "", false, m.err
 	}

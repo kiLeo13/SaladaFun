@@ -21,9 +21,9 @@ type Service interface {
 	Tree(userID uint64) (*appaccounttree.Tree, error)
 }
 
-// MemberLookup resolves a guild member's display name from its Discord ID.
+// MemberLookup resolves a guild member's Discord username from its Discord ID.
 type MemberLookup interface {
-	GuildMemberDisplayName(guildID, userID command.Snowflake) (string, bool, error)
+	GuildMemberUsername(guildID, userID command.Snowflake) (string, bool, error)
 }
 
 // componentResponder sends a Components V2 reply to one message command.
@@ -44,7 +44,7 @@ func handle(_ context.Context, request *messagecommand.Request, service Service,
 	if err != nil {
 		return request.Responder.Reply(err.Error())
 	}
-	if _, found, err := members.GuildMemberDisplayName(request.GuildID, targetID); err != nil {
+	if _, found, err := members.GuildMemberUsername(request.GuildID, targetID); err != nil {
 		return err
 	} else if !found {
 		return request.Responder.Reply(ptbr.AccountTreeUserNotFound)
@@ -88,7 +88,7 @@ func lookupNames(guildID command.Snowflake, node *appaccounttree.Node, members M
 	names := make(map[uint64]string)
 	var visit func(*appaccounttree.Node) error
 	visit = func(current *appaccounttree.Node) error {
-		name, found, err := members.GuildMemberDisplayName(guildID, command.Snowflake(strconv.FormatUint(current.UserID, 10)))
+		name, found, err := members.GuildMemberUsername(guildID, command.Snowflake(strconv.FormatUint(current.UserID, 10)))
 		if err != nil {
 			return err
 		}
