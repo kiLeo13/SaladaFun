@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	appaccounttree "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/accounttree"
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
 	apppreferences "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/preferences"
 	appquote "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/quote"
@@ -38,6 +39,7 @@ func main() {
 	birthdayRepo := mysql.NewBirthdayRepository(db)
 	preferencesRepo := mysql.NewUserPreferencesRepository(db)
 	quoteRepo := mysql.NewQuoteRepository(db)
+	accountTreeRepo := mysql.NewDiscordAccountLinkRepository(db)
 
 	token, err := configRepo.Get(config.AppToken)
 	if err != nil {
@@ -62,6 +64,7 @@ func main() {
 	birthdayService := appbirthday.NewService(birthdayRepo, configRepo)
 	preferencesService := apppreferences.NewService(preferencesRepo)
 	quoteService := appquote.NewService(quoteRepo)
+	accountTreeService := appaccounttree.NewService(accountTreeRepo)
 
 	// Discord
 	routes := padinhodiscord.NewRoutes()
@@ -103,7 +106,7 @@ func main() {
 	if err := gateway.AddSubscriber(ouroQuestListener); err != nil {
 		fail(logger, err)
 	}
-	commands.Register(routes, birthdayService, quoteService, gateway, ouroChestListener, ouroQuestListener)
+	commands.Register(routes, birthdayService, quoteService, accountTreeService, gateway, ouroChestListener, ouroQuestListener)
 	if err := routes.Freeze(); err != nil {
 		fail(logger, err)
 	}

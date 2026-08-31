@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
@@ -160,6 +161,26 @@ func (g *Gateway) Guild(guildID command.Snowflake) (*discordgo.Guild, error) {
 		return nil, fmt.Errorf("read guild state: %w", err)
 	}
 	return guild, nil
+}
+
+// GuildMemberDisplayName returns a member's guild display name by Discord ID.
+func (g *Gateway) GuildMemberDisplayName(guildID, userID command.Snowflake) (string, bool, error) {
+	member, err := g.session.State.Member(string(guildID), string(userID))
+	if err == nil {
+		return member.DisplayName(), true, nil
+	}
+	if !errors.Is(err, discordgo.ErrStateNotFound) {
+		return "", false, fmt.Errorf("read guild member state: %w", err)
+	}
+	member, err = g.session.GuildMember(string(guildID), string(userID))
+	if err != nil {
+		var restError *discordgo.RESTError
+		if errors.As(err, &restError) && restError.Response != nil && restError.Response.StatusCode == http.StatusNotFound {
+			return "", false, nil
+		}
+		return "", false, fmt.Errorf("load guild member: %w", err)
+	}
+	return member.DisplayName(), true, nil
 }
 
 // CurrentVoiceChannel returns the channel that a member currently occupies.

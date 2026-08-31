@@ -190,6 +190,42 @@ func TestMessageResponderAllowsOnlyUserMentionsWhenRequested(t *testing.T) {
 	}
 }
 
+func TestMessageResponderSendsNonMentioningComponentsV2Reply(t *testing.T) {
+	bodies := make(chan map[string]any, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
+			t.Errorf("decode body: %v", err)
+		}
+		bodies <- body
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write([]byte(`{"id":"reply","channel_id":"channel"}`))
+	}))
+	defer server.Close()
+	originalChannels := discordgo.EndpointChannels
+	discordgo.EndpointChannels = server.URL + "/channels/"
+	t.Cleanup(func() { discordgo.EndpointChannels = originalChannels })
+	session, err := discordgo.New("Bot token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	responder := newMessageResponder(session, &discordgo.Message{ID: "command", ChannelID: "channel", GuildID: "guild"})
+	if err := responder.ReplyWithComponents([]discordgo.MessageComponent{discordgo.Container{Components: []discordgo.MessageComponent{
+		discordgo.TextDisplay{Content: "## Árvore"},
+	}}}); err != nil {
+		t.Fatal(err)
+	}
+	body := <-bodies
+	if _, content := body["content"]; content || body["flags"] != float64(discordgo.MessageFlagsIsComponentsV2) {
+		t.Fatalf("Components V2 body = %#v", body)
+	}
+	allowedMentions, ok := body["allowed_mentions"].(map[string]any)
+	parse, parseOK := allowedMentions["parse"].([]any)
+	if !ok || !parseOK || len(parse) != 0 {
+		t.Fatalf("allowed mentions = %#v", body["allowed_mentions"])
+	}
+}
+
 func TestMessageCommandHandlerLogsFailedErrorResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		http.Error(writer, `{"message":"bad request","code":0}`, http.StatusBadRequest)
