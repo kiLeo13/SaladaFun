@@ -32,6 +32,14 @@ Shared migrations are a cross-release contract owned by the independent root
 `database` Go module. Its self-contained Linux executable is built and run
 manually on the Padinho VM; application code and Compose never own schema
 evolution.
+
+The shared `discord_account_links` table stores only Discord accounts that
+participate in a hierarchy. It uses an auto-increment surrogate key plus a
+unique Discord snowflake and optional direct-parent snowflake, allowing arbitrary
+rooted trees such as a managed account with its own managed accounts. Missing
+parents and direct self-parenting are rejected by MySQL. Applications that add
+reparenting must reject longer cycles before updating a relationship; hierarchy
+traversal and command behavior remain application concerns.
 Terraform owns OCI resources; Ansible configures the resulting VM and
 reconciles Docker Compose. GitHub Actions tests and publishes Padinho's image to
 the public GitHub Container Registry package used by Compose.

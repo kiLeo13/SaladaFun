@@ -16,8 +16,8 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 6 {
-		t.Fatalf("embedded migrations = %d, want 6", len(files))
+	if len(files) != 7 {
+		t.Fatalf("embedded migrations = %d, want 7", len(files))
 	}
 }
 
@@ -196,6 +196,61 @@ func TestUpAgainstMySQL(t *testing.T) {
 		uint64(0), "Orphan quote", nil, nil, false, 9, 9,
 	); err == nil {
 		t.Fatal("orphan quote was accepted")
+	}
+	const rootAccountID uint64 = 900000000000000010
+	result, err = transaction.Exec(`
+		INSERT INTO discord_account_links
+			(user_id, parent_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, rootAccountID, nil, 10, 10,
+	)
+	if err != nil {
+		t.Fatalf("insert root account link: %v", err)
+	}
+	if linkID, linkIDErr := result.LastInsertId(); linkIDErr != nil || linkID <= 0 {
+		t.Fatalf("root account link ID = %d, error = %v", linkID, linkIDErr)
+	}
+	const childAccountID uint64 = 900000000000000011
+	if _, err := transaction.Exec(`
+		INSERT INTO discord_account_links
+			(user_id, parent_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, childAccountID, rootAccountID, 11, 11,
+	); err != nil {
+		t.Fatalf("insert child account link: %v", err)
+	}
+	const grandchildAccountID uint64 = 900000000000000012
+	if _, err := transaction.Exec(`
+		INSERT INTO discord_account_links
+			(user_id, parent_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, grandchildAccountID, childAccountID, 12, 12,
+	); err != nil {
+		t.Fatalf("insert grandchild account link: %v", err)
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO discord_account_links
+			(user_id, parent_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, childAccountID, nil, 13, 13,
+	); err == nil {
+		t.Fatal("duplicate linked user was accepted")
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO discord_account_links
+			(user_id, parent_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, uint64(900000000000000013), uint64(900000000000000099), 14, 14,
+	); err == nil {
+		t.Fatal("linked user with a missing parent was accepted")
+	}
+	const selfParentedAccountID uint64 = 900000000000000014
+	if _, err := transaction.Exec(`
+		INSERT INTO discord_account_links
+			(user_id, parent_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?)`, selfParentedAccountID, selfParentedAccountID, 15, 15,
+	); err == nil {
+		t.Fatal("self-parented linked user was accepted")
+	}
+	if _, err := transaction.Exec(
+		"DELETE FROM discord_account_links WHERE user_id = ?", rootAccountID,
+	); err == nil {
+		t.Fatal("linked user with descendants was deleted")
 	}
 }
 

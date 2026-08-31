@@ -102,3 +102,12 @@ shared users table. Quotes retain their original text, an optional Brazilian
 Portuguese translation, optional provenance URL, and an enabled flag so a quote
 can be withheld without deleting it. Importers must resolve spelling variants
 to a canonical author before inserting quotes.
+
+Migration `00007_discord_account_links.sql` adds the sparse
+`discord_account_links` hierarchy. Each link has an auto-increment database ID
+and a unique `user_id`; `parent_id` is nullable and references the
+direct parent snowflake, so a parent may itself have a parent. A foreign key
+rejects missing parents, and a check constraint rejects direct self-parenting.
+The table deliberately does not represent unlinked singleton accounts. It does
+not prevent longer cycles; any future reparenting feature must validate that the
+new parent is not in the moved account's descendant subtree before writing.
