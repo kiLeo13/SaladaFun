@@ -11,6 +11,12 @@ every currently connected member from the chosen origin; if origin is omitted,
 it uses the caller's current voice channel. Destination capacity is not checked
 before moves are requested from Discord.
 
+Padinho records every voice-channel join, move, and leave in `voice_activity_logs`
+and sends a matching embed to the text channel configured by
+`channels.logs.voice`. Each delivery attempt is stored as `SENT` or `FAILED`;
+there is no application-level retry. The footer is the guild name exactly as
+Discord provides it, including any emoji already present in that name.
+
 Padinho also follows Mudae `$oc` (Ourochest) boards in real time. It replies
 below an identified board with the top-ranked button in a Components V2
 container, including its probability and scoring explanation, then edits that
@@ -117,7 +123,7 @@ and `DB_NAME` directly and returns `*gorm.DB`. Optional pool limits use
 configuration struct and callers never provide a DSN.
 
 `cmd/padinho` passes GORM directly to `internal/config`, loads `app.token`,
-`birthday.channel_id`, and the Mudae settings below, and then constructs Discord. Padinho derives its
+`birthday.channel_id`, `channels.logs.voice`, and the Mudae settings below, and then constructs Discord. Padinho derives its
 application ID after connecting and always synchronizes global commands; there
 are no Discord environment switches. When an announced birthday has no custom
 message, Padinho reads `birthday.defaultMessage` from `config` and applies
@@ -136,6 +142,7 @@ markup:
 ```text
 app.token
 birthday.channel_id
+channels.logs.voice
 birthday.defaultMessage
 bots.mudae.id
 bots.mudae.oc.emoji.blue

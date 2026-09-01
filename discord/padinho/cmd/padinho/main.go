@@ -12,6 +12,7 @@ import (
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
 	apppreferences "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/preferences"
 	appquote "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/quote"
+	appvoiceactivity "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/voiceactivity"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/commands"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/config"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/database"
@@ -19,6 +20,7 @@ import (
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
 	discordouroquest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroquest"
+	discordvoiceactivity "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/voiceactivity"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/job"
 	birthdayjob "github.com/kiLeo13/SaladaFun/discord/padinho/internal/job/birthday"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/persistence/mysql"
@@ -40,6 +42,7 @@ func main() {
 	preferencesRepo := mysql.NewUserPreferencesRepository(db)
 	quoteRepo := mysql.NewQuoteRepository(db)
 	accountTreeRepo := mysql.NewDiscordAccountLinkRepository(db)
+	voiceActivityRepo := mysql.NewVoiceActivityLogRepository(db)
 
 	token, err := configRepo.Get(config.AppToken)
 	if err != nil {
@@ -55,6 +58,13 @@ func main() {
 	if channelID == "" {
 		fail(logger, errors.New("birthday.channel_id is empty"))
 	}
+	voiceActivityChannelID, err := configRepo.Get(config.VoiceActivityLogChannel)
+	if err != nil {
+		fail(logger, err)
+	}
+	if voiceActivityChannelID == "" {
+		fail(logger, errors.New("channels.logs.voice is empty"))
+	}
 	mudaeSettings, err := configRepo.MudaeOQ()
 	if err != nil {
 		fail(logger, err)
@@ -65,6 +75,7 @@ func main() {
 	preferencesService := apppreferences.NewService(preferencesRepo)
 	quoteService := appquote.NewService(quoteRepo)
 	accountTreeService := appaccounttree.NewService(accountTreeRepo)
+	voiceActivityService := appvoiceactivity.NewService(voiceActivityRepo)
 
 	// Discord
 	routes := padinhodiscord.NewRoutes()
@@ -104,6 +115,13 @@ func main() {
 		fail(logger, err)
 	}
 	if err := gateway.AddSubscriber(ouroQuestListener); err != nil {
+		fail(logger, err)
+	}
+	voiceActivityListener, err := discordvoiceactivity.New(voiceActivityChannelID, gateway, voiceActivityService, logger)
+	if err != nil {
+		fail(logger, err)
+	}
+	if err := gateway.AddSubscriber(voiceActivityListener); err != nil {
 		fail(logger, err)
 	}
 	commands.Register(routes, birthdayService, quoteService, accountTreeService, gateway, ouroChestListener, ouroQuestListener)

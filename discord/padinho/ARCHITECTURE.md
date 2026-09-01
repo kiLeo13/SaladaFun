@@ -130,6 +130,23 @@ voice states before requesting an individual Discord move for every member.
 It deliberately does not inspect channel member limits; Discord evaluates each
 move request.
 
+## Voice activity logging
+
+`internal/discord/voiceactivity` is a gateway subscriber rather than a command.
+It uses DiscordGo's cached `BeforeUpdate` voice state to classify only channel
+changes as joins, moves, or leaves, then renders the configured log-channel
+embed. The post-update guild cache supplies the connected-member count for join
+and leave embeds. The feature uses the guild name verbatim in its footer, so a
+guild-owned emoji is not duplicated by the renderer.
+
+After one send attempt, the listener asks `application/voiceactivity` to persist
+the final `SENT` or `FAILED` outcome through
+`persistence/mysql/VoiceActivityLogRepository`. `voice_activity_logs` is an
+append-only ledger: old and new channel IDs encode the transition, `guild_id`
+preserves its server context, and `created_at` is the observed UTC millisecond
+time. There is no retry or mutable status yet; a future retry feature must add
+its own attempt metadata and update semantics.
+
 Response payloads intentionally use native DiscordGo types. The small bound
 responder owns the session and source interaction, sends exactly one initial
 response, and reports whether the gateway may still send an error. This is a

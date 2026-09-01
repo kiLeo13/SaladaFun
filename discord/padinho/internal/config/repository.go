@@ -9,17 +9,18 @@ import (
 )
 
 const (
-	AppToken               = "app.token"
-	BirthdayChannelID      = "birthday.channel_id"
-	BirthdayDefaultMessage = "birthday.defaultMessage"
-	MudaeBotID             = "bots.mudae.id"
-	MudaeOCBlueEmojiID     = "bots.mudae.oc.emoji.blue"
-	MudaeOCTealEmojiID     = "bots.mudae.oc.emoji.teal"
-	MudaeOCGreenEmojiID    = "bots.mudae.oc.emoji.green"
-	MudaeOCYellowEmojiID   = "bots.mudae.oc.emoji.yellow"
-	MudaeOCOrangeEmojiID   = "bots.mudae.oc.emoji.orange"
-	MudaeOCRedEmojiID      = "bots.mudae.oc.emoji.red"
-	MudaeOQPurpleEmojiID   = "bots.mudae.oq.emoji.purple"
+	AppToken                = "app.token"
+	BirthdayChannelID       = "birthday.channel_id"
+	VoiceActivityLogChannel = "channels.logs.voice"
+	BirthdayDefaultMessage  = "birthday.defaultMessage"
+	MudaeBotID              = "bots.mudae.id"
+	MudaeOCBlueEmojiID      = "bots.mudae.oc.emoji.blue"
+	MudaeOCTealEmojiID      = "bots.mudae.oc.emoji.teal"
+	MudaeOCGreenEmojiID     = "bots.mudae.oc.emoji.green"
+	MudaeOCYellowEmojiID    = "bots.mudae.oc.emoji.yellow"
+	MudaeOCOrangeEmojiID    = "bots.mudae.oc.emoji.orange"
+	MudaeOCRedEmojiID       = "bots.mudae.oc.emoji.red"
+	MudaeOQPurpleEmojiID    = "bots.mudae.oq.emoji.purple"
 )
 
 var ErrNotFound = errors.New("configuration value not found")
