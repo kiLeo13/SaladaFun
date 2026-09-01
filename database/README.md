@@ -53,12 +53,13 @@ ALTER USER 'padinho'@'10.42.10.%' IDENTIFIED BY 'replace-me';
 GRANT SELECT, INSERT, UPDATE, DELETE ON salada.* TO 'padinho'@'10.42.10.%';
 ```
 
-Padinho requires the non-null Discord token and birthday announcement channel
-before it can start:
+Padinho requires the non-null Discord token, birthday announcement channel, and
+voice activity log channel before it can start:
 
 ```sql
 INSERT INTO config (name, value) VALUES ('app.token', 'replace-me');
 INSERT INTO config (name, value) VALUES ('birthday.channel_id', 'replace-me');
+INSERT INTO config (name, value) VALUES ('channels.logs.voice', 'replace-me');
 ```
 
 Run that statement through a private, trusted MySQL session so the token does
@@ -111,3 +112,9 @@ rejects missing parents, and a check constraint rejects direct self-parenting.
 The table deliberately does not represent unlinked singleton accounts. It does
 not prevent longer cycles; any future reparenting feature must validate that the
 new parent is not in the moved account's descendant subtree before writing.
+
+Migration `00008_voice_activity_logs.sql` adds Padinho's append-only voice
+activity delivery ledger. It stores the guild and member snowflakes, nullable
+old/new channel snowflakes that encode join, leave, or move, the final `SENT`
+or `FAILED` delivery result, and the observed UTC millisecond timestamp. The
+schema rejects invalid statuses, channel-less rows, and unchanged channel pairs.

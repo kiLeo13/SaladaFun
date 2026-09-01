@@ -16,8 +16,8 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 7 {
-		t.Fatalf("embedded migrations = %d, want 7", len(files))
+	if len(files) != 8 {
+		t.Fatalf("embedded migrations = %d, want 8", len(files))
 	}
 }
 
@@ -251,6 +251,56 @@ func TestUpAgainstMySQL(t *testing.T) {
 		"DELETE FROM discord_account_links WHERE user_id = ?", rootAccountID,
 	); err == nil {
 		t.Fatal("linked user with descendants was deleted")
+	}
+	const voiceGuildID uint64 = 900000000000000200
+	const voiceUserID uint64 = 900000000000000201
+	const oldVoiceChannelID uint64 = 900000000000000202
+	const newVoiceChannelID uint64 = 900000000000000203
+	result, err = transaction.Exec(`
+		INSERT INTO voice_activity_logs
+			(guild_id, user_id, old_channel_id, new_channel_id, log_status, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		voiceGuildID, voiceUserID, oldVoiceChannelID, newVoiceChannelID, "SENT", 16,
+	)
+	if err != nil {
+		t.Fatalf("insert voice activity log: %v", err)
+	}
+	voiceLogID, err := result.LastInsertId()
+	if err != nil || voiceLogID <= 0 {
+		t.Fatalf("voice activity log ID = %d, error = %v", voiceLogID, err)
+	}
+	var voiceStatus string
+	var storedOldChannel sql.NullInt64
+	if err := transaction.QueryRow(`
+		SELECT log_status, old_channel_id
+		FROM voice_activity_logs
+		WHERE id = ?`, voiceLogID,
+	).Scan(&voiceStatus, &storedOldChannel); err != nil || voiceStatus != "SENT" || !storedOldChannel.Valid || storedOldChannel.Int64 != int64(oldVoiceChannelID) {
+		t.Fatalf("stored voice activity = %q, %#v, error = %v", voiceStatus, storedOldChannel, err)
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO voice_activity_logs
+			(guild_id, user_id, old_channel_id, new_channel_id, log_status, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		voiceGuildID, voiceUserID, nil, newVoiceChannelID, "PENDING", 17,
+	); err == nil {
+		t.Fatal("invalid voice activity status was accepted")
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO voice_activity_logs
+			(guild_id, user_id, old_channel_id, new_channel_id, log_status, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		voiceGuildID, voiceUserID, nil, nil, "FAILED", 18,
+	); err == nil {
+		t.Fatal("voice activity without channels was accepted")
+	}
+	if _, err := transaction.Exec(`
+		INSERT INTO voice_activity_logs
+			(guild_id, user_id, old_channel_id, new_channel_id, log_status, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		voiceGuildID, voiceUserID, oldVoiceChannelID, oldVoiceChannelID, "FAILED", 19,
+	); err == nil {
+		t.Fatal("unchanged voice activity channels were accepted")
 	}
 }
 
