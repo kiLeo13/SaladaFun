@@ -66,6 +66,12 @@ Its Discord `allowed_mentions` payload has only `users` in `parse`; role,
 `@everyone`, and reply-author mentions remain disabled. `source_url` is
 provenance for imports and is intentionally excluded from that fixed format.
 
+## BetaSpirit command
+
+`!betaspirit` is a literal message command registered through the shared route
+composition. Its handler replies with the required `urls.youtube.betaSpirit`
+configuration value, loaded and validated during process startup.
+
 ## Discord account hierarchy
 
 ```text

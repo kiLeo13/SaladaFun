@@ -170,9 +170,10 @@ waiting for its recharge cancel the failed correlation before a subsequent
 
 Message-command triggers include their prefix in the registered literal. They
 are case-insensitive, must be the first complete whitespace-separated token,
-and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`, and
-`!oqhelper`, and `!quote`. The first `!quote` argument is interpreted only when
-it is a positive decimal quote ID; otherwise it is ignored. Arguments use Go's
+and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`,
+`!oqhelper`, `!quote`, and `!betaspirit`. `!betaspirit` replies with the URL
+stored in `urls.youtube.betaSpirit`. The first `!quote` argument is interpreted
+only when it is a positive decimal quote ID; otherwise it is ignored. Arguments use Go's
 `strings.Fields` behavior, so repeated spaces and tabs do not create empty
 values.
 

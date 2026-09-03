@@ -60,6 +60,7 @@ voice activity log channel before it can start:
 INSERT INTO config (name, value) VALUES ('app.token', 'replace-me');
 INSERT INTO config (name, value) VALUES ('birthday.channel_id', 'replace-me');
 INSERT INTO config (name, value) VALUES ('channels.logs.voice', 'replace-me');
+INSERT INTO config (name, value) VALUES ('urls.youtube.betaSpirit', 'https://www.youtube.com/watch?v=TI0f3xA5_gg');
 ```
 
 Run that statement through a private, trusted MySQL session so the token does
