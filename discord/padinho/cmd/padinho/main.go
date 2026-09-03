@@ -65,6 +65,13 @@ func main() {
 	if voiceActivityChannelID == "" {
 		fail(logger, errors.New("channels.logs.voice is empty"))
 	}
+	betaSpiritURL, err := configRepo.Get(config.BetaSpiritYouTubeURL)
+	if err != nil {
+		fail(logger, err)
+	}
+	if betaSpiritURL == "" {
+		fail(logger, errors.New("urls.youtube.betaSpirit is empty"))
+	}
 	mudaeSettings, err := configRepo.MudaeOQ()
 	if err != nil {
 		fail(logger, err)
@@ -124,7 +131,10 @@ func main() {
 	if err := gateway.AddSubscriber(voiceActivityListener); err != nil {
 		fail(logger, err)
 	}
-	commands.Register(routes, birthdayService, quoteService, accountTreeService, gateway, ouroChestListener, ouroQuestListener)
+	commands.Register(
+		routes, birthdayService, quoteService, accountTreeService, betaSpiritURL,
+		gateway, ouroChestListener, ouroQuestListener,
+	)
 	if err := routes.Freeze(); err != nil {
 		fail(logger, err)
 	}

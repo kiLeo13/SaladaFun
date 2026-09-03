@@ -13,6 +13,7 @@ const (
 	BirthdayChannelID       = "birthday.channel_id"
 	VoiceActivityLogChannel = "channels.logs.voice"
 	BirthdayDefaultMessage  = "birthday.defaultMessage"
+	BetaSpiritYouTubeURL    = "urls.youtube.betaSpirit"
 	MudaeBotID              = "bots.mudae.id"
 	MudaeOCBlueEmojiID      = "bots.mudae.oc.emoji.blue"
 	MudaeOCTealEmojiID      = "bots.mudae.oc.emoji.teal"

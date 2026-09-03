@@ -6,6 +6,7 @@ package commands
 import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	discordaccounttree "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/accounttree"
+	discordbetaspirit "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/betaspirit"
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
 	discordmove "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/move"
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
@@ -26,6 +27,7 @@ func Register(
 	birthdays discordbirthday.Service,
 	quotes discordquote.Service,
 	accountTrees discordaccounttree.Service,
+	betaSpiritURL string,
 	gateway Gateway,
 	ouroChest *discordourochest.Listener,
 	ouroQuest *discordouroquest.Listener,
@@ -34,6 +36,7 @@ func Register(
 	discordmove.Register(routes, gateway)
 	discordquote.Register(routes.Messages(), quotes)
 	discordaccounttree.Register(routes.Messages(), accountTrees, gateway)
+	discordbetaspirit.Register(routes.Messages(), betaSpiritURL)
 	discordourochest.Register(routes.Messages(), ouroChest)
 	discordouroquest.Register(routes.Messages(), ouroQuest)
 }
