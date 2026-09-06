@@ -1,5 +1,8 @@
 target/
 **/target/
+**/.gradle/
+**/build/
+**/runs/
 *.db
 *.db-shm
 *.db-wal
