@@ -17,6 +17,8 @@ without being forced into the same language or build system.
 |-- discord/
 |   `-- padinho/              Padinho Discord bot
 |-- minecraft/
+|   |-- neoforge/
+|   |   `-- discord-utils/    NeoForge Discord chat bridge
 |   `-- purpur/
 |       `-- saladafun/        SaladaFun Purpur plugin
 |-- AGENTS.md
@@ -56,6 +58,11 @@ separate `mysqldbsystem` resource-principal IAM policies to provision one.
 vitals, batch breaking, and an optional Discord chat bridge. See
 [`minecraft/purpur/saladafun/ARCHITECTURE.md`](minecraft/purpur/saladafun/ARCHITECTURE.md).
 
+### Minecraft: Discord Utils
+
+`minecraft/neoforge/discord-utils` is a Java 21/NeoForge 21.1.249 server-side
+Discord utility mod. Its first feature is the optional bidirectional chat bridge.
+
 ### Discord: Padinho
 
 Padinho, under `discord/padinho`, is a Go 1.26 application designed for a 1 GB
@@ -80,5 +87,6 @@ Projects remain independent:
 
 ```text
 mvn -f minecraft/purpur/saladafun/pom.xml clean package
+cd minecraft/neoforge/discord-utils && .\gradlew.bat clean build
 cd discord/padinho && go test -race ./...
 ```
