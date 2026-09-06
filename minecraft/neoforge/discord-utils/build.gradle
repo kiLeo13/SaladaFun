@@ -66,7 +66,9 @@ dependencies {
         'com.fasterxml.jackson.core:jackson-databind:2.21.2',
         'com.google.crypto.tink:tink:1.18.0',
         'com.google.code.findbugs:jsr305:3.0.2',
-        'com.google.errorprone:error_prone_annotations:2.22.0',
+        // NeoForge already provides this module. Embedding a second copy makes
+        // Java reject JDA because it reads duplicate error-prone annotations.
+        // 'com.google.errorprone:error_prone_annotations:2.22.0',
         'com.google.protobuf:protobuf-java:4.28.2',
         'com.neovisionaries:nv-websocket-client:2.14',
         'com.squareup.okhttp3:okhttp-jvm:5.3.2',
