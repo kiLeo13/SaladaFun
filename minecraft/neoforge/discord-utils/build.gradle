@@ -1,0 +1,89 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.91'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+repositories {
+    mavenCentral()
+}
+
+neoForge {
+    version = neo_version
+    runs {
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.slf4j:slf4j-api:2.0.9'
+
+    jarJar(implementation("net.dv8tion:JDA:${jda_version}") {
+        // NeoForge already provides compatible SLF4J, Gson, and JNA versions.
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+        exclude group: 'com.google.code.gson', module: 'gson'
+        exclude group: 'net.java.dev.jna', module: 'jna'
+    }) {
+        version {
+            strictly '[6.4.1,6.5)'
+            prefer jda_version
+        }
+    }
+
+    // Jar-in-Jar does not follow JDA's transitive dependency graph. Keep the
+    // production artifact self-contained by declaring JDA's required runtime
+    // libraries explicitly. Versions mirror JDA 6.4.1's published metadata.
+    [
+        'net.sf.trove4j:core:3.1.0',
+        'com.fasterxml.jackson.core:jackson-annotations:2.21',
+        'com.fasterxml.jackson.core:jackson-core:2.21.2',
+        'com.fasterxml.jackson.core:jackson-databind:2.21.2',
+        'com.google.crypto.tink:tink:1.18.0',
+        'com.google.code.findbugs:jsr305:3.0.2',
+        'com.google.errorprone:error_prone_annotations:2.22.0',
+        'com.google.protobuf:protobuf-java:4.28.2',
+        'com.neovisionaries:nv-websocket-client:2.14',
+        'com.squareup.okhttp3:okhttp-jvm:5.3.2',
+        'com.squareup.okio:okio:3.16.4',
+        'com.squareup.okio:okio-jvm:3.16.4',
+        'org.jetbrains.kotlin:kotlin-stdlib:2.2.21',
+        'org.jetbrains:annotations:13.0',
+        'club.minnced:opus-java:1.1.1',
+        'club.minnced:opus-java-api:1.1.1',
+        'club.minnced:opus-java-natives:1.1.1',
+        'org.apache.commons:commons-collections4:4.5.0'
+    ].each { dependencyNotation ->
+        jarJar(dependencyNotation) {
+            version {
+                strictly "[${dependencyNotation.tokenize(':').last()}]"
+                prefer dependencyNotation.tokenize(':').last()
+            }
+        }
+    }
+
+    additionalRuntimeClasspath "net.dv8tion:JDA:${jda_version}"
+}
+
+tasks.named('test') { useJUnitPlatform() }
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
