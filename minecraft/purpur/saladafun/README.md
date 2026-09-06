@@ -1,6 +1,6 @@
-# Salada
+# SaladaFun
 
-Salada is the SaladaFun ecosystem's Minecraft plugin for Purpur 26.2. It provides
+SaladaFun is the SaladaFun ecosystem's Minecraft plugin for Purpur 26.2. It provides
 shared player vitals, player-scoped batch breaking, and an optional bidirectional
 Discord chat bridge.
 
@@ -25,7 +25,7 @@ mvn clean package
 From the repository root:
 
 ```text
-mvn -f minecraft/salada/pom.xml clean package
+mvn -f minecraft/purpur/saladafun/pom.xml clean package
 ```
 
 The complete unit and SQLite integration test suite runs during the build. The

@@ -1,8 +1,8 @@
-# Salada Minecraft plugin architecture
+# SaladaFun Minecraft plugin architecture
 
 ## Purpose
 
-The project at `minecraft/salada` is a Java 25 Purpur 26.2 plugin providing shared player vitals,
+The project at `minecraft/purpur/saladafun` is a Java 25 Purpur 26.2 plugin providing shared player vitals,
 player-scoped batch breaking, and a Discord chat bridge. Domain rules are isolated
 from Bukkit so they can be reused by another Minecraft server adapter.
 
@@ -174,7 +174,7 @@ verification are documented in `docs/discord-chat.md`.
 
 ## Build and verification
 
-Use JDK 25. From `minecraft/salada`:
+Use JDK 25. From `minecraft/purpur/saladafun`:
 
 ```text
 mvn clean package
@@ -188,5 +188,5 @@ rollout because mocks cannot reproduce server event ordering.
 From the repository root, the equivalent build is:
 
 ```text
-mvn -f minecraft/salada/pom.xml clean package
+mvn -f minecraft/purpur/saladafun/pom.xml clean package
 ```

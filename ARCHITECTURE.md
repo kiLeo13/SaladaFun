@@ -17,7 +17,8 @@ without being forced into the same language or build system.
 |-- discord/
 |   `-- padinho/              Padinho Discord bot
 |-- minecraft/
-|   `-- salada/               Purpur plugin
+|   `-- purpur/
+|       `-- saladafun/        SaladaFun Purpur plugin
 |-- AGENTS.md
 |-- ARCHITECTURE.md
 `-- README.md
@@ -49,11 +50,11 @@ separate `mysqldbsystem` resource-principal IAM policies to provision one.
 
 ## Projects
 
-### Minecraft: Salada
+### Minecraft: SaladaFun
 
-`minecraft/salada` is a Java 25/Purpur 26.2 plugin providing shared player
+`minecraft/purpur/saladafun` is a Java 25/Purpur 26.2 plugin providing shared player
 vitals, batch breaking, and an optional Discord chat bridge. See
-[`minecraft/salada/ARCHITECTURE.md`](minecraft/salada/ARCHITECTURE.md).
+[`minecraft/purpur/saladafun/ARCHITECTURE.md`](minecraft/purpur/saladafun/ARCHITECTURE.md).
 
 ### Discord: Padinho
 
@@ -78,6 +79,6 @@ connected bot and synchronizes global commands unconditionally. See
 Projects remain independent:
 
 ```text
-mvn -f minecraft/salada/pom.xml clean package
+mvn -f minecraft/purpur/saladafun/pom.xml clean package
 cd discord/padinho && go test -race ./...
 ```

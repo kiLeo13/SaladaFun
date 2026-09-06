@@ -1,4 +1,4 @@
-# Salada plugin contribution guidance
+# SaladaFun plugin contribution guidance
 
 - Keep the Maven build configured for Java 25 and Purpur 26.2.
 - Keep this project as one Maven JAR module using the standard project `src/main`
@@ -15,9 +15,9 @@
 - Treat `shared-state.db`, the retired `shared-inventory.db`, their WAL/SHM
   companions, and generated `target/` directories as runtime/build output; never
   commit them.
-- Run `mvn clean package` from `minecraft/salada` after build or plugin changes.
+- Run `mvn clean package` from `minecraft/purpur/saladafun` after build or plugin changes.
   From the repository root, use
-  `mvn -f minecraft/salada/pom.xml clean package`.
+  `mvn -f minecraft/purpur/saladafun/pom.xml clean package`.
 - Deploy only `target/saladafun-1.0.jar`; the `original-` JAR is an unshaded
   intermediate artifact.
 - Add or update tests for behavior changes and update `ARCHITECTURE.md` when the

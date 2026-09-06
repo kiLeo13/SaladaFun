@@ -3,8 +3,10 @@
 This file applies to the entire repository. More specific `AGENTS.md` files
 under platform and project directories add rules for their scope.
 
-- Keep platform-specific applications grouped by platform and project, for
-  example `minecraft/salada` and `discord/padinho`.
+- Keep platform-specific applications grouped by platform and project. Group
+  Minecraft projects by loader before project, for example
+  `minecraft/purpur/saladafun`; platforms without distinct loaders may keep
+  direct projects such as `discord/padinho`.
 - Keep each project independently buildable, testable, deployable, and
   documented. Do not couple unrelated projects through implicit working-directory
   assumptions.
