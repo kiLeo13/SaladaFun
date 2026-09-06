@@ -18,5 +18,9 @@ Build and test with the Gradle wrapper:
 The deployable artifact is written to `build/libs/`. Install it only on the
 dedicated server; clients do not need this server-only mod.
 
+The build also inspects the packaged `META-INF/neoforge.mods.toml` to ensure its
+Gradle placeholders were resolved, preventing an invalid mod artifact from
+reaching the server.
+
 See [`docs/discord-chat.md`](docs/discord-chat.md) for configuration, Discord
 permissions, security, and runtime behavior.

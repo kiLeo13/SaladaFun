@@ -29,3 +29,7 @@ stopping the server closes the active session.
 JDA and its runtime dependencies are packaged through NeoForge Jar-in-Jar.
 NeoForge supplies the SLF4J API and logging implementation, so JDA's duplicate
 SLF4J API is excluded from the nested dependency.
+
+The Gradle `check` lifecycle verifies the deployable JAR's
+`META-INF/neoforge.mods.toml`: every declared property must be expanded and the
+expected mod ID must be present. This catches invalid metadata before deployment.

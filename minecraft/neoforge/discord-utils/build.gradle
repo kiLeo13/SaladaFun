@@ -12,6 +12,15 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+def modResourceProperties = [
+    mod_id: mod_id,
+    mod_version: mod_version,
+    mod_name: mod_name,
+    mod_license: mod_license,
+    mod_authors: mod_authors,
+    mod_description: mod_description
+]
+
 repositories {
     mavenCentral()
 }
@@ -82,6 +91,42 @@ dependencies {
 }
 
 tasks.named('test') { useJUnitPlatform() }
+
+tasks.named('processResources', ProcessResources).configure {
+    inputs.properties(modResourceProperties)
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand(modResourceProperties)
+    }
+}
+
+tasks.register('verifyModMetadata') {
+    group = 'verification'
+    description = 'Verifies that the packaged NeoForge metadata contains no Gradle placeholders.'
+    dependsOn tasks.named('jar')
+
+    doLast {
+        def modJar = tasks.named('jar').get().archiveFile.get().asFile
+        def metadata = new java.util.zip.ZipFile(modJar).withCloseable { archive ->
+            def entry = archive.getEntry('META-INF/neoforge.mods.toml')
+            if (entry == null) {
+                throw new GradleException('The packaged mod is missing META-INF/neoforge.mods.toml.')
+            }
+
+            archive.getInputStream(entry).getText('UTF-8')
+        }
+
+        if (metadata.contains('${')) {
+            throw new GradleException('The packaged NeoForge metadata still contains Gradle placeholders.')
+        }
+        if (!metadata.contains("modId=\"${mod_id}\"")) {
+            throw new GradleException('The packaged NeoForge metadata has an unexpected mod ID.')
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyModMetadata')
+}
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
