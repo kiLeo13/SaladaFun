@@ -27,8 +27,11 @@ is closed and cannot interrupt the previous session. Disabling the setting or
 stopping the server closes the active session.
 
 JDA and its runtime dependencies are packaged through NeoForge Jar-in-Jar.
-NeoForge supplies the SLF4J API and logging implementation, so JDA's duplicate
-SLF4J API is excluded from the nested dependency.
+JDA and Commons Collections are first combined into a private nested JAR that
+relocates Commons Collections below `sld.saladafun.discordutils.shaded`; this
+avoids Java module package conflicts with other NeoForge mods. NeoForge supplies
+the SLF4J API and logging implementation, so JDA's duplicate SLF4J API is not
+packaged.
 
 The Gradle `check` lifecycle verifies the deployable JAR's
 `META-INF/neoforge.mods.toml`: every declared property must be expanded and the

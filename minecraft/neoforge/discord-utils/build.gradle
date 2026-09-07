@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'net.neoforged.moddev' version '2.0.91'
+    id 'com.gradleup.shadow' version '8.3.6'
 }
 
 version = mod_version
@@ -40,21 +41,52 @@ neoForge {
     }
 }
 
+configurations {
+    jdaRelocation {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+/*
+ * JDA needs Commons Collections. Relocating that package into JDA's private
+ * nested JAR prevents package collisions with Iris and other NeoForge mods.
+ */
+def relocateJda = tasks.register(
+    'relocateJda',
+    com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+) {
+    archiveBaseName = 'discord-utils-jda'
+    archiveVersion = jda_version
+    archiveClassifier = 'relocated'
+    configurations = [project.configurations.jdaRelocation]
+    exclude 'module-info.class'
+    exclude 'META-INF/versions/**/module-info.class'
+    manifest {
+        attributes 'Automatic-Module-Name': 'sld.saladafun.discordutils.jda'
+    }
+    relocate(
+        'org.apache.commons.collections4',
+        'sld.saladafun.discordutils.shaded.commonscollections4'
+    )
+}
+
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'org.slf4j:slf4j-api:2.0.9'
 
-    jarJar(implementation("net.dv8tion:JDA:${jda_version}") {
-        // NeoForge already provides compatible SLF4J, Gson, and JNA versions.
-        exclude group: 'org.slf4j', module: 'slf4j-api'
-        exclude group: 'com.google.code.gson', module: 'gson'
-        exclude group: 'net.java.dev.jna', module: 'jna'
-    }) {
-        version {
-            strictly '[6.4.1,6.5)'
-            prefer jda_version
-        }
+    implementation("net.dv8tion:JDA:${jda_version}") {
+        // Production uses the relocated JDA bundle declared below.
+        transitive = false
     }
+    testRuntimeOnly "net.dv8tion:JDA:${jda_version}"
+
+    jdaRelocation("net.dv8tion:JDA:${jda_version}") {
+        transitive = false
+    }
+    jdaRelocation 'org.apache.commons:commons-collections4:4.5.0'
+
+    jarJar files(relocateJda)
 
     // Jar-in-Jar does not follow JDA's transitive dependency graph. Keep the
     // production artifact self-contained by declaring JDA's required runtime
@@ -81,9 +113,6 @@ dependencies {
         'club.minnced:opus-java:1.1.1',
         'club.minnced:opus-java-api:1.1.1',
         'club.minnced:opus-java-natives:1.1.1'
-        // Iris already provides this package through its GLSL transformer.
-        // Embedding JDA's copy creates a Java module split-package conflict.
-        // 'org.apache.commons:commons-collections4:4.5.0'
     ].each { dependencyNotation ->
         jarJar(dependencyNotation) {
             version {
