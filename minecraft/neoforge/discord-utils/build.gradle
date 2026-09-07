@@ -65,7 +65,9 @@ dependencies {
         'com.fasterxml.jackson.core:jackson-core:2.21.2',
         'com.fasterxml.jackson.core:jackson-databind:2.21.2',
         'com.google.crypto.tink:tink:1.18.0',
-        'com.google.code.findbugs:jsr305:3.0.2',
+        // NeoForge already provides this module through Guava. Embedding it
+        // again makes JDA resolve two modules named jsr305.
+        // 'com.google.code.findbugs:jsr305:3.0.2',
         // NeoForge already provides this module. Embedding a second copy makes
         // Java reject JDA because it reads duplicate error-prone annotations.
         // 'com.google.errorprone:error_prone_annotations:2.22.0',
