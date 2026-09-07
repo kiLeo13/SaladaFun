@@ -80,8 +80,10 @@ dependencies {
         'org.jetbrains:annotations:13.0',
         'club.minnced:opus-java:1.1.1',
         'club.minnced:opus-java-api:1.1.1',
-        'club.minnced:opus-java-natives:1.1.1',
-        'org.apache.commons:commons-collections4:4.5.0'
+        'club.minnced:opus-java-natives:1.1.1'
+        // Iris already provides this package through its GLSL transformer.
+        // Embedding JDA's copy creates a Java module split-package conflict.
+        // 'org.apache.commons:commons-collections4:4.5.0'
     ].each { dependencyNotation ->
         jarJar(dependencyNotation) {
             version {
