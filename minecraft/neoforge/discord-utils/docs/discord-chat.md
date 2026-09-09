@@ -33,7 +33,10 @@ Minecraft messages, preserving the Minecraft player's name and MC Heads avatar.
 
 - Minecraft to Discord: forwards uncancelled final chat only, strips messages
   that are blank after Minecraft formatting, limits content to Discord's 2,000
-  code-point maximum, and disables all allowed mentions.
+  code-point maximum, and disables all allowed mentions. The webhook avatar uses
+  `https://api.mcheads.org/head/{username}/128/hat`, allowing MC Heads to resolve
+  the player's current head and outer/hat layer even when an offline server gives
+  the player a non-Mojang UUID.
 - Discord to Minecraft: accepts ordinary user messages only from the configured
   channel. Bot and webhook messages are ignored to prevent loops. Text, image
   attachment counts, and sticker counts are rendered for every online player.
@@ -60,9 +63,10 @@ Before deployment, run:
 .\gradlew.bat clean build
 ```
 
-On a test server, verify both directions, a bot message is ignored, a webhook
-message is ignored, and a broken replacement configuration does not interrupt a
-working bridge.
+On a test server, verify both directions, confirm an offline-mode player's
+username resolves to their head and outer/hat layer in the webhook avatar, verify
+a bot message and a webhook message are ignored, and confirm a broken replacement
+configuration does not interrupt a working bridge.
 
 Configuration reloads stage a replacement connection until Discord READY proves
 the channel is visible; an invalid or failed replacement leaves the existing
