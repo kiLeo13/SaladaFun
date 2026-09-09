@@ -1,7 +1,6 @@
 package sld.saladafun.discordutils.discord;
 
 import java.time.Duration;
-import java.util.UUID;
 import sld.saladafun.discordutils.config.DiscordChatSettings;
 
 /** Transport abstraction for a candidate or active Discord connection. */
@@ -13,7 +12,7 @@ interface DiscordSession extends AutoCloseable {
     void activate();
 
     /** Queues one Minecraft-originated message for Discord delivery. */
-    void publish(String playerName, UUID playerId, String content);
+    void publish(String playerName, String content);
 
     /** Waits for session shutdown up to timeout. */
     boolean awaitTermination(Duration timeout) throws InterruptedException;

@@ -2,7 +2,6 @@ package sld.saladafun.discordutils.discord;
 
 import java.time.Duration;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import sld.saladafun.discordutils.config.DiscordChatSettings;
@@ -73,9 +72,9 @@ public final class DiscordChatBridge implements AutoCloseable {
     }
 
     /** Publishes content through the active session when one is available. */
-    public synchronized void publish(String playerName, UUID playerId, String content) {
+    public synchronized void publish(String playerName, String content) {
         if (activeSession != null) {
-            activeSession.publish(playerName, playerId, content);
+            activeSession.publish(playerName, content);
         }
     }
 

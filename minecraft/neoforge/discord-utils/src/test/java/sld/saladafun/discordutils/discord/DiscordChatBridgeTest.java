@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,7 @@ class DiscordChatBridgeTest {
         assertFalse(first.active());
 
         first.ready();
-        bridge.publish("Leo", UUID.randomUUID(), "hello");
+        bridge.publish("Leo", "hello");
 
         assertTrue(first.active());
         assertEquals(1, first.publishedMessages());
@@ -54,7 +53,7 @@ class DiscordChatBridgeTest {
         bridge.reconfigure(SECOND_SETTINGS);
         FakeSession second = factory.sessions().get(1);
         second.fail(new IllegalStateException("channel unavailable"));
-        bridge.publish("Leo", UUID.randomUUID(), "still connected");
+        bridge.publish("Leo", "still connected");
 
         assertFalse(first.closed());
         assertTrue(second.closed());
@@ -158,7 +157,7 @@ class DiscordChatBridgeTest {
         }
 
         @Override
-        public void publish(String playerName, UUID playerId, String content) {
+        public void publish(String playerName, String content) {
             publishedMessages++;
         }
 

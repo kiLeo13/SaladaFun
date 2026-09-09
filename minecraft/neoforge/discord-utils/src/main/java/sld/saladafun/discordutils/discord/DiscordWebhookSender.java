@@ -2,7 +2,6 @@ package sld.saladafun.discordutils.discord;
 
 import java.util.EnumSet;
 import java.util.Objects;
-import java.util.UUID;
 import net.dv8tion.jda.api.entities.IncomingWebhookClient;
 import net.dv8tion.jda.api.entities.Message;
 import org.slf4j.Logger;
@@ -23,14 +22,14 @@ final class DiscordWebhookSender {
     }
 
     /** Queues a mention-safe outbound message with the player's head avatar. */
-    void send(String playerName, UUID playerId, String content) {
+    void send(String playerName, String content) {
         if (content.isBlank()) {
             return;
         }
 
         webhook.sendMessage(limitToDiscordContent(content))
             .setUsername(playerName)
-            .setAvatarUrl(headAvatarUrl(playerId))
+            .setAvatarUrl(headAvatarUrl(playerName))
             .setAllowedMentions(EnumSet.noneOf(Message.MentionType.class))
             .queue(
                 ignored -> { },
@@ -41,9 +40,9 @@ final class DiscordWebhookSender {
             );
     }
 
-    private static String headAvatarUrl(UUID playerId) {
+    private static String headAvatarUrl(String playerName) {
         return HEAD_AVATAR_BASE_URL
-            + playerId
+            + playerName
             + "/"
             + HEAD_AVATAR_SIZE_PIXELS
             + "/"

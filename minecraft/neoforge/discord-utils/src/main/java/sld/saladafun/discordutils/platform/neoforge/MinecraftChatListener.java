@@ -21,7 +21,6 @@ public final class MinecraftChatListener {
 
         chatBridge.publish(
             event.getUsername(),
-            event.getPlayer().getUUID(),
             event.getMessage().getString()
         );
     }

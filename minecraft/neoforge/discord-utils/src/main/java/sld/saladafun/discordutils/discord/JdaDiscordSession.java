@@ -2,7 +2,6 @@ package sld.saladafun.discordutils.discord;
 
 import java.time.Duration;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import net.dv8tion.jda.api.JDA;
@@ -76,9 +75,9 @@ final class JdaDiscordSession implements DiscordSession {
     }
 
     @Override
-    public void publish(String playerName, UUID playerId, String content) {
+    public void publish(String playerName, String content) {
         if (active.get()) {
-            webhookSender.send(playerName, playerId, content);
+            webhookSender.send(playerName, content);
         }
     }
 
