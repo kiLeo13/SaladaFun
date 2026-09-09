@@ -73,6 +73,7 @@ def relocateJda = tasks.register(
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.mockito:mockito-core:5.20.0'
     testImplementation 'org.slf4j:slf4j-api:2.0.9'
 
     implementation("net.dv8tion:JDA:${jda_version}") {
