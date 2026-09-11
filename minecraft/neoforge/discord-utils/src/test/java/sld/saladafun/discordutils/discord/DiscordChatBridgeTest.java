@@ -90,6 +90,24 @@ class DiscordChatBridgeTest {
         bridge.close();
     }
 
+    @Test
+    void presenceNotificationsUseOnlyTheActiveSession() {
+        FakeSessionFactory factory = new FakeSessionFactory();
+        DiscordChatBridge bridge = bridge(factory);
+
+        bridge.reconfigure(FIRST_SETTINGS);
+        FakeSession session = factory.sessions().getFirst();
+        bridge.publishPresence("Player", PlayerPresence.JOINED);
+        assertEquals(0, session.publishedPresenceEvents());
+
+        session.ready();
+        bridge.publishPresence("Player", PlayerPresence.JOINED);
+        bridge.publishPresence("Player", PlayerPresence.LEFT);
+
+        assertEquals(2, session.publishedPresenceEvents());
+        bridge.close();
+    }
+
     private static DiscordChatBridge bridge(FakeSessionFactory factory) {
         return new DiscordChatBridge(
             message -> { },
@@ -140,6 +158,7 @@ class DiscordChatBridgeTest {
         private boolean active;
         private boolean closed;
         private int publishedMessages;
+        private int publishedPresenceEvents;
 
         private FakeSession(DiscordChatSettings settings, DiscordConnectionObserver observer) {
             this.settings = settings;
@@ -159,6 +178,11 @@ class DiscordChatBridgeTest {
         @Override
         public void publish(String playerName, String content) {
             publishedMessages++;
+        }
+
+        @Override
+        public void publishPresence(String playerName, PlayerPresence presence) {
+            publishedPresenceEvents++;
         }
 
         @Override
@@ -190,6 +214,10 @@ class DiscordChatBridgeTest {
 
         private int publishedMessages() {
             return publishedMessages;
+        }
+
+        private int publishedPresenceEvents() {
+            return publishedPresenceEvents;
         }
     }
 }
