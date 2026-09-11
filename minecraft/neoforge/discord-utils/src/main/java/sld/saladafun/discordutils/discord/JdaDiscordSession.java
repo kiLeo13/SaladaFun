@@ -24,6 +24,9 @@ final class JdaDiscordSession implements DiscordSession {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final JDA jda;
     private final DiscordWebhookSender webhookSender;
+    private final Logger logger;
+
+    private volatile DiscordPlayerNotificationSender playerNotificationSender;
 
     /** Connects a lightweight JDA session without activating message traffic yet. */
     JdaDiscordSession(
@@ -35,7 +38,7 @@ final class JdaDiscordSession implements DiscordSession {
         this.settings = Objects.requireNonNull(settings, "settings");
         Objects.requireNonNull(destination, "destination");
         Objects.requireNonNull(observer, "observer");
-        Objects.requireNonNull(logger, "logger");
+        this.logger = Objects.requireNonNull(logger, "logger");
 
         DiscordMessageListener messages = new DiscordMessageListener(
             settings.channelId(),
@@ -82,6 +85,14 @@ final class JdaDiscordSession implements DiscordSession {
     }
 
     @Override
+    public void publishPresence(String playerName, PlayerPresence presence) {
+        DiscordPlayerNotificationSender sender = playerNotificationSender;
+        if (active.get() && sender != null) {
+            sender.send(playerName, presence);
+        }
+    }
+
+    @Override
     public boolean awaitTermination(Duration timeout) throws InterruptedException {
         return jda.awaitShutdown(timeout);
     }
@@ -103,7 +114,7 @@ final class JdaDiscordSession implements DiscordSession {
                 }
 
                 if (!(event.getJDA().getGuildChannelById(settings.channelId())
-                    instanceof GuildMessageChannel)) {
+                    instanceof GuildMessageChannel channel)) {
                     observer.failed(
                         JdaDiscordSession.this,
                         new IllegalStateException("Configured Discord text channel is unavailable")
@@ -111,6 +122,7 @@ final class JdaDiscordSession implements DiscordSession {
                     return;
                 }
 
+                playerNotificationSender = new DiscordPlayerNotificationSender(channel, logger);
                 ready.set(true);
                 observer.ready(JdaDiscordSession.this);
             }

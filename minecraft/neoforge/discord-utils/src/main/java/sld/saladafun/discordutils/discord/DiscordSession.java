@@ -14,6 +14,9 @@ interface DiscordSession extends AutoCloseable {
     /** Queues one Minecraft-originated message for Discord delivery. */
     void publish(String playerName, String content);
 
+    /** Queues one Minecraft player-presence notification for Discord delivery. */
+    void publishPresence(String playerName, PlayerPresence presence);
+
     /** Waits for session shutdown up to timeout. */
     boolean awaitTermination(Duration timeout) throws InterruptedException;
 

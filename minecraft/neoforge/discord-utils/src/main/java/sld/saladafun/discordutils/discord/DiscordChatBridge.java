@@ -78,6 +78,13 @@ public final class DiscordChatBridge implements AutoCloseable {
         }
     }
 
+    /** Publishes a player-presence transition through the active session. */
+    public synchronized void publishPresence(String playerName, PlayerPresence presence) {
+        if (activeSession != null) {
+            activeSession.publishPresence(playerName, presence);
+        }
+    }
+
     /** Closes both active and candidate sessions and waits for termination. */
     @Override
     public synchronized void close() {

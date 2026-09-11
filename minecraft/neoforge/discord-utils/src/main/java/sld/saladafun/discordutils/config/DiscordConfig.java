@@ -21,11 +21,11 @@ public final class DiscordConfig {
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         builder.push("discord-chat");
-        ENABLED = builder.comment("Bridges accepted Minecraft chat and one Discord text channel.")
+        ENABLED = builder.comment("Bridges chat and player-presence notices with one Discord text channel.")
             .define("enabled", false);
         TOKEN = builder.comment("Discord bot token. Keep this secret and never commit it.")
             .define("token", "");
-        WEBHOOK_URL = builder.comment("Incoming webhook for Minecraft-to-Discord traffic. Keep this secret.")
+        WEBHOOK_URL = builder.comment("Incoming webhook for Minecraft chat traffic. Keep this secret.")
             .define("webhook-url", "");
         CHANNEL_ID = builder.comment("Discord text-channel snowflake for Discord-to-Minecraft traffic.")
             .define("channel-id", "");
