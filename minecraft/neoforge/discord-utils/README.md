@@ -2,8 +2,8 @@
 
 Discord Utils is a server-side NeoForge 21.1.249 mod for Minecraft 1.21.1.
 Its first feature is an optional bidirectional Discord chat bridge with player
-join and leave notifications; account linking is deliberately not implemented
-yet.
+join and leave notifications and a channel-scoped `!players` command; account
+linking is deliberately not implemented yet.
 
 ## Requirements
 

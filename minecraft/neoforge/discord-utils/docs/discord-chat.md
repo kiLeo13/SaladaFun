@@ -2,8 +2,9 @@
 
 The optional bridge mirrors accepted Minecraft chat to one Discord channel,
 mirrors supported Discord messages back to every online player, and reports
-player joins and leaves in that channel. The mod owns one JDA gateway session
-for all current and future Discord features.
+player joins and leaves in that channel. It also provides registered message
+commands scoped to that channel. The mod owns one JDA gateway session for all
+current and future Discord features.
 
 ## Configuration
 
@@ -40,8 +41,10 @@ Minecraft player's name and MC Heads avatar.
   the player's current head and outer/hat layer even when an offline server gives
   the player a non-Mojang UUID.
 - Discord to Minecraft: accepts ordinary user messages only from the configured
-  channel. Bot and webhook messages are ignored to prevent loops. Text, image
-  attachment counts, and sticker counts are rendered for every online player.
+  channel. The single inbound gateway first dispatches a registered command; an
+  unknown first token falls through to Minecraft chat. Bot and webhook messages
+  are ignored to prevent loops. Text, image attachment counts, and sticker
+  counts are rendered for every online player.
 - Player presence: Padinho sends `**Player** entrou no servidor` when a player
   completes login and `**Player** saiu do servidor` when a player logs out. Each
   bot message enables Components V2 and contains one text display inside one
@@ -49,6 +52,29 @@ Minecraft player's name and MC Heads avatar.
   Player names are Markdown-escaped and all allowed mentions are disabled.
 - Discord callbacks never access Minecraft state directly. Delivery is scheduled
   on the dedicated server thread.
+
+## Message commands
+
+Message-command triggers include their prefix and match the first
+whitespace-delimited token case-insensitively. Commands work only in the
+configured Minecraft Discord channel. A handled command is not broadcast into
+Minecraft; unknown commands remain ordinary chat.
+
+`!players` snapshots the online player names on the Minecraft server thread and
+lists them alphabetically through Padinho's bot identity:
+
+```text
+## <:mc_grass:1547842476193357885> Players Online
+- PlayerOne
+- PlayerTwo
+```
+
+The response enables Components V2 and uses one text display inside a container
+with the dark Minecraft-green `#3C8527` accent. It has no footer, separator, or
+player count, and all allowed mentions are disabled. An empty server displays
+`- Nenhum jogador online`. A normal response uses one message; if the complete
+list would exceed Discord's 4,000-character component-text limit, the mod emits
+additional messages with the same minimal shape rather than dropping players.
 
 ## Reloading and failure handling
 
@@ -73,7 +99,9 @@ Before deployment, run:
 On a test server, verify both chat directions; join and leave with a player to
 confirm Padinho emits the green and red Components V2 notifications; confirm an
 offline-mode player's username resolves to their head and outer/hat layer in the
-webhook avatar; verify a bot message and a webhook message are ignored; and
+webhook avatar; invoke `!players` with zero, one, and multiple online players;
+confirm `!players` in another channel is ignored and `!unknown` still reaches
+Minecraft chat; verify a bot message and a webhook message are ignored; and
 confirm a broken replacement configuration does not interrupt a working bridge.
 
 Configuration reloads stage a replacement connection until Discord READY proves

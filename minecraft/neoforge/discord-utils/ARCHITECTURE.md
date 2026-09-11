@@ -2,8 +2,9 @@
 
 `minecraft/neoforge/discord-utils` is an independent Java 21/NeoForge 21.1.249
 server-side mod. It owns one Discord gateway lifecycle for all of its features.
-The initial release implements a bidirectional chat bridge and player-presence
-notifications; Discord account linking remains a future feature.
+The initial release implements a bidirectional chat bridge, player-presence
+notifications, and registered message commands; Discord account linking remains
+a future feature.
 
 ## Boundaries
 
@@ -13,10 +14,13 @@ notifications; Discord account linking remains a future feature.
 - `config` converts NeoForge values to a validated immutable
   `DiscordChatSettings`. It never permits token or webhook diagnostics.
 - `discord` contains the JDA transport and the staged `DiscordChatBridge`
-  lifecycle. It contains no Minecraft or NeoForge types.
+  lifecycle. Its frozen message-command registry gives the single inbound
+  message listener one dispatch decision: execute a registered first-token
+  match or fall through to Minecraft chat. It contains no Minecraft or NeoForge
+  types.
 - `platform.neoforge` translates server chat and player connection events into
-  transport calls and schedules Discord-originated messages back onto the
-  Minecraft server thread.
+  transport calls, schedules Discord-originated messages back onto the Minecraft
+  server thread, and snapshots online-player names there for Discord commands.
 
 ## Lifecycle
 
@@ -31,6 +35,15 @@ Minecraft chat uses the configured webhook so each message can retain the
 player's name and avatar. Player join and leave notifications use Padinho's bot
 identity in the validated guild channel. Each notification is a Components V2
 container with one text display and a green or red accent.
+
+The same inbound JDA listener handles registered literal message commands before
+ordinary Discord-to-Minecraft chat. Triggers include their prefix and match the
+first whitespace-delimited token case-insensitively. `!players` requests an
+immutable name snapshot through the platform boundary; NeoForge fulfills it on
+the server thread, and the originating JDA session replies only if it remains
+active. Its response uses Padinho's identity and one dark-green Components V2
+container with one text display. Large lists paginate only when required by
+Discord's component-text limit, preserving every online player.
 
 JDA and its runtime dependencies are packaged through NeoForge Jar-in-Jar.
 JDA and Commons Collections are first combined into a private nested JAR that
