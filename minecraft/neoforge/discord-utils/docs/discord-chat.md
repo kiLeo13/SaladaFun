@@ -1,8 +1,9 @@
 # Discord chat bridge
 
-The optional bridge mirrors accepted Minecraft chat to one Discord channel and
-mirrors supported Discord messages back to every online player. The mod owns one
-JDA gateway session for all current and future Discord features.
+The optional bridge mirrors accepted Minecraft chat to one Discord channel,
+mirrors supported Discord messages back to every online player, and reports
+player joins and leaves in that channel. The mod owns one JDA gateway session
+for all current and future Discord features.
 
 ## Configuration
 
@@ -26,8 +27,9 @@ configuration without logging either secret.
 Create one bot application and one incoming webhook in the same target channel.
 Enable the bot's **Message Content Intent** in the Discord Developer Portal.
 Give the bot View Channel, Read Message History, and Send Messages access to the
-target channel. The bot reads inbound messages; the webhook sends outbound
-Minecraft messages, preserving the Minecraft player's name and MC Heads avatar.
+target channel. The bot reads inbound messages and sends player-presence
+notifications. The webhook sends outbound Minecraft chat, preserving the
+Minecraft player's name and MC Heads avatar.
 
 ## Message behavior
 
@@ -40,6 +42,11 @@ Minecraft messages, preserving the Minecraft player's name and MC Heads avatar.
 - Discord to Minecraft: accepts ordinary user messages only from the configured
   channel. Bot and webhook messages are ignored to prevent loops. Text, image
   attachment counts, and sticker counts are rendered for every online player.
+- Player presence: Padinho sends `**Player** entrou no servidor` when a player
+  completes login and `**Player** saiu do servidor` when a player logs out. Each
+  bot message enables Components V2 and contains one text display inside one
+  container, using green (`#57F287`) for joins and red (`#ED4245`) for leaves.
+  Player names are Markdown-escaped and all allowed mentions are disabled.
 - Discord callbacks never access Minecraft state directly. Delivery is scheduled
   on the dedicated server thread.
 
@@ -63,10 +70,11 @@ Before deployment, run:
 .\gradlew.bat clean build
 ```
 
-On a test server, verify both directions, confirm an offline-mode player's
-username resolves to their head and outer/hat layer in the webhook avatar, verify
-a bot message and a webhook message are ignored, and confirm a broken replacement
-configuration does not interrupt a working bridge.
+On a test server, verify both chat directions; join and leave with a player to
+confirm Padinho emits the green and red Components V2 notifications; confirm an
+offline-mode player's username resolves to their head and outer/hat layer in the
+webhook avatar; verify a bot message and a webhook message are ignored; and
+confirm a broken replacement configuration does not interrupt a working bridge.
 
 Configuration reloads stage a replacement connection until Discord READY proves
 the channel is visible; an invalid or failed replacement leaves the existing

@@ -2,8 +2,8 @@
 
 `minecraft/neoforge/discord-utils` is an independent Java 21/NeoForge 21.1.249
 server-side mod. It owns one Discord gateway lifecycle for all of its features.
-The initial release implements only a bidirectional chat bridge; Discord account
-linking remains a future feature.
+The initial release implements a bidirectional chat bridge and player-presence
+notifications; Discord account linking remains a future feature.
 
 ## Boundaries
 
@@ -14,17 +14,23 @@ linking remains a future feature.
   `DiscordChatSettings`. It never permits token or webhook diagnostics.
 - `discord` contains the JDA transport and the staged `DiscordChatBridge`
   lifecycle. It contains no Minecraft or NeoForge types.
-- `platform.neoforge` translates server chat events into transport calls and
-  schedules Discord-originated messages back onto the Minecraft server thread.
+- `platform.neoforge` translates server chat and player connection events into
+  transport calls and schedules Discord-originated messages back onto the
+  Minecraft server thread.
 
 ## Lifecycle
 
-On server start, the mod creates the bridge and attaches a chat listener.
-Configuration creates a candidate JDA session. The candidate becomes active only
-after Discord reports `READY` and the configured guild text channel is visible.
-Until then, the previous session continues carrying traffic. A failed candidate
-is closed and cannot interrupt the previous session. Disabling the setting or
-stopping the server closes the active session.
+On server start, the mod creates the bridge and attaches chat and player
+connection listeners. Configuration creates a candidate JDA session. The
+candidate becomes active only after Discord reports `READY` and the configured
+guild text channel is visible. Until then, the previous session continues
+carrying traffic. A failed candidate is closed and cannot interrupt the previous
+session. Disabling the setting or stopping the server closes the active session.
+
+Minecraft chat uses the configured webhook so each message can retain the
+player's name and avatar. Player join and leave notifications use Padinho's bot
+identity in the validated guild channel. Each notification is a Components V2
+container with one text display and a green or red accent.
 
 JDA and its runtime dependencies are packaged through NeoForge Jar-in-Jar.
 JDA and Commons Collections are first combined into a private nested JAR that
@@ -33,6 +39,14 @@ avoids Java module package conflicts with other NeoForge mods. NeoForge supplies
 the SLF4J API and logging implementation, so JDA's duplicate SLF4J API is not
 packaged.
 
-The Gradle `check` lifecycle verifies the deployable JAR's
-`META-INF/neoforge.mods.toml`: every declared property must be expanded and the
-expected mod ID must be present. This catches invalid metadata before deployment.
+OkHttp and Okio bring a Kotlin standard-library runtime requirement. The mod
+bundles Kotlin 2.2.21 as a fallback and declares compatibility with 2.2.21 or
+newer through Jar-in-Jar metadata. NeoForge can therefore select a newer shared
+copy, such as the one packaged by Kotlin for Forge, without making Kotlin for
+Forge a mandatory dependency. Kotlin is not relocated because Kotlin-compiled
+libraries rely on Kotlin metadata and runtime package names.
+
+The Gradle `check` lifecycle verifies the deployable JAR's mod and Jar-in-Jar
+metadata. Every mod property must be expanded, the expected mod ID must be
+present, and the Kotlin fallback must exist with the negotiable `[2.2.21,)`
+range. These checks catch invalid metadata before deployment.
