@@ -109,7 +109,6 @@ dependencies {
         'com.squareup.okhttp3:okhttp-jvm:5.3.2',
         'com.squareup.okio:okio:3.16.4',
         'com.squareup.okio:okio-jvm:3.16.4',
-        'org.jetbrains.kotlin:kotlin-stdlib:2.2.21',
         'org.jetbrains:annotations:13.0',
         'club.minnced:opus-java:1.1.1',
         'club.minnced:opus-java-api:1.1.1',
@@ -120,6 +119,16 @@ dependencies {
                 strictly "[${dependencyNotation.tokenize(':').last()}]"
                 prefer dependencyNotation.tokenize(':').last()
             }
+        }
+    }
+
+    // OkHttp and Okio require Kotlin. Bundle the version used by JDA as a
+    // fallback, but allow NeoForge to select a newer shared copy supplied by
+    // Kotlin for Forge or another mod.
+    jarJar('org.jetbrains.kotlin:kotlin-stdlib:2.2.21') {
+        version {
+            strictly '[2.2.21,)'
+            prefer '2.2.21'
         }
     }
 
@@ -160,8 +169,53 @@ tasks.register('verifyModMetadata') {
     }
 }
 
+tasks.register('verifyRuntimePackaging') {
+    group = 'verification'
+    description = 'Verifies that Kotlin is packaged as a negotiable runtime fallback.'
+    dependsOn tasks.named('jar')
+
+    doLast {
+        def modJar = tasks.named('jar').get().archiveFile.get().asFile
+        new java.util.zip.ZipFile(modJar).withCloseable { archive ->
+            def metadataEntry = archive.getEntry('META-INF/jarjar/metadata.json')
+            if (metadataEntry == null) {
+                throw new GradleException('The packaged mod is missing Jar-in-Jar metadata.')
+            }
+
+            def metadataText = archive.getInputStream(metadataEntry).withCloseable { stream ->
+                stream.getText('UTF-8')
+            }
+            def metadata = new groovy.json.JsonSlurper().parseText(metadataText)
+            def kotlinStdlib = metadata.jars.find { nestedJar ->
+                nestedJar.identifier.group == 'org.jetbrains.kotlin' &&
+                    nestedJar.identifier.artifact == 'kotlin-stdlib'
+            }
+
+            if (kotlinStdlib == null) {
+                throw new GradleException('The packaged mod is missing its Kotlin standard-library fallback.')
+            }
+            if (kotlinStdlib.version.range != '[2.2.21,)') {
+                throw new GradleException(
+                    "The Kotlin standard-library range must be [2.2.21,), but was ${kotlinStdlib.version.range}."
+                )
+            }
+            if (kotlinStdlib.version.artifactVersion != '2.2.21') {
+                throw new GradleException(
+                    "The bundled Kotlin fallback must be 2.2.21, but was ${kotlinStdlib.version.artifactVersion}."
+                )
+            }
+            if (archive.getEntry(kotlinStdlib.path) == null) {
+                throw new GradleException(
+                    "The Kotlin fallback declared at ${kotlinStdlib.path} is missing from the packaged mod."
+                )
+            }
+        }
+    }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('verifyModMetadata')
+    dependsOn tasks.named('verifyRuntimePackaging')
 }
 
 tasks.withType(JavaCompile).configureEach {
