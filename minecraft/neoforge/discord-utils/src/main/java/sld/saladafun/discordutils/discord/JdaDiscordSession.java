@@ -27,22 +27,34 @@ final class JdaDiscordSession implements DiscordSession {
     private final Logger logger;
 
     private volatile DiscordPlayerNotificationSender playerNotificationSender;
+    private volatile DiscordPlayersCommandResponder playersCommandResponder;
 
     /** Connects a lightweight JDA session without activating message traffic yet. */
     JdaDiscordSession(
         DiscordChatSettings settings,
         Consumer<DiscordInboundMessage> destination,
+        OnlinePlayerNamesProvider onlinePlayerNames,
         DiscordConnectionObserver observer,
         Logger logger
     ) {
         this.settings = Objects.requireNonNull(settings, "settings");
         Objects.requireNonNull(destination, "destination");
+        Objects.requireNonNull(onlinePlayerNames, "onlinePlayerNames");
         Objects.requireNonNull(observer, "observer");
         this.logger = Objects.requireNonNull(logger, "logger");
 
+        DiscordMessageCommandRegistry commands = new DiscordMessageCommandRegistry();
+        DiscordPlayersCommandHandler playersCommand = new DiscordPlayersCommandHandler(
+            onlinePlayerNames,
+            active::get,
+            () -> playersCommandResponder
+        );
+        commands.register("!players", playersCommand);
+        commands.freeze();
         DiscordMessageListener messages = new DiscordMessageListener(
             settings.channelId(),
             active::get,
+            commands,
             destination
         );
         ListenerAdapter lifecycle = lifecycleListener(observer);
@@ -123,6 +135,7 @@ final class JdaDiscordSession implements DiscordSession {
                 }
 
                 playerNotificationSender = new DiscordPlayerNotificationSender(channel, logger);
+                playersCommandResponder = new DiscordPlayersCommandResponder(channel, logger);
                 ready.set(true);
                 observer.ready(JdaDiscordSession.this);
             }
@@ -142,4 +155,5 @@ final class JdaDiscordSession implements DiscordSession {
             }
         };
     }
+
 }

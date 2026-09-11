@@ -15,6 +15,7 @@ import sld.saladafun.discordutils.config.DiscordConfig;
 import sld.saladafun.discordutils.discord.DiscordChatBridge;
 import sld.saladafun.discordutils.platform.neoforge.DiscordMinecraftBroadcaster;
 import sld.saladafun.discordutils.platform.neoforge.MinecraftChatListener;
+import sld.saladafun.discordutils.platform.neoforge.MinecraftOnlinePlayerNamesProvider;
 import sld.saladafun.discordutils.platform.neoforge.MinecraftPlayerConnectionListener;
 
 /** Boots the dedicated-server Discord chat bridge and applies configuration reloads. */
@@ -44,7 +45,11 @@ public final class DiscordUtilsMod {
     }
 
     private void onServerStarted(ServerStartedEvent event) {
-        chatBridge = new DiscordChatBridge(new DiscordMinecraftBroadcaster(event.getServer()), LOGGER);
+        chatBridge = new DiscordChatBridge(
+            new DiscordMinecraftBroadcaster(event.getServer()),
+            new MinecraftOnlinePlayerNamesProvider(event.getServer()),
+            LOGGER
+        );
         MinecraftChatListener chatListener = new MinecraftChatListener(chatBridge);
         NeoForge.EVENT_BUS.addListener(chatListener::onServerChat);
         MinecraftPlayerConnectionListener connectionListener = new MinecraftPlayerConnectionListener(chatBridge);

@@ -7,20 +7,23 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-/** Filters JDA messages and reduces accepted messages to JDA-free values. */
+/** Routes accepted JDA messages to registered commands or Minecraft chat. */
 final class DiscordMessageListener extends ListenerAdapter {
     private final String channelId;
     private final BooleanSupplier active;
+    private final DiscordMessageCommandRegistry commands;
     private final Consumer<DiscordInboundMessage> destination;
 
     /** Creates a listener for the configured Discord text channel. */
     DiscordMessageListener(
         String channelId,
         BooleanSupplier active,
+        DiscordMessageCommandRegistry commands,
         Consumer<DiscordInboundMessage> destination
     ) {
         this.channelId = Objects.requireNonNull(channelId, "channelId");
         this.active = Objects.requireNonNull(active, "active");
+        this.commands = Objects.requireNonNull(commands, "commands");
         this.destination = Objects.requireNonNull(destination, "destination");
     }
 
@@ -31,7 +34,12 @@ final class DiscordMessageListener extends ListenerAdapter {
             return;
         }
 
-        DiscordInboundMessage inbound = copyInboundMessage(event);
+        Message message = event.getMessage();
+        if (commands.dispatch(message.getContentRaw())) {
+            return;
+        }
+
+        DiscordInboundMessage inbound = copyInboundMessage(event, message);
         if (inbound.hasVisibleContent()) {
             destination.accept(inbound);
         }
@@ -44,8 +52,7 @@ final class DiscordMessageListener extends ListenerAdapter {
             && !event.isWebhookMessage();
     }
 
-    private DiscordInboundMessage copyInboundMessage(MessageReceivedEvent event) {
-        Message message = event.getMessage();
+    private DiscordInboundMessage copyInboundMessage(MessageReceivedEvent event, Message message) {
         int imageCount = Math.toIntExact(
             message.getAttachments().stream().filter(Message.Attachment::isImage).count()
         );

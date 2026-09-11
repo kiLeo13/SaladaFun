@@ -20,8 +20,12 @@ public final class DiscordChatBridge implements AutoCloseable {
     private boolean closed;
 
     /** Creates a production bridge backed by JDA sessions. */
-    public DiscordChatBridge(Consumer<DiscordInboundMessage> inboundDestination, Logger logger) {
-        this(inboundDestination, new JdaDiscordSessionFactory(logger), logger);
+    public DiscordChatBridge(
+        Consumer<DiscordInboundMessage> inboundDestination,
+        OnlinePlayerNamesProvider onlinePlayerNames,
+        Logger logger
+    ) {
+        this(inboundDestination, new JdaDiscordSessionFactory(onlinePlayerNames, logger), logger);
     }
 
     /** Creates a bridge with an explicit factory for focused lifecycle tests. */

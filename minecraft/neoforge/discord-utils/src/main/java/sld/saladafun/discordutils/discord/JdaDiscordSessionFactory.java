@@ -7,10 +7,12 @@ import sld.saladafun.discordutils.config.DiscordChatSettings;
 
 /** Creates production JDA-backed Discord sessions. */
 final class JdaDiscordSessionFactory implements DiscordSessionFactory {
+    private final OnlinePlayerNamesProvider onlinePlayerNames;
     private final Logger logger;
 
     /** Creates a factory that logs through NeoForge and JDA's SLF4J backend. */
-    JdaDiscordSessionFactory(Logger logger) {
+    JdaDiscordSessionFactory(OnlinePlayerNamesProvider onlinePlayerNames, Logger logger) {
+        this.onlinePlayerNames = Objects.requireNonNull(onlinePlayerNames, "onlinePlayerNames");
         this.logger = Objects.requireNonNull(logger, "logger");
     }
 
@@ -21,6 +23,6 @@ final class JdaDiscordSessionFactory implements DiscordSessionFactory {
         Consumer<DiscordInboundMessage> destination,
         DiscordConnectionObserver observer
     ) {
-        return new JdaDiscordSession(settings, destination, observer, logger);
+        return new JdaDiscordSession(settings, destination, onlinePlayerNames, observer, logger);
     }
 }

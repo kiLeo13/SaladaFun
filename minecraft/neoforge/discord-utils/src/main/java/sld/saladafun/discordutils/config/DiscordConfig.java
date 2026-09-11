@@ -21,7 +21,7 @@ public final class DiscordConfig {
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         builder.push("discord-chat");
-        ENABLED = builder.comment("Bridges chat and player-presence notices with one Discord text channel.")
+        ENABLED = builder.comment("Bridges chat, commands, and player-presence notices with one Discord channel.")
             .define("enabled", false);
         TOKEN = builder.comment("Discord bot token. Keep this secret and never commit it.")
             .define("token", "");
