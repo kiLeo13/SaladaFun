@@ -3,12 +3,14 @@ package discord
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
@@ -23,6 +25,65 @@ func TestNewRequestsRequiredGatewayIntents(t *testing.T) {
 		discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
 	if gateway.session.Identify.Intents&want != want {
 		t.Fatalf("gateway intents = %v", gateway.session.Identify.Intents)
+	}
+	if gateway.session.ShouldReconnectOnError {
+		t.Fatal("DiscordGo internal reconnect is enabled")
+	}
+}
+
+func TestOpenGatewayReturnsConnectionResult(t *testing.T) {
+	want := errors.New("open failed")
+	if err := openGateway(context.Background(), time.Second, func() error { return want }); !errors.Is(err, want) {
+		t.Fatalf("openGateway() error = %v, want %v", err, want)
+	}
+	if err := openGateway(context.Background(), time.Second, func() error { return nil }); err != nil {
+		t.Fatalf("openGateway() error = %v", err)
+	}
+}
+
+func TestOpenGatewayStopsForCancellationOrTimeout(t *testing.T) {
+	t.Run("cancellation", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		release := make(chan struct{})
+		err := openGateway(ctx, time.Second, func() error {
+			<-release
+			return nil
+		})
+		close(release)
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("openGateway() error = %v, want context cancellation", err)
+		}
+	})
+
+	t.Run("timeout", func(t *testing.T) {
+		release := make(chan struct{})
+		err := openGateway(context.Background(), time.Millisecond, func() error {
+			<-release
+			return nil
+		})
+		close(release)
+		if !errors.Is(err, errGatewayOpenTimeout) {
+			t.Fatalf("openGateway() error = %v, want %v", err, errGatewayOpenTimeout)
+		}
+	})
+}
+
+func TestGatewayWaitTreatsDisconnectAsFatalAndCancellationAsGraceful(t *testing.T) {
+	disconnected := make(chan struct{}, 1)
+	signalDisconnect(disconnected)
+	signalDisconnect(disconnected)
+	if len(disconnected) != 1 {
+		t.Fatalf("disconnect signals = %d, want 1", len(disconnected))
+	}
+	if err := waitForGateway(context.Background(), disconnected); !errors.Is(err, errGatewayDisconnected) {
+		t.Fatalf("waitForGateway() error = %v, want %v", err, errGatewayDisconnected)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := waitForGateway(ctx, make(chan struct{})); err != nil {
+		t.Fatalf("waitForGateway() cancellation error = %v", err)
 	}
 }
 

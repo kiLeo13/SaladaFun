@@ -6,9 +6,17 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
+)
+
+const gatewayOpenTimeout = 60 * time.Second
+
+var (
+	errGatewayDisconnected = errors.New("discord gateway disconnected unexpectedly")
+	errGatewayOpenTimeout  = errors.New("discord gateway opening timed out")
 )
 
 // Gateway owns Padinho's Discord session, registration, and interaction adapter.
@@ -32,6 +40,9 @@ func New(token string, routes *Routes, logger *slog.Logger) (*Gateway, error) {
 	}
 	session.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildVoiceStates |
 		discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
+	// Process supervision replaces a disconnected session with a fresh process;
+	// DiscordGo must not reuse the session internally.
+	session.ShouldReconnectOnError = false
 	return &Gateway{
 		session: session,
 		routes:  routes,
@@ -41,6 +52,7 @@ func New(token string, routes *Routes, logger *slog.Logger) (*Gateway, error) {
 
 // Run opens Discord, synchronizes global commands, and blocks until cancellation.
 func (g *Gateway) Run(ctx context.Context) error {
+	disconnected := make(chan struct{}, 1)
 	handler := &interactionHandler{
 		routes: g.routes,
 		logger: g.logger,
@@ -49,10 +61,16 @@ func (g *Gateway) Run(ctx context.Context) error {
 	g.session.AddHandler(handler.handle)
 	messageHandler := &messageCommandHandler{routes: g.routes, logger: g.logger, ctx: ctx}
 	g.session.AddHandler(messageHandler.handle)
+	g.session.AddHandler(func(_ *discordgo.Session, _ *discordgo.Disconnect) {
+		signalDisconnect(disconnected)
+	})
 	for _, subscriber := range g.subscribers {
 		subscriber.Subscribe(ctx, g.session)
 	}
-	if err := g.session.Open(); err != nil {
+	if err := openGateway(ctx, gatewayOpenTimeout, g.session.Open); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
 		return fmt.Errorf("open Discord gateway: %w", err)
 	}
 	defer g.session.Close()
@@ -60,8 +78,50 @@ func (g *Gateway) Run(ctx context.Context) error {
 	if err := g.synchronizeCommands(); err != nil {
 		return err
 	}
-	<-ctx.Done()
-	return nil
+	return waitForGateway(ctx, disconnected)
+}
+
+// openGateway bounds the initial connection attempt so process supervision can
+// replace a stalled Discord session with a fresh process and session.
+func openGateway(ctx context.Context, timeout time.Duration, open func() error) error {
+	result := make(chan error, 1)
+	go func() {
+		result <- open()
+	}()
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return errGatewayOpenTimeout
+	case err := <-result:
+		return err
+	}
+}
+
+// signalDisconnect reports a gateway disconnect without blocking DiscordGo's
+// event goroutine or emitting duplicate lifecycle signals.
+func signalDisconnect(disconnected chan<- struct{}) {
+	select {
+	case disconnected <- struct{}{}:
+	default:
+	}
+}
+
+// waitForGateway distinguishes intentional process cancellation from an
+// unexpected Discord disconnect that must trigger process supervision.
+func waitForGateway(ctx context.Context, disconnected <-chan struct{}) error {
+	select {
+	case <-ctx.Done():
+		return nil
+	case <-disconnected:
+		if ctx.Err() != nil {
+			return nil
+		}
+		return errGatewayDisconnected
+	}
 }
 
 // AddSubscriber registers a feature listener before the gateway is opened.
