@@ -46,10 +46,14 @@ Minecraft player's name and MC Heads avatar.
   are ignored to prevent loops. Text, image attachment counts, and sticker
   counts are rendered for every online player.
 - Player presence: Padinho sends `**Player** entrou no servidor` when a player
-  completes login and `**Player** saiu do servidor` when a player logs out. Each
-  bot message enables Components V2 and contains one text display inside one
-  container, using green (`#57F287`) for joins and red (`#ED4245`) for leaves.
-  Player names are Markdown-escaped and all allowed mentions are disabled.
+  completes login. A routine client disconnect sends `**Player** saiu do
+  servidor`; timeouts, kicks, network failures, and other reasoned disconnects
+  instead send `**Player** desconectou: <reason>` using the reason retained by
+  the server connection. Each bot message enables Components V2 and contains
+  one text display inside one container, using green (`#57F287`) for joins and
+  red (`#ED4245`) for leaves. Player names and disconnect reasons are
+  Markdown-escaped, reason whitespace is normalized, oversized text is safely
+  truncated, and all allowed mentions are disabled.
 - Discord callbacks never access Minecraft state directly. Delivery is scheduled
   on the dedicated server thread.
 
@@ -96,13 +100,15 @@ Before deployment, run:
 .\gradlew.bat clean build
 ```
 
-On a test server, verify both chat directions; join and leave with a player to
-confirm Padinho emits the green and red Components V2 notifications; confirm an
-offline-mode player's username resolves to their head and outer/hat layer in the
-webhook avatar; invoke `!players` with zero, one, and multiple online players;
-confirm `!players` in another channel is ignored and `!unknown` still reaches
-Minecraft chat; verify a bot message and a webhook message are ignored; and
-confirm a broken replacement configuration does not interrupt a working bridge.
+On a test server, verify both chat directions; join and use the client's
+Disconnect button to confirm Padinho emits the ordinary green and red Components
+V2 notifications; force a connection timeout or kick to confirm the red message
+uses `desconectou: <reason>`; confirm an offline-mode player's username resolves
+to their head and outer/hat layer in the webhook avatar; invoke `!players` with
+zero, one, and multiple online players; confirm `!players` in another channel is
+ignored and `!unknown` still reaches Minecraft chat; verify a bot message and a
+webhook message are ignored; and confirm a broken replacement configuration does
+not interrupt a working bridge.
 
 Configuration reloads stage a replacement connection until Discord READY proves
 the channel is visible; an invalid or failed replacement leaves the existing

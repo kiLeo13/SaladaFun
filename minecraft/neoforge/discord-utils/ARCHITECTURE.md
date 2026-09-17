@@ -36,6 +36,16 @@ player's name and avatar. Player join and leave notifications use Padinho's bot
 identity in the validated guild channel. Each notification is a Components V2
 container with one text display and a green or red accent.
 
+NeoForge's `PlayerLoggedOutEvent` does not carry a disconnect reason directly.
+The platform listener therefore reads the `DisconnectionDetails` retained by
+the logged-out `ServerPlayer` connection while `PlayerList.remove` is firing.
+Vanilla's `disconnect.endOfStream` reason identifies the routine client-close
+path and remains the ordinary `saiu do servidor` notification. Other nonblank
+reasons are normalized and passed through the platform-free presence model for
+the reasoned `desconectou: <reason>` notification. Discord rendering escapes
+both player-controlled names and reason formatting, disables mentions, and
+limits the final text to the Components V2 text-display boundary.
+
 The same inbound JDA listener handles registered literal message commands before
 ordinary Discord-to-Minecraft chat. Triggers include their prefix and match the
 first whitespace-delimited token case-insensitively. `!players` requests an
