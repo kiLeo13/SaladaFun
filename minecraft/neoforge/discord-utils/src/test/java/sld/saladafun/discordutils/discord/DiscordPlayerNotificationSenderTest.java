@@ -1,6 +1,7 @@
 package sld.saladafun.discordutils.discord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -45,6 +46,54 @@ class DiscordPlayerNotificationSenderTest {
             DiscordPlayerNotificationSender.LEFT_ACCENT_COLOR,
             "**Player** saiu do servidor"
         );
+    }
+
+    @Test
+    void createsReasonedDisconnectNotification() {
+        MessageCreateData message = DiscordPlayerNotificationSender.createMessage(
+            "Player",
+            PlayerPresence.disconnected("Timed out")
+        );
+
+        assertNotification(
+            message,
+            DiscordPlayerNotificationSender.LEFT_ACCENT_COLOR,
+            "**Player** desconectou: Timed out"
+        );
+    }
+
+    @Test
+    void normalizesAndEscapesDisconnectReasonMarkdown() {
+        MessageCreateData message = DiscordPlayerNotificationSender.createMessage(
+            "Player",
+            PlayerPresence.disconnected("  Bad  **packet**\nreceived  ")
+        );
+
+        Container container = message.getComponents().getFirst().asContainer();
+        assertEquals(
+            "**Player** desconectou: Bad \\*\\*packet\\*\\* received",
+            container.getComponents().getFirst().asTextDisplay().getContent()
+        );
+        assertTrue(message.getAllowedMentions().isEmpty());
+    }
+
+    @Test
+    void limitsLongDisconnectReasonWithoutSplittingUnicode() {
+        MessageCreateData message = DiscordPlayerNotificationSender.createMessage(
+            "Player",
+            PlayerPresence.disconnected("😀".repeat(DiscordPlayerNotificationSender.MAX_COMPONENT_TEXT_LENGTH))
+        );
+
+        String content = message.getComponents()
+            .getFirst()
+            .asContainer()
+            .getComponents()
+            .getFirst()
+            .asTextDisplay()
+            .getContent();
+        assertTrue(content.length() <= DiscordPlayerNotificationSender.MAX_COMPONENT_TEXT_LENGTH);
+        assertFalse(Character.isHighSurrogate(content.charAt(content.length() - 2)));
+        assertTrue(content.endsWith("…"));
     }
 
     @Test

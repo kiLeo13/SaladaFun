@@ -102,9 +102,11 @@ class DiscordChatBridgeTest {
 
         session.ready();
         bridge.publishPresence("Player", PlayerPresence.JOINED);
-        bridge.publishPresence("Player", PlayerPresence.LEFT);
+        PlayerPresence disconnected = PlayerPresence.disconnected("Timed out");
+        bridge.publishPresence("Player", disconnected);
 
         assertEquals(2, session.publishedPresenceEvents());
+        assertEquals(disconnected, session.lastPresence());
         bridge.close();
     }
 
@@ -159,6 +161,7 @@ class DiscordChatBridgeTest {
         private boolean closed;
         private int publishedMessages;
         private int publishedPresenceEvents;
+        private PlayerPresence lastPresence;
 
         private FakeSession(DiscordChatSettings settings, DiscordConnectionObserver observer) {
             this.settings = settings;
@@ -183,6 +186,7 @@ class DiscordChatBridgeTest {
         @Override
         public void publishPresence(String playerName, PlayerPresence presence) {
             publishedPresenceEvents++;
+            lastPresence = presence;
         }
 
         @Override
@@ -218,6 +222,10 @@ class DiscordChatBridgeTest {
 
         private int publishedPresenceEvents() {
             return publishedPresenceEvents;
+        }
+
+        private PlayerPresence lastPresence() {
+            return lastPresence;
         }
     }
 }

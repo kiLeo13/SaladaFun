@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.components.textdisplay.TextDisplay;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
+import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.dv8tion.jda.api.utils.MarkdownUtil;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
 import net.dv8tion.jda.api.utils.messages.MessageCreateData;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 final class DiscordPlayerNotificationSender {
     static final int JOINED_ACCENT_COLOR = 0x57F287;
     static final int LEFT_ACCENT_COLOR = 0xED4245;
+    static final int MAX_COMPONENT_TEXT_LENGTH = 4_000;
 
     private final GuildMessageChannel channel;
     private final Logger logger;
@@ -42,20 +44,35 @@ final class DiscordPlayerNotificationSender {
         Objects.requireNonNull(presence, "presence");
 
         String boldPlayerName = MarkdownUtil.bold(playerName);
-        String text = switch (presence) {
+        String text = switch (presence.type()) {
             case JOINED -> "%s entrou no servidor".formatted(boldPlayerName);
-            case LEFT -> "%s saiu do servidor".formatted(boldPlayerName);
+            case LEFT -> presence.disconnectReason()
+                .map(reason -> "%s desconectou: %s".formatted(boldPlayerName, MarkdownSanitizer.escape(reason)))
+                .orElseGet(() -> "%s saiu do servidor".formatted(boldPlayerName));
         };
-        int accentColor = switch (presence) {
+        int accentColor = switch (presence.type()) {
             case JOINED -> JOINED_ACCENT_COLOR;
             case LEFT -> LEFT_ACCENT_COLOR;
         };
-        Container container = Container.of(TextDisplay.of(text)).withAccentColor(accentColor);
+        Container container = Container.of(TextDisplay.of(limitToComponentText(text))).withAccentColor(accentColor);
 
         return new MessageCreateBuilder()
             .setComponents(container)
             .useComponentsV2()
             .setAllowedMentions(EnumSet.noneOf(Message.MentionType.class))
             .build();
+    }
+
+    /** Limits a text display to Discord's UTF-16 length without splitting a surrogate pair. */
+    static String limitToComponentText(String text) {
+        if (text.length() <= MAX_COMPONENT_TEXT_LENGTH) {
+            return text;
+        }
+
+        int end = MAX_COMPONENT_TEXT_LENGTH - 1;
+        if (Character.isHighSurrogate(text.charAt(end - 1))) {
+            end--;
+        }
+        return text.substring(0, end) + "…";
     }
 }
