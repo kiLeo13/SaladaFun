@@ -1,6 +1,7 @@
 package sld.saladafun.discordutils.discord;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,40 @@ class DiscordMessageListenerTest {
         assertEquals(List.of(), broadcasts);
     }
 
+    @Test
+    void resolvedReplyReferenceIsCopiedForMinecraftRendering() {
+        AtomicInteger commandCalls = new AtomicInteger();
+        List<DiscordInboundMessage> broadcasts = new ArrayList<>();
+        DiscordMessageListener listener = listener(commandCalls, broadcasts);
+        Message referencedMessage = referencedMessage("Lucas", "Hello, guys");
+
+        listener.onMessageReceived(event(
+            "minecraft",
+            "Oiee, Lucas",
+            false,
+            false,
+            referencedMessage
+        ));
+
+        DiscordReplyReference reference = broadcasts.getFirst().replyReference().orElseThrow();
+        assertEquals("Lucas", reference.authorName());
+        assertEquals("Hello, guys", reference.content());
+        assertEquals(0, reference.imageCount());
+        assertEquals(0, reference.stickerCount());
+    }
+
+    @Test
+    void unavailableReplyReferenceDoesNotDiscardMessage() {
+        AtomicInteger commandCalls = new AtomicInteger();
+        List<DiscordInboundMessage> broadcasts = new ArrayList<>();
+        DiscordMessageListener listener = listener(commandCalls, broadcasts);
+
+        listener.onMessageReceived(event("minecraft", "Still visible", false, false, null));
+
+        assertEquals(1, broadcasts.size());
+        assertTrue(broadcasts.getFirst().replyReference().isEmpty());
+    }
+
     private static DiscordMessageListener listener(
         AtomicInteger commandCalls,
         List<DiscordInboundMessage> broadcasts
@@ -69,6 +104,16 @@ class DiscordMessageListenerTest {
         boolean bot,
         boolean webhook
     ) {
+        return event(channelId, content, bot, webhook, null);
+    }
+
+    private static MessageReceivedEvent event(
+        String channelId,
+        String content,
+        boolean bot,
+        boolean webhook,
+        Message referencedMessage
+    ) {
         MessageReceivedEvent event = mock(MessageReceivedEvent.class);
         MessageChannelUnion channel = mock(MessageChannelUnion.class);
         User author = mock(User.class);
@@ -84,6 +129,18 @@ class DiscordMessageListenerTest {
         when(message.getContentDisplay()).thenReturn(content);
         when(message.getAttachments()).thenReturn(List.of());
         when(message.getStickers()).thenReturn(List.of());
+        when(message.getReferencedMessage()).thenReturn(referencedMessage);
         return event;
+    }
+
+    private static Message referencedMessage(String authorName, String content) {
+        Message message = mock(Message.class);
+        User author = mock(User.class);
+        when(message.getAuthor()).thenReturn(author);
+        when(author.getEffectiveName()).thenReturn(authorName);
+        when(message.getContentDisplay()).thenReturn(content);
+        when(message.getAttachments()).thenReturn(List.of());
+        when(message.getStickers()).thenReturn(List.of());
+        return message;
     }
 }

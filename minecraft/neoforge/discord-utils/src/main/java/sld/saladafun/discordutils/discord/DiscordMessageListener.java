@@ -1,6 +1,7 @@
 package sld.saladafun.discordutils.discord;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import net.dv8tion.jda.api.entities.Message;
@@ -60,7 +61,26 @@ final class DiscordMessageListener extends ListenerAdapter {
             event.getAuthor().getEffectiveName(),
             message.getContentDisplay(),
             imageCount,
-            message.getStickers().size()
+            message.getStickers().size(),
+            copyReplyReference(message)
         );
+    }
+
+    /** Copies a resolved Discord reply without retaining JDA-owned objects. */
+    private Optional<DiscordReplyReference> copyReplyReference(Message message) {
+        Message referencedMessage = message.getReferencedMessage();
+        if (referencedMessage == null) {
+            return Optional.empty();
+        }
+
+        int imageCount = Math.toIntExact(
+            referencedMessage.getAttachments().stream().filter(Message.Attachment::isImage).count()
+        );
+        return Optional.of(new DiscordReplyReference(
+            referencedMessage.getAuthor().getEffectiveName(),
+            referencedMessage.getContentDisplay(),
+            imageCount,
+            referencedMessage.getStickers().size()
+        ));
     }
 }

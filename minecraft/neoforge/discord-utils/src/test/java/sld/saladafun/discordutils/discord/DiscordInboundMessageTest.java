@@ -1,8 +1,11 @@
 package sld.saladafun.discordutils.discord;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** Tests visible-content filtering before Discord callbacks cross into Minecraft. */
@@ -15,5 +18,26 @@ class DiscordInboundMessageTest {
     }
     @Test void negativeMediaCountsAreRejected() {
         assertThrows(IllegalArgumentException.class, () -> new DiscordInboundMessage("name", "", -1, 0));
+    }
+
+    @Test void replyReferenceIsRetained() {
+        DiscordReplyReference reference = new DiscordReplyReference("Lucas", "Hello, guys", 0, 0);
+
+        DiscordInboundMessage message = new DiscordInboundMessage(
+            "Leo13",
+            "Oiee, Lucas",
+            0,
+            0,
+            Optional.of(reference)
+        );
+
+        assertEquals(Optional.of(reference), message.replyReference());
+    }
+
+    @Test void nullReplyContainerIsRejected() {
+        assertThrows(
+            NullPointerException.class,
+            () -> new DiscordInboundMessage("name", "text", 0, 0, null)
+        );
     }
 }
