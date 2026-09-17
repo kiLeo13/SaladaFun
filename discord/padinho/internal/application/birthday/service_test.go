@@ -140,6 +140,7 @@ func TestUpdateRejectsInvalidAndMissingRecords(t *testing.T) {
 		{"multiple fields", UpdateInput{UserID: 7, Name: &name, Message: &second}, ErrInvalidUpdate},
 		{"name", UpdateInput{UserID: 7, Name: ptrString(" ")}, ErrInvalidName},
 		{"date", UpdateInput{UserID: 7, Birthday: &time.Time{}}, ErrInvalidDate},
+		{"future date", UpdateInput{UserID: 7, Birthday: ptrTime(time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC))}, ErrInvalidDate},
 		{"timezone", UpdateInput{UserID: 7, TimeZone: ptrString("Mars/Olympus")}, ErrInvalidTimeZone},
 		{"message", UpdateInput{UserID: 7, Message: ptrString("{unknown}")}, ErrInvalidMessage},
 	}
@@ -159,8 +160,9 @@ func TestUpdateRejectsInvalidAndMissingRecords(t *testing.T) {
 	}
 }
 
-func ptrString(value string) *string { return &value }
-func ptrBool(value bool) *bool       { return &value }
+func ptrString(value string) *string     { return &value }
+func ptrBool(value bool) *bool           { return &value }
+func ptrTime(value time.Time) *time.Time { return &value }
 
 func TestDueUsesEachUsersLocalDateAndLedger(t *testing.T) {
 	repository := &fakeRepository{birthdays: []*entity.Birthday{
