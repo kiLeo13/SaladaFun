@@ -1,11 +1,13 @@
 # Padinho
 
 Padinho is SaladaFun's Discord bot, written in Go 1.26 for a small private
-guild. Its `/birthdays [month:<January...December>]` command displays a
-Components V2 calendar with one page per month, arrow-only navigation, a
+guild. Its `/birthdays [month:<January...December>] [full-date:<true|false>]`
+command displays a Components V2 calendar with one page per month, arrow-only navigation, a
 self-inspection button beside the title, and an add modal opened through the
 `Adicionar` button. When `month` is omitted, the command starts at the bot
-process's current calendar month. Its
+process's current calendar month. Birthday rows show day and month by default;
+`full-date:true` also shows the stored birth year and keeps that format while
+the user navigates between months. Its
 `/move-all destination:<voice channel> [origin:<voice channel>]` command moves
 every currently connected member from the chosen origin; if origin is omitted,
 it uses the caller's current voice channel. Destination capacity is not checked
@@ -73,10 +75,12 @@ uses the cached guild name and guild icon in its footer; when cache data is
 unavailable, it renders a localized fallback instead. The public `Editar` button
 opens an ephemeral dashboard only for administrators. Its User Select loads one
 existing registration into the same dashboard, where name, full date, timezone,
-and message each have a pencil that opens a prefilled one-field modal. The
-Components V2 dashboard ends with an `Usuário` label and the User Select.
-Submitting
-the modal atomically updates that column in `birthdays`, reloads the row, and
+and message each have a pencil that opens a prefilled one-field modal. Timezone
+creation and editing share the same Brasília, Amazonas, and UTC select menu.
+The immutable user-ID row ends with a disabled snowflake accessory. The
+Components V2 dashboard ends with a divider followed by the `Usuário` label and
+User Select inside the dashboard container.
+Submitting the modal atomically updates that column in `birthdays`, reloads the row, and
 replaces the same dashboard message. The Discord user ID is never editable.
 
 Each birthday page separates its capitalized month heading, mention-based list,

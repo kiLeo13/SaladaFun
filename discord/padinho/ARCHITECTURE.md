@@ -189,11 +189,15 @@ implementation. Discord handlers consume a smaller service interface local to
 their feature package.
 
 The `/birthdays` command accepts an optional `month` string choice with English
-labels from January through December and lowercase values internally. When
-omitted, it uses the bot process's current calendar month. Each of the twelve pages
-queries and renders one month in day/name order with Components V2. Arrow-only
-buttons carry only direction and current month in a stateless custom ID, so any
-member can browse the list. A magnifier accessory in the title section looks up
+labels from January through December and lowercase values internally, plus an
+optional `full-date` Boolean. When `month` is omitted, it uses the bot process's
+current calendar month. Birthday rows render day and month by default; enabling
+`full-date` also renders the stored year. Each of the twelve pages queries and
+renders one month in day/name order with Components V2. Arrow-only buttons carry
+direction, current month, and the date-format choice in a stateless custom ID,
+so any member can browse the list without losing the requested format. The page
+parser continues accepting older two-parameter IDs as abbreviated dates. A
+magnifier accessory in the title section looks up
 the clicking member from the interaction actor and returns their full stored
 registration ephemerally; the route never accepts a target-user parameter. The
 private legacy embed reads the cached guild through the gateway, renders its name
@@ -210,12 +214,15 @@ The public `Editar` button opens one ephemeral Components V2 dashboard, but the
 button, target selector, field buttons, and modal submissions each independently
 require Discord's exact `Administrator` permission. A User Select updates the
 same dashboard with either a not-found state or the chosen registration. User ID
-is rendered without an accessory; name, full date, raw IANA timezone, and custom
-message use Sections with pencil-button accessories. Each pencil opens one
-prefilled text-input modal whose stateless custom ID carries the validated field
-and target user. The final dashboard Text Display labels its attached User Select
-as `Usuário`. Successful submission performs a validated atomic update of
-only that column in the existing `birthdays` table, reloads the row, and updates
+is rendered in an immutable Section with a disabled custom snowflake emoji
+accessory; name, full date, raw IANA timezone, and custom message use Sections
+with pencil-button accessories. Each pencil opens one
+prefilled single-field modal whose stateless custom ID carries the validated
+field and target user. Creation and editing build those modal controls from the
+same field definitions; timezone is a required select in both flows. The final
+dashboard divider, `Usuário` Text Display, and attached User Select all live
+inside the same Container. Successful submission performs a validated atomic
+update of only that column in the existing `birthdays` table, reloads the row, and updates
 the source dashboard message. No edit table, schema migration, or expiring
 server-side interaction state is used.
 
@@ -244,10 +251,11 @@ once for that scheduler run and supplies its `{age}`, `{name}`, and `{mention}`
 template to the Discord sender. A birthday with a non-empty stored message never
 reads that configuration value.
 
-The add-birthday modal uses Discord's current modal component contract: text
-inputs, the required User Select, and the required timezone string select are
-wrapped in `Label` components. The User Select supplies the target member's
-snowflake, while the timezone select offers localized Brazilian Portuguese
+The add- and edit-birthday modals use Discord's current modal component contract:
+text inputs and selects are wrapped in `Label` components. Shared field
+definitions keep labels, placeholders, required state, limits, and control type
+consistent between both flows. The add modal's User Select supplies the target
+member's snowflake, while the timezone select offers localized Brazilian Portuguese
 labels for Brasília (`America/Sao_Paulo`), Amazonas (`America/Manaus`), and
 UTC. Padinho pins the official `github.com/bwmarrin/discordgo` upstream
 revision `v0.29.1-0.20260214123928-f43dd94faaac`, which exposes the required
