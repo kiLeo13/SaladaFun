@@ -2,7 +2,8 @@
 package enus
 
 const (
-	BirthdayMonthOptionDescription = "Month to display"
+	BirthdayMonthOptionDescription    = "Month to display"
+	BirthdayFullDateOptionDescription = "Show the stored birth year"
 )
 
 // MonthNames contains the lowercase values sent by the month command option.

@@ -21,9 +21,10 @@ func pageResponse(
 	month time.Month,
 	birthdays []*entity.Birthday,
 	next *appbirthday.UpcomingBirthday,
+	fullDate bool,
 ) *discordgo.InteractionResponse {
-	container := pageContainer(month, birthdays, next)
-	actions := pageActions(month)
+	container := pageContainer(month, birthdays, next, fullDate)
+	actions := pageActions(month, fullDate)
 
 	return &discordgo.InteractionResponse{
 		Type: responseType,
@@ -35,32 +36,34 @@ func pageResponse(
 	}
 }
 
-func pageContainer(month time.Month, birthdays []*entity.Birthday, next *appbirthday.UpcomingBirthday) discordgo.Container {
+func pageContainer(month time.Month, birthdays []*entity.Birthday, next *appbirthday.UpcomingBirthday, fullDate bool) discordgo.Container {
 	accent := birthdayAccentColor
 	divider := true
 	return discordgo.Container{
 		AccentColor: &accent,
 		Components: []discordgo.MessageComponent{
 			pageHeading(month),
-			discordgo.TextDisplay{Content: pageContent(birthdays)},
+			discordgo.TextDisplay{Content: pageContent(birthdays, fullDate)},
 			discordgo.Separator{Divider: &divider},
 			discordgo.TextDisplay{Content: upcomingContent(next)},
 		},
 	}
 }
 
-func pageActions(month time.Month) discordgo.ActionsRow {
+func pageActions(month time.Month, fullDate bool) discordgo.ActionsRow {
 	previous := pageButton(
 		"⬅️",
 		"previous",
 		month,
 		month == time.January,
+		fullDate,
 	)
 	next := pageButton(
 		"➡️",
 		"next",
 		month,
 		month == time.December,
+		fullDate,
 	)
 
 	return discordgo.ActionsRow{Components: []discordgo.MessageComponent{
@@ -86,7 +89,7 @@ func pageTitle(month time.Month) string {
 	return fmt.Sprintf("## "+ptbr.BirthdayTitle, locale.Capitalize(ptbr.MonthNames[month]))
 }
 
-func pageContent(birthdays []*entity.Birthday) string {
+func pageContent(birthdays []*entity.Birthday, fullDate bool) string {
 	var content strings.Builder
 	if len(birthdays) == 0 {
 		content.WriteString(ptbr.BirthdayEmptyMonth)
@@ -96,13 +99,18 @@ func pageContent(birthdays []*entity.Birthday) string {
 		if index > 0 {
 			content.WriteByte('\n')
 		}
-		fmt.Fprintf(
-			&content,
-			ptbr.BirthdayEntry,
-			birthday.Birthday.Day(),
-			birthday.Birthday.Month(),
-			birthday.UserID,
-		)
+		if fullDate {
+			fmt.Fprintf(
+				&content,
+				ptbr.BirthdayFullDateEntry,
+				birthday.Birthday.Day(),
+				birthday.Birthday.Month(),
+				birthday.Birthday.Year(),
+				birthday.UserID,
+			)
+			continue
+		}
+		fmt.Fprintf(&content, ptbr.BirthdayEntry, birthday.Birthday.Day(), birthday.Birthday.Month(), birthday.UserID)
 	}
 	return content.String()
 }
@@ -119,11 +127,12 @@ func pageButton(
 	direction string,
 	month time.Month,
 	disabled bool,
+	fullDate bool,
 ) discordgo.Button {
 	return discordgo.Button{
 		Style: discordgo.SecondaryButton, Disabled: disabled,
 		Emoji:    &discordgo.ComponentEmoji{Name: emoji},
-		CustomID: fmt.Sprintf("%s:%s:%d", pageRoute, direction, month),
+		CustomID: fmt.Sprintf("%s:%s:%d:%t", pageRoute, direction, month, fullDate),
 	}
 }
 
@@ -144,13 +153,23 @@ func editButton() discordgo.Button {
 	}
 }
 
-func parsePage(parameters []string) (string, time.Month, error) {
-	if len(parameters) != 2 || parameters[0] != "previous" && parameters[0] != "next" {
-		return "", 0, fmt.Errorf("invalid birthday page parameters")
+func parsePage(parameters []string) (string, time.Month, bool, error) {
+	if len(parameters) != 2 && len(parameters) != 3 {
+		return "", 0, false, fmt.Errorf("invalid birthday page parameters")
+	}
+	if parameters[0] != "previous" && parameters[0] != "next" {
+		return "", 0, false, fmt.Errorf("invalid birthday page parameters")
 	}
 	month, err := strconv.Atoi(parameters[1])
 	if err != nil || month < int(time.January) || month > int(time.December) {
-		return "", 0, fmt.Errorf("invalid birthday page month")
+		return "", 0, false, fmt.Errorf("invalid birthday page month")
 	}
-	return parameters[0], time.Month(month), nil
+	fullDate := false
+	if len(parameters) == 3 {
+		fullDate, err = strconv.ParseBool(parameters[2])
+		if err != nil {
+			return "", 0, false, fmt.Errorf("invalid birthday page date format")
+		}
+	}
+	return parameters[0], time.Month(month), fullDate, nil
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func (h Handler) ChangePage(_ context.Context, request *discord.InteractionRequest) error {
-	direction, month, err := parsePage(request.Parameters)
+	direction, month, fullDate, err := parsePage(request.Parameters)
 	if err != nil {
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayInvalidInteraction))
 	}
@@ -32,6 +32,7 @@ func (h Handler) ChangePage(_ context.Context, request *discord.InteractionReque
 		month,
 		birthdays,
 		next,
+		fullDate,
 	))
 }
 

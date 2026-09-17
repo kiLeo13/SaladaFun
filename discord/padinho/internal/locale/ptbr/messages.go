@@ -6,6 +6,7 @@ const (
 	BirthdayTitle                 = "🥳 %s"
 	BirthdayEmptyMonth            = "Nenhum aniversário para este mês."
 	BirthdayEntry                 = "**%02d/%02d** — <@%d>"
+	BirthdayFullDateEntry         = "**%02d/%02d/%04d** — <@%d>"
 	BirthdayUpcoming              = "-# Próximo aniversário: <@%d> <t:%d:R>"
 	BirthdayNoUpcoming            = "Nenhum aniversário cadastrado."
 	BirthdayAddModalTitle         = "Adicionar Aniversário"

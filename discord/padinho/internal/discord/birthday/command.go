@@ -13,7 +13,10 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const monthOptionName = "month"
+const (
+	monthOptionName    = "month"
+	fullDateOptionName = "full-date"
+)
 
 var errInvalidMonth = errors.New("invalid birthday month")
 
@@ -29,6 +32,10 @@ func (h Handler) List(_ context.Context, request *command.CommandRequest) error 
 	if err != nil {
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayInvalidMonth))
 	}
+	fullDate, err := h.fullDate(request)
+	if err != nil {
+		return err
+	}
 	birthdays, err := h.service.Month(month)
 	if err != nil {
 		return err
@@ -42,6 +49,7 @@ func (h Handler) List(_ context.Context, request *command.CommandRequest) error 
 		month,
 		birthdays,
 		next,
+		fullDate,
 	))
 }
 
@@ -68,6 +76,15 @@ func (h Handler) currentTime() time.Time {
 	return time.Now()
 }
 
+// fullDate returns whether the command should include stored birth years.
+func (h Handler) fullDate(request *command.CommandRequest) (bool, error) {
+	value, err := request.Options.Boolean(fullDateOptionName)
+	if errors.Is(err, command.ErrOptionMissing) {
+		return false, nil
+	}
+	return value, err
+}
+
 func monthOption() *command.StringCommandOption {
 	choices := make([]command.OptionChoice, 0, len(enus.MonthNames)-1)
 	for month := time.January; month <= time.December; month++ {
@@ -77,4 +94,9 @@ func monthOption() *command.StringCommandOption {
 		})
 	}
 	return command.StringOption(monthOptionName, enus.BirthdayMonthOptionDescription).Choices(choices...)
+}
+
+// fullDateOption declares the optional year-display toggle.
+func fullDateOption() *command.BooleanCommandOption {
+	return command.BooleanOption(fullDateOptionName, enus.BirthdayFullDateOptionDescription)
 }

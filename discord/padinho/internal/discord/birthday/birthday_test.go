@@ -30,8 +30,11 @@ func TestRegisterAndListStartsInJanuary(t *testing.T) {
 	if err != nil || len(definitions) != 1 || definitions[0].Name != commandName || definitions[0].Description != ptbr.BirthdayCommandDescription {
 		t.Fatalf("definitions = %#v, %v", definitions, err)
 	}
-	if len(definitions[0].Options) != 1 || definitions[0].Options[0].Name != monthOptionName || len(definitions[0].Options[0].Choices) != 12 || definitions[0].Options[0].Choices[0].Name != "January" || definitions[0].Options[0].Choices[0].Value != "january" || definitions[0].Options[0].Choices[11].Name != "December" {
+	if len(definitions[0].Options) != 2 || definitions[0].Options[0].Name != monthOptionName || len(definitions[0].Options[0].Choices) != 12 || definitions[0].Options[0].Choices[0].Name != "January" || definitions[0].Options[0].Choices[0].Value != "january" || definitions[0].Options[0].Choices[11].Name != "December" {
 		t.Fatalf("month option = %#v", definitions[0].Options[0])
+	}
+	if definitions[0].Options[1].Name != fullDateOptionName || definitions[0].Options[1].Type != command.OptionTypeBoolean || definitions[0].Options[1].Required {
+		t.Fatalf("full-date option = %#v", definitions[0].Options[1])
 	}
 	wantMonths := []string{"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"}
 	for index, value := range wantMonths {
@@ -50,6 +53,9 @@ func TestRegisterAndListStartsInJanuary(t *testing.T) {
 		t.Fatalf("List() error = %v, month = %v", err, service.month)
 	}
 	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "Janeiro", "<@123>")
+	if text := responseText(responder.response); strings.Contains(text, "2000") {
+		t.Fatalf("default page unexpectedly includes birth year: %q", text)
+	}
 }
 
 func TestListUsesSelectedMonth(t *testing.T) {
@@ -64,6 +70,29 @@ func TestListUsesSelectedMonth(t *testing.T) {
 		t.Fatalf("List() error = %v, month = %v", err, service.month)
 	}
 	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "Outubro")
+}
+
+func TestListShowsFullDateWhenRequested(t *testing.T) {
+	service := &fakeService{birthdays: []*entity.Birthday{{
+		UserID: 123, Birthday: time.Date(2001, time.June, 1, 0, 0, 0, 0, time.UTC),
+	}, {
+		UserID: 456, Birthday: time.Date(1998, time.June, 2, 0, 0, 0, 0, time.UTC),
+	}}}
+	responder := &fakeResponder{}
+	err := (Handler{service: service}).List(context.Background(), &command.CommandRequest{
+		Options: command.NewOptionValues(map[string]any{
+			monthOptionName: "june", fullDateOptionName: true,
+		}),
+		Responder: responder,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertPage(t, responder.response, discordgo.InteractionResponseChannelMessageWithSource, "01/06/2001", "02/06/1998")
+	row := responder.response.Data.Components[1].(discordgo.ActionsRow)
+	if button := row.Components[0].(discordgo.Button); !strings.HasSuffix(button.CustomID, ":true") {
+		t.Fatalf("pagination custom ID = %q", button.CustomID)
+	}
 }
 
 func TestListRejectsInvalidMonth(t *testing.T) {
@@ -85,12 +114,14 @@ func TestListReturnsServiceError(t *testing.T) {
 }
 
 func TestChangePage(t *testing.T) {
-	service := &fakeService{}
+	service := &fakeService{birthdays: []*entity.Birthday{{
+		UserID: 123, Birthday: time.Date(2001, time.February, 1, 0, 0, 0, 0, time.UTC),
+	}}}
 	handler := Handler{service: service}
 	responder := &fakeResponder{}
 	request := &discord.InteractionRequest{
 		Actor:      command.Actor{UserID: "123"},
-		Parameters: []string{"next", "1"}, Responder: responder,
+		Parameters: []string{"next", "1", "true"}, Responder: responder,
 	}
 	if err := handler.ChangePage(context.Background(), request); err != nil {
 		t.Fatal(err)
@@ -98,7 +129,7 @@ func TestChangePage(t *testing.T) {
 	if service.month != time.February {
 		t.Fatalf("month = %v", service.month)
 	}
-	assertPage(t, responder.response, discordgo.InteractionResponseUpdateMessage, "Fevereiro", ptbr.BirthdayEmptyMonth)
+	assertPage(t, responder.response, discordgo.InteractionResponseUpdateMessage, "Fevereiro", "01/02/2001")
 
 	request.Parameters = []string{"previous", "12"}
 	if err := handler.ChangePage(context.Background(), request); err != nil || service.month != time.November {
@@ -131,7 +162,8 @@ func TestChangePageRejectsInvalidAndForeignButtons(t *testing.T) {
 		"missing":   nil,
 		"direction": {"sideways", "1", "123"},
 		"month":     {"next", "13", "123"},
-		"extra":     {"next", "1", "123"},
+		"format":    {"next", "1", "sometimes"},
+		"extra":     {"next", "1", "true", "extra"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			responder := &fakeResponder{}
@@ -339,7 +371,7 @@ func TestPageUsesBirthdayMentionsAndSeparators(t *testing.T) {
 	next := &appbirthday.UpcomingBirthday{UserID: 456, OccursAt: time.Unix(1_767_267_200, 0)}
 	response := pageResponse(discordgo.InteractionResponseChannelMessageWithSource, time.January, []*entity.Birthday{{
 		UserID: 123, Name: "Leo", Birthday: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
-	}}, next)
+	}}, next, false)
 	if got := responseText(response); !strings.Contains(got, "<@123>") || !strings.Contains(got, "Próximo aniversário: <@456> <t:1767267200:R>") {
 		t.Fatalf("page content = %q", got)
 	}
