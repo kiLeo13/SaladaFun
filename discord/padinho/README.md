@@ -115,6 +115,28 @@ during Watchtower restarts. Brazilian
 Portuguese response text and English command metadata are centralized as typed
 constants in `internal/locale` without a runtime translation dependency.
 
+## Gateway lifecycle
+
+Padinho pins the official `github.com/bwmarrin/discordgo` repository at
+`v0.29.1-0.20260214123928-f43dd94faaac`. That upstream revision includes the
+Label component and submitted modal-select values required by the birthday UI;
+no module replacement or third-party DiscordGo fork is used.
+
+DiscordGo's internal gateway reconnect is deliberately disabled. A gateway
+disconnect is treated as a process-fatal condition rather than attempting to
+reuse a session whose WebSocket state, goroutines, or locks may be unhealthy.
+`Gateway.Run` also limits the initial open attempt to 60 seconds. Either failure
+returns to `cmd/padinho`, which logs the error and exits non-zero. The bot
+service's Compose `restart: unless-stopped` policy then creates a new process,
+DiscordGo session, and WebSocket connection. SIGINT and SIGTERM remain graceful
+shutdown paths and do not report a gateway failure.
+
+The pinned upstream revision does not include the DAVE voice implementation
+previously carried by the removed fork. Padinho does not currently establish
+Discord voice connections. Any future speech playback feature must verify
+upstream DAVE support or deliberately introduce a separately reviewed voice
+implementation before joining voice channels.
+
 ## Database configuration
 
 `internal/database.Open()` reads `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`,

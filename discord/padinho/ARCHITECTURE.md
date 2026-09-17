@@ -9,6 +9,15 @@ services and Discord listeners, registers and freezes all Discord routes, and
 starts the gateway plus recurring-job scheduler. Missing, empty, non-numeric,
 or duplicate Mudae identifiers fail before Discord connects.
 
+One DiscordGo session exists for the lifetime of one process. Its internal
+reconnect option is disabled: an unexpected Disconnect event makes
+`Gateway.Run` fail, and an initial Open attempt that exceeds 60 seconds fails in
+the same way. `cmd/padinho` exits non-zero and the Compose
+`restart: unless-stopped` policy creates a fresh process, session, state cache,
+handler set, and WebSocket. The application never calls Open again on a
+disconnected session. Context cancellation from SIGINT or SIGTERM remains a
+normal shutdown and closes the connected session without reporting a failure.
+
 ## Command boundary
 
 The unique `internal/command.Registry` exposes typed options, top-level slash
@@ -240,9 +249,12 @@ inputs, the required User Select, and the required timezone string select are
 wrapped in `Label` components. The User Select supplies the target member's
 snowflake, while the timezone select offers localized Brazilian Portuguese
 labels for Brasília (`America/Sao_Paulo`), Amazonas (`America/Manaus`), and
-UTC. The DiscordGo dependency is replaced with the `sajfer/discordgo` v0.30.0
-fork until the upstream dependency exposes these modal component and
-submitted-select value types.
+UTC. Padinho pins the official `github.com/bwmarrin/discordgo` upstream
+revision `v0.29.1-0.20260214123928-f43dd94faaac`, which exposes the required
+Label and submitted-select value types without a module replacement. That
+revision does not include DAVE voice support; a future voice playback feature
+must reassess upstream support or introduce an explicitly reviewed voice
+implementation.
 
 ## Mudae Ourochest helper
 
