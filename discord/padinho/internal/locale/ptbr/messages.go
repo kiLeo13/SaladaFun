@@ -23,7 +23,7 @@ const (
 	BirthdayEditDashboardTitle    = "✏️ Painel de Edição"
 	BirthdayDashboardUserLabel    = "Usuário"
 	BirthdayEditSelectPlaceholder = "Selecione o usuário que deseja editar"
-	BirthdayUserIDLabel           = "ID do Usuário"
+	BirthdayUserIDLabel           = "<:snowflake:1539452210516336680> ID do Usuário"
 	BirthdayGuildUnknown          = "Servidor desconhecido"
 	BirthdayNoRegistration        = "Este usuário não possui um aniversário cadastrado."
 	BirthdaySelfNoRegistration    = "Você ainda não possui um aniversário cadastrado."

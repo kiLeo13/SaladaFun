@@ -135,12 +135,12 @@ func TestSelectDashboardUserLoadsAndRendersEditableFields(t *testing.T) {
 	}
 	container := responder.response.Data.Components[0].(discordgo.Container)
 	fields := container.Components[2:7]
-	if fields[0].Type() != discordgo.SectionComponent {
+	if fields[0].Type() != discordgo.TextDisplayComponent {
 		t.Fatalf("user ID field = %#v", fields[0])
 	}
-	userIDAccessory := fields[0].(discordgo.Section).Accessory.(discordgo.Button)
-	if !userIDAccessory.Disabled || userIDAccessory.Emoji == nil || userIDAccessory.Emoji.Name != userIDSnowflakeEmojiName || userIDAccessory.Emoji.ID != userIDSnowflakeEmojiID {
-		t.Fatalf("user ID accessory = %#v", userIDAccessory)
+	userIDField := fields[0].(discordgo.TextDisplay)
+	if !strings.Contains(userIDField.Content, ptbr.BirthdayUserIDLabel) {
+		t.Fatalf("user ID field = %#v", userIDField)
 	}
 	divider := container.Components[len(container.Components)-3].(discordgo.Separator)
 	if divider.Divider == nil || !*divider.Divider {

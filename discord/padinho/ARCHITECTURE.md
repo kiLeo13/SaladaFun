@@ -214,9 +214,9 @@ The public `Editar` button opens one ephemeral Components V2 dashboard, but the
 button, target selector, field buttons, and modal submissions each independently
 require Discord's exact `Administrator` permission. A User Select updates the
 same dashboard with either a not-found state or the chosen registration. User ID
-is rendered in an immutable Section with a disabled custom snowflake emoji
-accessory; name, full date, raw IANA timezone, and custom message use Sections
-with pencil-button accessories. Each pencil opens one
+is rendered as immutable text whose label starts with the custom snowflake
+emoji; name, full date, raw IANA timezone, and custom message use Sections with
+pencil-button accessories. Each pencil opens one
 prefilled single-field modal whose stateless custom ID carries the validated
 field and target user. Creation and editing build those modal controls from the
 same field definitions; timezone is a required select in both flows. The final

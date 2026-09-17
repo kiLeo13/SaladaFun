@@ -77,7 +77,7 @@ opens an ephemeral dashboard only for administrators. Its User Select loads one
 existing registration into the same dashboard, where name, full date, timezone,
 and message each have a pencil that opens a prefilled one-field modal. Timezone
 creation and editing share the same Brasília, Amazonas, and UTC select menu.
-The immutable user-ID row ends with a disabled snowflake accessory. The
+The immutable user-ID label starts with the custom snowflake emoji. The
 Components V2 dashboard ends with a divider followed by the `Usuário` label and
 User Select inside the dashboard container.
 Submitting the modal atomically updates that column in `birthdays`, reloads the row, and
