@@ -55,6 +55,14 @@ active. Its response uses Padinho's identity and one dark-green Components V2
 container with one text display. Large lists paginate only when required by
 Discord's component-text limit, preserving every online player.
 
+For ordinary inbound chat, the listener also snapshots any resolved Discord
+reply into a JDA-free `DiscordReplyReference`. The NeoForge broadcaster renders
+that snapshot as a dark-gray, single-line quote above the normal bridge message,
+including supported-media counts when the reference has no text. Missing,
+deleted, or unresolved references are omitted without delaying or discarding the
+new message. Reply context is one-way presentation metadata and does not create
+a Minecraft reply mechanism.
+
 JDA and its runtime dependencies are packaged through NeoForge Jar-in-Jar.
 JDA and Commons Collections are first combined into a private nested JAR that
 relocates Commons Collections below `sld.saladafun.discordutils.shaded`; this

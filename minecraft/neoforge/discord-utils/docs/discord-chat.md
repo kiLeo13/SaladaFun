@@ -44,7 +44,19 @@ Minecraft player's name and MC Heads avatar.
   channel. The single inbound gateway first dispatches a registered command; an
   unknown first token falls through to Minecraft chat. Bot and webhook messages
   are ignored to prevent loops. Text, image attachment counts, and sticker
-  counts are rendered for every online player.
+  counts are rendered for every online player. A Discord reply adds a compact
+  dark-gray reference line above the ordinary bridge message:
+
+  ```text
+  ┃ respondendo a Lucas: Hello, guys
+  [Discord] Leo13: Oiee, Lucas
+  ```
+
+  Reference whitespace is collapsed to keep the preview on one logical line.
+  A media-only reference shows its image and sticker counts. If Discord cannot
+  resolve a deleted or unavailable referenced message, the new message is still
+  delivered normally without a reference line. This is display-only context;
+  the mod does not add Minecraft reply support.
 - Player presence: Padinho sends `**Player** entrou no servidor` when a player
   completes login. A routine client disconnect sends `**Player** saiu do
   servidor`; timeouts, kicks, network failures, and other reasoned disconnects
@@ -107,8 +119,10 @@ uses `desconectou: <reason>`; confirm an offline-mode player's username resolves
 to their head and outer/hat layer in the webhook avatar; invoke `!players` with
 zero, one, and multiple online players; confirm `!players` in another channel is
 ignored and `!unknown` still reaches Minecraft chat; verify a bot message and a
-webhook message are ignored; and confirm a broken replacement configuration does
-not interrupt a working bridge.
+webhook message are ignored; reply to text and media-only Discord messages and
+confirm the dark-gray reference appears only above the Discord-to-Minecraft
+message; and confirm a broken replacement configuration does not interrupt a
+working bridge.
 
 Configuration reloads stage a replacement connection until Discord READY proves
 the channel is visible; an invalid or failed replacement leaves the existing
