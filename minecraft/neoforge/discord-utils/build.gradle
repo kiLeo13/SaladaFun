@@ -41,6 +41,11 @@ neoForge {
     }
 }
 
+sourceSets.test {
+    compileClasspath += sourceSets.main.compileClasspath
+    runtimeClasspath += sourceSets.main.runtimeClasspath
+}
+
 configurations {
     jdaRelocation {
         canBeConsumed = false
@@ -135,7 +140,14 @@ dependencies {
     additionalRuntimeClasspath "net.dv8tion:JDA:${jda_version}"
 }
 
-tasks.named('test') { useJUnitPlatform() }
+tasks.named('test') {
+    useJUnitPlatform()
+    def testRunDirectory = layout.buildDirectory.dir('test-run')
+    workingDir testRunDirectory
+    doFirst {
+        testRunDirectory.get().asFile.mkdirs()
+    }
+}
 
 tasks.named('processResources', ProcessResources).configure {
     inputs.properties(modResourceProperties)
