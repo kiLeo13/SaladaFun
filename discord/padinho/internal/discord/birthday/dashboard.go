@@ -10,7 +10,12 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const emptyDashboardValue = "—"
+const (
+	emptyDashboardValue      = "—"
+	userIDSnowflakeEmojiName = "snowflake"
+	userIDSnowflakeEmojiID   = "1539452210516336680"
+	userIDAccessoryCustomID  = "birthdays.user-id"
+)
 
 func inspectionResponse(birthday *entity.Birthday, guild *discordgo.Guild) *discordgo.InteractionResponse {
 	accent := birthdayAccentColor
@@ -66,6 +71,7 @@ func dashboardResponse(
 	status string,
 ) *discordgo.InteractionResponse {
 	accent := birthdayAccentColor
+	divider := true
 	components := []discordgo.MessageComponent{
 		discordgo.TextDisplay{Content: "## " + ptbr.BirthdayEditDashboardTitle},
 		discordgo.Separator{},
@@ -74,9 +80,14 @@ func dashboardResponse(
 		components = append(components, discordgo.TextDisplay{Content: status})
 	}
 	components = append(components, dashboardFields(birthday)...)
-	components = append(components, discordgo.TextDisplay{Content: "### " + ptbr.BirthdayDashboardUserLabel})
+	components = append(
+		components,
+		discordgo.Separator{Divider: &divider},
+		discordgo.TextDisplay{Content: "### " + ptbr.BirthdayDashboardUserLabel},
+		dashboardSelect(selectedUserID),
+	)
 	container := discordgo.Container{AccentColor: &accent, Components: components}
-	response := componentResponse(responseType, responseType == discordgo.InteractionResponseChannelMessageWithSource, container, dashboardSelect(selectedUserID))
+	response := componentResponse(responseType, responseType == discordgo.InteractionResponseChannelMessageWithSource, container)
 	return response
 }
 
@@ -98,11 +109,25 @@ func dashboardFields(birthday *entity.Birthday) []discordgo.MessageComponent {
 		messageDisplay = message
 	}
 	return []discordgo.MessageComponent{
-		discordgo.TextDisplay{Content: fmt.Sprintf("**%s**\n`%d`", ptbr.BirthdayUserIDLabel, birthday.UserID)},
+		userIDSection(birthday.UserID),
 		editableSection(ptbr.BirthdayNameLabel, escapeDisplayValue(birthday.Name), editFieldName, birthday.UserID),
 		editableSection(ptbr.BirthdayDateLabel, birthday.Birthday.Format(birthdayDateFormat), editFieldBirthday, birthday.UserID),
 		editableSection(ptbr.BirthdayTimeZoneLabel, "`"+birthday.TimeZone+"`", editFieldTimeZone, birthday.UserID),
 		editableSection(ptbr.BirthdayMessageLabel, messageDisplay, editFieldMessage, birthday.UserID),
+	}
+}
+
+// userIDSection renders the immutable Discord user ID with a visual-only
+// snowflake accessory matching the edit buttons on mutable rows.
+func userIDSection(userID uint64) discordgo.Section {
+	return discordgo.Section{
+		Components: []discordgo.MessageComponent{discordgo.TextDisplay{
+			Content: fmt.Sprintf("**%s**\n`%d`", ptbr.BirthdayUserIDLabel, userID),
+		}},
+		Accessory: discordgo.Button{
+			Style: discordgo.SecondaryButton, CustomID: userIDAccessoryCustomID, Disabled: true,
+			Emoji: &discordgo.ComponentEmoji{Name: userIDSnowflakeEmojiName, ID: userIDSnowflakeEmojiID},
+		},
 	}
 }
 

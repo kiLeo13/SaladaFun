@@ -13,21 +13,6 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const (
-	nameInputID          = "name"
-	userInputID          = "user"
-	birthdayInputID      = "birthday"
-	timeZoneInputID      = "time_zone"
-	messageInputID       = "message"
-	maximumNameLength    = 100
-	birthdayDateFormat   = "02/01/2006"
-	birthdayDateLength   = len(birthdayDateFormat)
-	maximumMessageLength = 1800
-	brasiliaTimeZone     = "America/Sao_Paulo"
-	amazonasTimeZone     = "America/Manaus"
-	utcTimeZone          = "UTC"
-)
-
 func (h Handler) OpenModal(_ context.Context, request *discord.InteractionRequest) error {
 	if !hasManageServerPermission(request.Actor.Permissions) {
 		return request.Responder.Respond(ephemeralMessage(ptbr.BirthdayManageServerRequired))
@@ -36,45 +21,19 @@ func (h Handler) OpenModal(_ context.Context, request *discord.InteractionReques
 }
 
 func addBirthdayModal() *discordgo.InteractionResponse {
-	user := userLabel()
-	name := inputLabel(
-		nameInputID,
-		ptbr.BirthdayNameLabel,
-		ptbr.BirthdayNamePlaceholder,
-		discordgo.TextInputShort,
-		true,
-		maximumNameLength,
-	)
-	birthday := inputLabel(
-		birthdayInputID,
-		ptbr.BirthdayDateLabel,
-		ptbr.BirthdayDatePlaceholder,
-		discordgo.TextInputShort,
-		true,
-		birthdayDateLength,
-	)
-	timeZone := timezoneLabel()
-	message := inputLabel(
-		messageInputID,
-		ptbr.BirthdayMessageLabel,
-		ptbr.BirthdayMessagePlaceholder,
-		discordgo.TextInputParagraph,
-		false,
-		maximumMessageLength,
-	)
+	definitions := birthdayFieldDefinitions()
+	components := make([]discordgo.MessageComponent, 0, len(definitions)+1)
+	components = append(components, userLabel())
+	for _, definition := range definitions {
+		components = append(components, modalFieldLabel(definition, definition.id, ""))
+	}
 
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
-			CustomID: addBirthdayRoute,
-			Title:    ptbr.BirthdayAddModalTitle,
-			Components: []discordgo.MessageComponent{
-				user,
-				name,
-				birthday,
-				timeZone,
-				message,
-			},
+			CustomID:   addBirthdayRoute,
+			Title:      ptbr.BirthdayAddModalTitle,
+			Components: components,
 		},
 	}
 }
@@ -116,25 +75,6 @@ func hasManageServerPermission(permissions int64) bool {
 	return permissions&(discordgo.PermissionManageGuild|discordgo.PermissionAdministrator) != 0
 }
 
-func inputLabel(
-	customID string,
-	label string,
-	placeholder string,
-	style discordgo.TextInputStyle,
-	required bool,
-	maximumLength int,
-) discordgo.MessageComponent {
-	requiredValue := required
-	input := discordgo.TextInput{
-		CustomID:    customID,
-		Placeholder: placeholder,
-		Style:       style,
-		Required:    &requiredValue,
-		MaxLength:   maximumLength,
-	}
-	return discordgo.Label{Label: label, Component: input}
-}
-
 func userLabel() discordgo.Label {
 	required := true
 	return discordgo.Label{
@@ -146,26 +86,6 @@ func userLabel() discordgo.Label {
 			MinValues:   new(1),
 			MaxValues:   1,
 			Required:    &required,
-		},
-	}
-}
-
-func timezoneLabel() discordgo.Label {
-	required := true
-	return discordgo.Label{
-		Label: ptbr.BirthdayTimeZoneLabel,
-		Component: discordgo.SelectMenu{
-			MenuType:    discordgo.StringSelectMenu,
-			CustomID:    timeZoneInputID,
-			Placeholder: ptbr.BirthdayTimeZonePlaceholder,
-			MinValues:   new(1),
-			MaxValues:   1,
-			Required:    &required,
-			Options: []discordgo.SelectMenuOption{
-				{Label: ptbr.BirthdayTimeZoneBrasilia, Value: brasiliaTimeZone, Default: true},
-				{Label: ptbr.BirthdayTimeZoneAmazonas, Value: amazonasTimeZone},
-				{Label: ptbr.BirthdayTimeZoneUTC, Value: utcTimeZone},
-			},
 		},
 	}
 }

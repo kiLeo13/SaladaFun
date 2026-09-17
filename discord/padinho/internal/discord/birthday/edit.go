@@ -16,11 +16,7 @@ import (
 )
 
 const (
-	editFieldName     = "name"
-	editFieldBirthday = "birthday"
-	editFieldTimeZone = "time_zone"
-	editFieldMessage  = "message"
-	editValueInputID  = "value"
+	editValueInputID = "value"
 )
 
 func (h Handler) Inspect(_ context.Context, request *discord.InteractionRequest) error {
@@ -162,49 +158,36 @@ func parseEditParameters(parameters []string) (string, uint64, error) {
 }
 
 func validEditField(field string) bool {
-	switch field {
-	case editFieldName, editFieldBirthday, editFieldTimeZone, editFieldMessage:
-		return true
-	default:
-		return false
-	}
+	_, exists := birthdayField(field)
+	return exists
 }
 
 func editModal(field string, birthday *entity.Birthday) *discordgo.InteractionResponse {
-	label, value, style, required, maximumLength := editFieldPresentation(field, birthday)
+	definition, _ := birthdayField(field)
+	value := editFieldValue(field, birthday)
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
 			CustomID: fmt.Sprintf("%s:%s:%d", editSubmitRoute, field, birthday.UserID),
-			Title:    fmt.Sprintf(ptbr.BirthdayEditModalTitle, label),
-			Components: []discordgo.MessageComponent{editInputLabel(
-				label, value, style, required, maximumLength,
-			)},
+			Title:    fmt.Sprintf(ptbr.BirthdayEditModalTitle, definition.label),
+			Components: []discordgo.MessageComponent{
+				modalFieldLabel(definition, editValueInputID, value),
+			},
 		},
 	}
 }
 
-func editFieldPresentation(field string, birthday *entity.Birthday) (string, string, discordgo.TextInputStyle, bool, int) {
+// editFieldValue returns the stored value rendered in an edit modal control.
+func editFieldValue(field string, birthday *entity.Birthday) string {
 	switch field {
 	case editFieldName:
-		return ptbr.BirthdayNameLabel, birthday.Name, discordgo.TextInputShort, true, maximumNameLength
+		return birthday.Name
 	case editFieldBirthday:
-		return ptbr.BirthdayDateLabel, birthday.Birthday.Format(birthdayDateFormat), discordgo.TextInputShort, true, birthdayDateLength
+		return birthday.Birthday.Format(birthdayDateFormat)
 	case editFieldTimeZone:
-		return ptbr.BirthdayTimeZoneLabel, birthday.TimeZone, discordgo.TextInputShort, true, 255
+		return birthday.TimeZone
 	default:
-		return ptbr.BirthdayMessageLabel, birthday.Message, discordgo.TextInputParagraph, false, maximumMessageLength
-	}
-}
-
-func editInputLabel(label, value string, style discordgo.TextInputStyle, required bool, maximumLength int) discordgo.Label {
-	requiredValue := required
-	return discordgo.Label{
-		Label: label,
-		Component: discordgo.TextInput{
-			CustomID: editValueInputID, Value: value, Style: style,
-			Required: &requiredValue, MaxLength: maximumLength,
-		},
+		return birthday.Message
 	}
 }
 

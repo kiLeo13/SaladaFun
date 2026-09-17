@@ -112,7 +112,11 @@ func TestOpenDashboardRequiresAdministratorAndStartsEmpty(t *testing.T) {
 	if responder.response.Data.Flags&discordgo.MessageFlagsEphemeral == 0 {
 		t.Fatalf("dashboard flags = %v", responder.response.Data.Flags)
 	}
-	row := responder.response.Data.Components[1].(discordgo.ActionsRow)
+	if len(responder.response.Data.Components) != 1 {
+		t.Fatalf("dashboard top-level components = %#v", responder.response.Data.Components)
+	}
+	container := responder.response.Data.Components[0].(discordgo.Container)
+	row := container.Components[len(container.Components)-1].(discordgo.ActionsRow)
 	menu := row.Components[0].(discordgo.SelectMenu)
 	if menu.CustomID != editSelectRoute || menu.MenuType != discordgo.UserSelectMenu || menu.MaxValues != 1 {
 		t.Fatalf("dashboard select = %#v", menu)
@@ -131,10 +135,18 @@ func TestSelectDashboardUserLoadsAndRendersEditableFields(t *testing.T) {
 	}
 	container := responder.response.Data.Components[0].(discordgo.Container)
 	fields := container.Components[2:7]
-	if fields[0].Type() != discordgo.TextDisplayComponent {
+	if fields[0].Type() != discordgo.SectionComponent {
 		t.Fatalf("user ID field = %#v", fields[0])
 	}
-	lastLabel := container.Components[len(container.Components)-1].(discordgo.TextDisplay)
+	userIDAccessory := fields[0].(discordgo.Section).Accessory.(discordgo.Button)
+	if !userIDAccessory.Disabled || userIDAccessory.Emoji == nil || userIDAccessory.Emoji.Name != userIDSnowflakeEmojiName || userIDAccessory.Emoji.ID != userIDSnowflakeEmojiID {
+		t.Fatalf("user ID accessory = %#v", userIDAccessory)
+	}
+	divider := container.Components[len(container.Components)-3].(discordgo.Separator)
+	if divider.Divider == nil || !*divider.Divider {
+		t.Fatalf("dashboard user divider = %#v", divider)
+	}
+	lastLabel := container.Components[len(container.Components)-2].(discordgo.TextDisplay)
 	if lastLabel.Content != "### "+ptbr.BirthdayDashboardUserLabel {
 		t.Fatalf("dashboard user label = %#v", lastLabel)
 	}
@@ -147,7 +159,7 @@ func TestSelectDashboardUserLoadsAndRendersEditableFields(t *testing.T) {
 			t.Fatalf("field button %d = %q, want %q", index, button.CustomID, wantID)
 		}
 	}
-	menu := responder.response.Data.Components[1].(discordgo.ActionsRow).Components[0].(discordgo.SelectMenu)
+	menu := container.Components[len(container.Components)-1].(discordgo.ActionsRow).Components[0].(discordgo.SelectMenu)
 	if len(menu.DefaultValues) != 1 || menu.DefaultValues[0].ID != "123" {
 		t.Fatalf("selected dashboard user = %#v", menu.DefaultValues)
 	}
@@ -207,10 +219,11 @@ func TestUpdateInputRejectsUnknownField(t *testing.T) {
 func TestBirthdayComponentResponsesSerialize(t *testing.T) {
 	registration := registeredBirthday()
 	responses := map[string]*discordgo.InteractionResponse{
-		"page":       pageResponse(discordgo.InteractionResponseChannelMessageWithSource, time.March, []*entity.Birthday{registration}, nil),
-		"inspection": inspectionResponse(registration, nil),
-		"dashboard":  dashboardResponse(discordgo.InteractionResponseUpdateMessage, registration.UserID, registration, ""),
-		"modal":      editModal(editFieldMessage, registration),
+		"page":           pageResponse(discordgo.InteractionResponseChannelMessageWithSource, time.March, []*entity.Birthday{registration}, nil, false),
+		"inspection":     inspectionResponse(registration, nil),
+		"dashboard":      dashboardResponse(discordgo.InteractionResponseUpdateMessage, registration.UserID, registration, ""),
+		"message modal":  editModal(editFieldMessage, registration),
+		"timezone modal": editModal(editFieldTimeZone, registration),
 	}
 	for name, response := range responses {
 		t.Run(name, func(t *testing.T) {
@@ -242,7 +255,6 @@ func TestOpenEditModalPrefillsEachMutableField(t *testing.T) {
 	}{
 		editFieldName:     {registration.Name, discordgo.TextInputShort, true},
 		editFieldBirthday: {"04/03/2000", discordgo.TextInputShort, true},
-		editFieldTimeZone: {registration.TimeZone, discordgo.TextInputShort, true},
 		editFieldMessage:  {registration.Message, discordgo.TextInputParagraph, false},
 	}
 	for field, test := range tests {
@@ -260,6 +272,19 @@ func TestOpenEditModalPrefillsEachMutableField(t *testing.T) {
 				t.Fatalf("input = %#v", input)
 			}
 		})
+	}
+
+	responder := &fakeResponder{}
+	err := (Handler{service: &fakeService{birthday: registration}}).OpenEditModal(context.Background(), &discord.InteractionRequest{
+		Actor:      command.Actor{Permissions: discordgo.PermissionAdministrator},
+		Parameters: []string{editFieldTimeZone, "123"}, Responder: responder,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	menu := responder.response.Data.Components[0].(discordgo.Label).Component.(discordgo.SelectMenu)
+	if menu.CustomID != editValueInputID || len(menu.Options) != 3 || !menu.Options[0].Default || menu.Options[0].Value != registration.TimeZone {
+		t.Fatalf("timezone edit select = %#v", menu)
 	}
 }
 
@@ -393,6 +418,10 @@ func editModalRequest(field, userID, value string, responder *fakeResponder) *di
 }
 
 func editModalRequestWithPermissions(field, userID, value string, permissions int64, responder *fakeResponder) *discord.InteractionRequest {
+	var component discordgo.MessageComponent = discordgo.TextInput{CustomID: editValueInputID, Value: value}
+	if field == editFieldTimeZone {
+		component = discordgo.SelectMenu{CustomID: editValueInputID, Values: []string{value}}
+	}
 	return &discord.InteractionRequest{
 		Actor: command.Actor{Permissions: permissions}, Parameters: []string{field, userID}, Responder: responder,
 		Interaction: &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{
@@ -400,7 +429,7 @@ func editModalRequestWithPermissions(field, userID, value string, permissions in
 			Data: discordgo.ModalSubmitInteractionData{
 				CustomID: fmt.Sprintf("%s:%s:%s", editSubmitRoute, field, userID),
 				Components: []discordgo.MessageComponent{discordgo.Label{
-					Component: discordgo.TextInput{CustomID: editValueInputID, Value: value},
+					Component: component,
 				}},
 			},
 		}},
