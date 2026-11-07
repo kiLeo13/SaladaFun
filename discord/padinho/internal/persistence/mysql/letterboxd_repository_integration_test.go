@@ -138,8 +138,8 @@ func TestLetterboxdAgainstMySQL(t *testing.T) {
 	if err := r.SaveWatch(ctx, 11, title.ID, 105, 4, "x"); err == nil {
 		t.Fatal("review")
 	}
-	cached, err := r.CachedSearch(ctx, "Translation")
-	if err != nil || len(cached) != 1 || cached[0].ID != title.ID || len(cached[0].Creators) != 2 || cached[0].Homepage != title.Homepage {
+	cached, err := r.CachedSearch(ctx, "Translation", 1)
+	if err != nil || len(cached.Items) != 1 || cached.Items[0].ID != title.ID || len(cached.Items[0].Creators) != 2 || cached.Items[0].Homepage != title.Homepage {
 		t.Fatal("cached search")
 	}
 	opinions, err := r.Reviews(ctx, title.ID)

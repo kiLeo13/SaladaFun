@@ -127,12 +127,22 @@ func (r *LetterboxdRepository) CurrentReview(ctx context.Context, watch uint64) 
 	return &revision, err
 }
 
-// CachedSearch supplies bounded complete metadata when remote search fails.
-func (r *LetterboxdRepository) CachedSearch(ctx context.Context, query string) ([]entity.LetterboxdTitle, error) {
+// CachedSearch counts all matching titles and returns one bounded fallback page.
+func (r *LetterboxdRepository) CachedSearch(ctx context.Context, query string, page int) (app.SearchResults, error) {
+	if page < 1 || page > 500 {
+		return app.SearchResults{}, app.ErrInvalid
+	}
 	var titles []entity.LetterboxdTitle
+	var total int64
 	pattern := "%" + query + "%"
-	err := r.db.WithContext(ctx).Where("original_title LIKE ? OR localized_title LIKE ?", pattern, pattern).Order("id").Limit(25).Find(&titles).Error
-	return titles, err
+	match := r.db.WithContext(ctx).Model(&entity.LetterboxdTitle{}).Where("original_title LIKE ? OR localized_title LIKE ?", pattern, pattern)
+	if err := match.Count(&total).Error; err != nil {
+		return app.SearchResults{}, err
+	}
+	if err := match.Order("id").Offset((page - 1) * app.SearchPageSize).Limit(app.SearchPageSize).Find(&titles).Error; err != nil {
+		return app.SearchResults{}, err
+	}
+	return app.SearchResults{Items: titles, TotalResults: int(total), TotalPages: int((total + app.SearchPageSize - 1) / app.SearchPageSize)}, nil
 }
 
 // Reviews reads one latest revision per rated watch, including withdrawals.

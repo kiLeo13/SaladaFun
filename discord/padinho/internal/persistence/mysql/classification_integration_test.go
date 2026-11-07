@@ -67,8 +67,8 @@ func TestClassificationsAgainstMySQL(t *testing.T) {
 	if err != nil || state == nil || !reflect.DeepEqual(state.Title.ContentRatings, ratings) {
 		t.Fatal("watch metadata lost classifications", err)
 	}
-	cached, err := repo.CachedSearch(ctx, title.OriginalTitle)
-	if err != nil || len(cached) != 1 || !reflect.DeepEqual(cached[0].ContentRatings, ratings) {
+	cached, err := repo.CachedSearch(ctx, title.OriginalTitle, 1)
+	if err != nil || len(cached.Items) != 1 || !reflect.DeepEqual(cached.Items[0].ContentRatings, ratings) {
 		t.Fatal("cached search", err)
 	}
 	title.ContentRatings = []entity.ContentRating{}
