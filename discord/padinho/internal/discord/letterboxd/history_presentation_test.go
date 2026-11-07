@@ -53,6 +53,9 @@ func TestPublicHistoryLayout(t *testing.T) {
 	if err := h.historyPage(context.Background(), nav); err != nil {
 		t.Fatal(err)
 	}
+	if out.responseType != discordgo.InteractionResponseDeferredMessageUpdate {
+		t.Fatal("history pagination created a new reply")
+	}
 	if out.flags&discordgo.MessageFlagsEphemeral != 0 || out.data.Embeds[0].Author.Name != "Avaliações de Leo" || out.data.Embeds[0].Footer.Text != "Total: 4 avaliações." {
 		t.Fatal("pagination lost member or total")
 	}

@@ -197,7 +197,7 @@ func (h Handler) history(ctx context.Context, r *command.CommandRequest) error {
 
 // historyPage validates navigation and retains the requested member and ordering.
 func (h Handler) historyPage(ctx context.Context, r *discord.InteractionRequest) error {
-	if _, err := component(r, false); err != nil {
+	if _, err := updateComponent(r); err != nil {
 		return err
 	}
 	if len(r.Parameters) != 4 {
