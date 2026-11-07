@@ -29,10 +29,13 @@ func (r *LetterboxdRepository) FindTitle(ctx context.Context, kind string, id ui
 
 // SaveTitle atomically replaces metadata without changing identity or creation time.
 func (r *LetterboxdRepository) SaveTitle(ctx context.Context, t *entity.LetterboxdTitle) error {
+	t.Creators = app.MetadataNames(t.Creators)
+	t.Genres = app.MetadataNames(t.Genres)
+	t.Homepage = app.HomepageURL(t.Homepage)
 	if err := app.ValidateTitle(t); err != nil {
 		return err
 	}
-	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "media_type"}, {Name: "tmdb_id"}}, DoUpdates: clause.AssignmentColumns([]string{"original_title", "localized_title", "release_year", "release_date", "synopsis", "poster_path", "backdrop_path", "accent", "accent_source", "metadata_fetched_at", "updated_at"})}).Create(t).Error
+	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "media_type"}, {Name: "tmdb_id"}}, DoUpdates: clause.AssignmentColumns([]string{"original_title", "localized_title", "release_year", "release_date", "synopsis", "creators", "genres", "homepage", "season_count", "poster_path", "backdrop_path", "accent", "accent_source", "metadata_fetched_at", "updated_at"})}).Create(t).Error
 	if err != nil {
 		return err
 	}

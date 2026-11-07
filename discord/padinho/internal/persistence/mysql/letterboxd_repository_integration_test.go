@@ -11,6 +11,41 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 )
 
+// TestTitleMetadataClearingAgainstMySQL verifies empty arrays and zero values replace old metadata.
+func TestTitleMetadataClearingAgainstMySQL(t *testing.T) {
+	setLiveEnvironment(t)
+	db, err := database.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { database.Close(db) })
+	tx := db.Begin()
+	if tx.Error != nil {
+		t.Fatal(tx.Error)
+	}
+	t.Cleanup(func() { tx.Rollback() })
+	r := NewLetterboxdRepository(tx)
+	ctx := context.Background()
+	title := &entity.LetterboxdTitle{TMDBID: uint64(time.Now().UnixNano()), MediaType: "tv", OriginalTitle: "Metadata", ReleaseYear: 2021, Creators: []string{"Creator"}, Genres: []string{"Drama"}, Homepage: "https://example.test", SeasonCount: 3}
+	if err := r.SaveTitle(ctx, title); err != nil {
+		t.Fatal(err)
+	}
+	title.Creators = nil
+	title.Genres = nil
+	title.Homepage = "javascript:bad"
+	title.SeasonCount = 0
+	if err := r.SaveTitle(ctx, title); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := r.FindTitle(ctx, "tv", title.TMDBID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored.Creators == nil || len(stored.Creators) != 0 || stored.Genres == nil || len(stored.Genres) != 0 || stored.Homepage != "" || stored.SeasonCount != 0 {
+		t.Fatalf("metadata not cleared: %#v", stored)
+	}
+}
+
 // TestLetterboxdAgainstMySQL exercises constraints, ownership and concurrent revisions.
 func TestLetterboxdAgainstMySQL(t *testing.T) {
 	setLiveEnvironment(t)
@@ -34,8 +69,25 @@ func TestLetterboxdAgainstMySQL(t *testing.T) {
 		db.Delete(&entity.LetterboxdTitle{}, originalID)
 	})
 	title.LocalizedTitle = "Translation"
+	title.Creators = []string{" Ross Duffer ", "Matt Duffer", "Ross Duffer", ""}
+	title.Genres = []string{"Drama", "Comedy, Drama"}
+	title.Homepage = "https://example.test/show"
+	title.SeasonCount = 5
 	if err := r.SaveTitle(ctx, title); err != nil || title.ID != originalID || title.CreatedAt != created {
 		t.Fatalf("upsert %#v %v", title, err)
+	}
+	if len(title.Creators) != 2 || title.Creators[0] != "Ross Duffer" || len(title.Genres) != 2 || title.Genres[1] != "Comedy, Drama" || title.Homepage != "https://example.test/show" || title.SeasonCount != 5 {
+		t.Fatalf("metadata upsert round trip: %#v", title)
+	}
+	var jsonType string
+	if err := db.Raw("SELECT JSON_TYPE(creators) FROM letterboxd_titles WHERE id=?", title.ID).Scan(&jsonType).Error; err != nil || jsonType != "ARRAY" {
+		t.Fatal("JSON array", err)
+	}
+	if err := db.Exec("UPDATE letterboxd_titles SET creators = JSON_OBJECT() WHERE id=?", title.ID).Error; err == nil {
+		t.Fatal("object accepted as creators")
+	}
+	if err := db.Exec("UPDATE letterboxd_titles SET season_count = -1 WHERE id=?", title.ID).Error; err == nil {
+		t.Fatal("negative seasons")
 	}
 	if missing, err := r.FindTitle(ctx, "tv", title.TMDBID); err != nil || missing != nil {
 		t.Fatal("namespace")
@@ -45,7 +97,7 @@ func TestLetterboxdAgainstMySQL(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if titles, err := r.Wishlist(ctx, 11); err != nil || len(titles) != 1 || titles[0].LocalizedTitle != "Translation" {
+	if titles, err := r.Wishlist(ctx, 11); err != nil || len(titles) != 1 || titles[0].LocalizedTitle != "Translation" || len(titles[0].Creators) != 2 || len(titles[0].Genres) != 2 {
 		t.Fatal("wishlist")
 	}
 	if deleted, err := r.RemoveWishlist(ctx, 12, title.ID); err != nil || deleted {
@@ -87,7 +139,7 @@ func TestLetterboxdAgainstMySQL(t *testing.T) {
 		t.Fatal("review")
 	}
 	cached, err := r.CachedSearch(ctx, "Translation")
-	if err != nil || len(cached) != 1 || cached[0].ID != title.ID {
+	if err != nil || len(cached) != 1 || cached[0].ID != title.ID || len(cached[0].Creators) != 2 || cached[0].Homepage != title.Homepage {
 		t.Fatal("cached search")
 	}
 	opinions, err := r.Reviews(ctx, title.ID)
