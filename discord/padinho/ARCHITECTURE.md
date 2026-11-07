@@ -427,7 +427,7 @@ cannot multiply community votes. Wishlist names come from cached title joins.
 
 Modals use only a bounded local lookup for prefill and write only on submission,
 with ownership derived from the actor. History uses whitelisted date/rating order,
-a watch-ID tie-breaker, and three rows plus one lookahead per page. Random
+a watch-ID tie-breaker, a total watch count, and up to three rows per page. Random
 selection joins the caller's wishlist and excludes only that caller's watches
 using NOT EXISTS and ORDER BY RAND() LIMIT 1; it never broadens an empty pool.
 
@@ -549,3 +549,21 @@ normalize legacy text without rewriting stored revisions. The shared opinion
 renderer escapes Markdown after normalization, preventing input line breaks from
 breaking quote layout in shared reviews or expanding personal history.
 No schema migration is required.
+
+### Public member history
+
+History commands and pagination defer publicly and render one embed with at most
+three entries. Release years are omitted; titles are escaped and capped at
+300 UTF-16 units, ratings are bold, and dates use `<t:seconds:d>`. Quoted reviews
+use the existing normalization and placeholder. Three worst-case 500-character
+escaped reviews plus bounded titles and date markup remain below the
+4,096-unit description limit. The footer uses the member's absolute watch count,
+not page length or review-revision count; SQL returns that count alongside a
+bounded page. Existing order validation and watch-ID tie-breaking remain.
+
+The Discord mapper passes caller/resolved user profiles as project-owned
+`CommandRequest.Users` data. History always renders an author: global name,
+username, or member snowflake, with the provided avatar and a profile URL.
+Pagination copies the previous bot embed author only when its URL matches the
+requested member. No separate profile cache or REST user lookup is introduced.
+Unknown profiles always use the snowflake rather than a mention.

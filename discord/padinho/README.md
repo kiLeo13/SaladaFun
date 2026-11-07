@@ -203,8 +203,13 @@ Payload regression checks run with
 
 Random selection uses only the caller's unwatched wishlist. History defaults to
 the caller, watched date, and descending order. Choose Avaliações to sort by
-numeric rating; member, sort, and order persist through pagination. Dates display
-in UTC. Review edits preserve the original watched date and retain old revisions
+numeric rating; member, sort, and order persist through pagination. History and
+its pagination are public and use one embed with up to three entries. Title
+names omit the release year; each rating has a compact Discord-localized date
+and a quoted review or `Sem comentário`. The author uses the member's global
+name, then username, then snowflake, with their avatar when available. The footer
+counts all of that member's ratings across pages. Review edits preserve the
+original watched date and retain old revisions
 in the database; ordinary views show only the latest text.
 
 ### Manual release order
