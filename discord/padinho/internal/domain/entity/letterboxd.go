@@ -11,8 +11,9 @@ type LetterboxdTitle struct {
 	LocalizedTitle    string
 	ReleaseYear       int
 	ReleaseDate       *time.Time
-	Creators          []string `gorm:"serializer:json;type:json;not null"`
-	Genres            []string `gorm:"serializer:json;type:json;not null"`
+	Creators          []string        `gorm:"serializer:json;type:json;not null"`
+	Genres            []string        `gorm:"serializer:json;type:json;not null"`
+	ContentRatings    []ContentRating `gorm:"serializer:json;type:json"`
 	Homepage          string
 	SeasonCount       int
 	Synopsis          string
@@ -23,6 +24,13 @@ type LetterboxdTitle struct {
 	MetadataFetchedAt int64
 	CreatedAt         int64 `gorm:"autoCreateTime:milli"`
 	UpdatedAt         int64 `gorm:"autoUpdateTime:milli"`
+}
+
+// ContentRating preserves a country's certification and optional movie release type.
+type ContentRating struct {
+	Country       string `json:"country"`
+	Certification string `json:"certification"`
+	ReleaseType   int    `json:"release_type,omitempty"`
 }
 
 // TableName identifies the shared metadata cache.
