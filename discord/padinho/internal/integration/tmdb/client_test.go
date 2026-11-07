@@ -29,10 +29,10 @@ func TestDetails(t *testing.T) {
 				if r.Header.Get("Authorization") != "Bearer secret" || r.URL.Query().Get("language") != "pt-BR" {
 					t.Fatal("auth/options")
 				}
-				if kind == "movie" && r.URL.Query().Get("append_to_response") != "credits,release_dates" {
+				if kind == "movie" && r.URL.Query().Get("append_to_response") != "credits,release_dates,external_ids" {
 					t.Fatal("movie credits missing")
 				}
-				if kind == "tv" && r.URL.Query().Get("append_to_response") != "content_ratings" {
+				if kind == "tv" && r.URL.Query().Get("append_to_response") != "content_ratings,external_ids" {
 					t.Fatal("TV classifications missing")
 				}
 				body := `{"id":1,"original_title":"Original","title":"Traduzido","release_date":"2020-02-03","original_name":"Series","name":"Serie","first_air_date":"2021","homepage":"https://example.test/title","genres":[{"name":" Drama "},{"name":"Drama"},{"name":""},{"name":"Comedy, Drama"}],"created_by":[{"name":" Ross Duffer "},{"name":"Matt Duffer"},{"name":"Ross Duffer"}],"number_of_seasons":5,"credits":{"crew":[{"name":" Director, Jr. ","job":"Director"},{"name":"Director, Jr.","job":"Director"},{"name":"Writer","job":"Writer"}]},"release_dates":{"results":[{"iso_3166_1":"BR","release_dates":[{"certification":"16","type":3}]}]},"content_ratings":{"results":[{"iso_3166_1":"BR","rating":"16"}]},"belongs_to_collection":{"backdrop_path":"/collection.jpg"}}`
@@ -42,7 +42,7 @@ func TestDetails(t *testing.T) {
 				t.Fatal(err)
 			}
 			title, err := c.Details(kind, 1)
-			if err != nil || title.ReleaseYear < 2020 {
+			if err != nil || title.ReleaseYear == nil || *title.ReleaseYear < 2020 {
 				t.Fatalf("details: %#v %v", title, err)
 			}
 			if len(title.ContentRatings) != 1 || title.ContentRatings[0].Country != "BR" || title.ContentRatings[0].Certification != "16" {
@@ -71,7 +71,7 @@ func TestDetails(t *testing.T) {
 			}
 		})
 	}
-	for _, body := range []string{`{}`, `broken`, `{"id":1,"original_title":"Name","release_date":""}`} {
+	for _, body := range []string{`{}`, `broken`, `{"id":1,"original_title":"Name","release_date":"broken"}`} {
 		c, _ := New("secret", http.Client{Transport: transport(func(*http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body))}, nil
 		})})

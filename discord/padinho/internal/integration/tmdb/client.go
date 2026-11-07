@@ -54,7 +54,7 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 	options := map[string]string{"language": "pt-BR"}
 	var date string
 	if kind == "movie" {
-		options["append_to_response"] = "credits,release_dates"
+		options["append_to_response"] = "credits,release_dates,external_ids"
 		m, err := c.client.GetMovieDetails(int(id), options)
 		if err != nil {
 			return nil, errors.New("TMDB movie details unavailable")
@@ -68,6 +68,24 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 		t.PosterPath = m.PosterPath
 		t.BackdropPath = m.BackdropPath
 		t.Homepage = app.HomepageURL(m.Homepage)
+		t.OriginalLanguage = optionalText(m.OriginalLanguage)
+		t.Status = optionalText(m.Status)
+		t.OriginCountries = append([]string{}, m.OriginCountry...)
+		if m.Runtime > 0 {
+			t.RuntimeMinutes = new(m.Runtime)
+		} else if m.Runtime < 0 {
+			return nil, app.ErrInvalid
+		}
+		if m.MovieExternalIDsAppend != nil && m.MovieExternalIDs != nil {
+			ids := m.MovieExternalIDs
+			imdb := ids.IMDbID
+			if imdb == "" {
+				imdb = m.IMDbID
+			}
+			t.ExternalIDs = externalIDs(imdb, ids.WikiDataID, ids.FacebookID, ids.InstagramID, ids.TwitterID)
+		} else if m.IMDbID != "" {
+			t.ExternalIDs = externalIDs(m.IMDbID, "", "", "", "")
+		}
 		for _, genre := range m.Genres {
 			t.Genres = append(t.Genres, genre.Name)
 		}
@@ -90,7 +108,7 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 			t.BackdropPath = m.BelongsToCollection.BackdropPath
 		}
 	} else {
-		options["append_to_response"] = "content_ratings"
+		options["append_to_response"] = "content_ratings,external_ids"
 		m, err := c.client.GetTVDetails(int(id), options)
 		if err != nil {
 			return nil, errors.New("TMDB series details unavailable")
@@ -111,6 +129,25 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 		}
 		t.Homepage = app.HomepageURL(m.Homepage)
 		t.SeasonCount = m.NumberOfSeasons
+		t.OriginalLanguage = optionalText(m.OriginalLanguage)
+		t.Status = optionalText(m.Status)
+		t.OriginCountries = append([]string{}, m.OriginCountry...)
+		t.EpisodeRuntimeMinutes = append([]int{}, m.EpisodeRunTime...)
+		t.EpisodeCount = new(m.NumberOfEpisodes)
+		if m.TVExternalIDsAppend != nil && m.TVExternalIDs != nil {
+			ids := m.TVExternalIDs
+			t.ExternalIDs = externalIDs(ids.IMDbID, ids.WikiDataID, ids.FacebookID, ids.InstagramID, ids.TwitterID)
+			for key, value := range map[string]string{"freebase_mid": ids.FreebaseMID, "freebase_id": ids.FreebaseID} {
+				if value != "" {
+					t.ExternalIDs[key] = value
+				}
+			}
+			for key, value := range map[string]int64{"tvdb_id": ids.TVDBID, "tvrage_id": ids.TVRageID} {
+				if value > 0 {
+					t.ExternalIDs[key] = strconv.FormatInt(value, 10)
+				}
+			}
+		}
 		for _, person := range m.CreatedBy {
 			t.Creators = append(t.Creators, person.Name)
 		}
@@ -123,11 +160,19 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 	}
 	t.Creators = app.MetadataNames(t.Creators)
 	t.Genres = app.MetadataNames(t.Genres)
-	if len(date) == 4 {
-		t.ReleaseYear, _ = strconv.Atoi(date)
+	if date == "" {
+		// Planned titles legitimately have no announced release date.
+	} else if len(date) == 4 {
+		year, err := strconv.Atoi(date)
+		if err != nil {
+			return nil, app.ErrInvalid
+		}
+		t.ReleaseYear = new(year)
 	} else if d, err := time.Parse("2006-01-02", date); err == nil {
 		t.ReleaseDate = &d
-		t.ReleaseYear = d.Year()
+		t.ReleaseYear = new(d.Year())
+	} else {
+		return nil, app.ErrInvalid
 	}
 	if err := app.ValidateTitle(t); err != nil {
 		return nil, err
@@ -163,9 +208,31 @@ func (c *Client) Search(query string, page int) (app.SearchResults, error) {
 			t.OriginalTitle = t.LocalizedTitle
 		}
 		if len(date) >= 4 {
-			t.ReleaseYear, _ = strconv.Atoi(date[:4])
+			if year, err := strconv.Atoi(date[:4]); err == nil && year > 0 && year <= 9999 {
+				t.ReleaseYear = new(year)
+			}
 		}
 		titles = append(titles, t)
 	}
 	return app.SearchResults{Items: titles, TotalResults: int(result.TotalResults), TotalPages: int(result.TotalPages)}, nil
+}
+
+// optionalText retains SQL NULL for absent scalar metadata.
+func optionalText(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+// externalIDs stores available provider identifiers using TMDB keys and string values.
+// An empty object means fetched with no identifiers; nil means not fetched.
+func externalIDs(imdb, wikidata, facebook, instagram, twitter string) map[string]string {
+	result := map[string]string{}
+	for key, value := range map[string]string{"imdb_id": imdb, "wikidata_id": wikidata, "facebook_id": facebook, "instagram_id": instagram, "twitter_id": twitter} {
+		if value != "" {
+			result[key] = value
+		}
+	}
+	return result
 }
