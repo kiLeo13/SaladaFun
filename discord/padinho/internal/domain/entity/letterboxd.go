@@ -4,26 +4,33 @@ import "time"
 
 // LetterboxdTitle caches a complete TMDB movie or series detail response.
 type LetterboxdTitle struct {
-	ID                uint64 `gorm:"primaryKey"`
-	TMDBID            uint64 `gorm:"column:tmdb_id"`
-	MediaType         string
-	OriginalTitle     string
-	LocalizedTitle    string
-	ReleaseYear       int
-	ReleaseDate       *time.Time
-	Creators          []string        `gorm:"serializer:json;type:json;not null"`
-	Genres            []string        `gorm:"serializer:json;type:json;not null"`
-	ContentRatings    []ContentRating `gorm:"serializer:json;type:json"`
-	Homepage          string
-	SeasonCount       int
-	Synopsis          string
-	PosterPath        string
-	BackdropPath      string
-	Accent            *uint32
-	AccentSource      string
-	MetadataFetchedAt int64
-	CreatedAt         int64 `gorm:"autoCreateTime:milli"`
-	UpdatedAt         int64 `gorm:"autoUpdateTime:milli"`
+	ID                    uint64 `gorm:"primaryKey"`
+	TMDBID                uint64 `gorm:"column:tmdb_id"`
+	MediaType             string
+	OriginalTitle         string
+	LocalizedTitle        string
+	ReleaseYear           *int
+	ReleaseDate           *time.Time
+	Creators              []string        `gorm:"serializer:json;type:json;not null"`
+	Genres                []string        `gorm:"serializer:json;type:json;not null"`
+	ContentRatings        []ContentRating `gorm:"serializer:json;type:json"`
+	RuntimeMinutes        *int
+	EpisodeRuntimeMinutes []int `gorm:"serializer:json;type:json"`
+	OriginalLanguage      *string
+	OriginCountries       []string `gorm:"serializer:json;type:json"`
+	Status                *string
+	EpisodeCount          *int
+	ExternalIDs           map[string]string `gorm:"serializer:json;type:json"`
+	Homepage              string
+	SeasonCount           int
+	Synopsis              string
+	PosterPath            string
+	BackdropPath          string
+	Accent                *uint32
+	AccentSource          string
+	MetadataFetchedAt     int64
+	CreatedAt             int64 `gorm:"autoCreateTime:milli"`
+	UpdatedAt             int64 `gorm:"autoUpdateTime:milli"`
 }
 
 // ContentRating preserves a country's certification and optional movie release type.

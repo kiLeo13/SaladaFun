@@ -29,7 +29,7 @@ func TestMetadataHelpers(t *testing.T) {
 			t.Fatal("valid homepage")
 		}
 	}
-	title := &entity.LetterboxdTitle{MediaType: "tv", TMDBID: 1, OriginalTitle: "TV", ReleaseYear: 2020, SeasonCount: -1}
+	title := &entity.LetterboxdTitle{MediaType: "tv", TMDBID: 1, OriginalTitle: "TV", ReleaseYear: new(2020), SeasonCount: -1}
 	if ValidateTitle(title) == nil {
 		t.Fatal("negative seasons")
 	}
@@ -67,7 +67,7 @@ type provider struct {
 // Details returns an independent valid response.
 func (p *provider) Details(k string, id uint64) (*entity.LetterboxdTitle, error) {
 	p.calls++
-	return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Original", ReleaseYear: 2020, BackdropPath: "/a.jpg", ContentRatings: []entity.ContentRating{}}, p.err
+	return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Original", ReleaseYear: new(2020), BackdropPath: "/a.jpg", ContentRatings: []entity.ContentRating{}}, p.err
 }
 
 type artwork struct {
@@ -164,7 +164,7 @@ func TestCacheFailurePaths(t *testing.T) {
 		t.Fatal("nil snapshot")
 	}
 	fixture := providerFunc(func(k string, id uint64) (*entity.LetterboxdTitle, error) {
-		return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Title", ReleaseYear: 2020, PosterPath: "/poster.jpg"}, nil
+		return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Title", ReleaseYear: new(2020), PosterPath: "/poster.jpg"}, nil
 	})
 	m := &memory{saveErr: errors.New("write")}
 	s := New(m, fixture, nil)

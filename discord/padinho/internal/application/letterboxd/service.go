@@ -98,8 +98,19 @@ func ValidateTitle(t *entity.LetterboxdTitle) error {
 	if t.SeasonCount < 0 || utf8.RuneCountInString(t.Homepage) > 2048 {
 		return ErrInvalid
 	}
-	if !ValidIdentity(t.MediaType, t.TMDBID) || strings.TrimSpace(t.OriginalTitle) == "" || utf8.RuneCountInString(t.OriginalTitle) > 500 || utf8.RuneCountInString(t.LocalizedTitle) > 500 || t.ReleaseYear < 1 || t.ReleaseYear > 9999 {
+	if !ValidIdentity(t.MediaType, t.TMDBID) || strings.TrimSpace(t.OriginalTitle) == "" || utf8.RuneCountInString(t.OriginalTitle) > 500 || utf8.RuneCountInString(t.LocalizedTitle) > 500 || (t.ReleaseYear != nil && (*t.ReleaseYear < 1 || *t.ReleaseYear > 9999)) {
 		return ErrInvalid
+	}
+	if (t.RuntimeMinutes != nil && (*t.RuntimeMinutes < 1 || *t.RuntimeMinutes > 65535)) || (t.EpisodeCount != nil && (*t.EpisodeCount < 0 || uint64(*t.EpisodeCount) > 4294967295)) {
+		return ErrInvalid
+	}
+	if (t.OriginalLanguage != nil && utf8.RuneCountInString(*t.OriginalLanguage) > 10) || (t.Status != nil && utf8.RuneCountInString(*t.Status) > 64) {
+		return ErrInvalid
+	}
+	for _, minutes := range t.EpisodeRuntimeMinutes {
+		if minutes < 0 {
+			return ErrInvalid
+		}
 	}
 	return nil
 }

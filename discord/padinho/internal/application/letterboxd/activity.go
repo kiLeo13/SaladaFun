@@ -27,7 +27,7 @@ type HistoryEntry struct {
 	LocalizedTitle string
 	MediaType      string
 	TMDBID         uint64
-	ReleaseYear    int
+	ReleaseYear    *int
 	WatchedAt      int64
 	Rating         int
 	Review         *string
