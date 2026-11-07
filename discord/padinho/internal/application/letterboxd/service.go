@@ -56,7 +56,7 @@ func (s *Service) Title(ctx context.Context, kind string, id uint64) (*entity.Le
 		return nil, false, err
 	}
 	now := s.now()
-	if cached != nil && now.UnixMilli()-cached.MetadataFetchedAt < MetadataTTL.Milliseconds() {
+	if cached != nil && cached.ContentRatings != nil && now.UnixMilli()-cached.MetadataFetchedAt < MetadataTTL.Milliseconds() {
 		return cached, false, nil
 	}
 	title, err := s.provider.Details(kind, id)

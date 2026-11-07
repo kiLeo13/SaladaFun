@@ -67,7 +67,7 @@ type provider struct {
 // Details returns an independent valid response.
 func (p *provider) Details(k string, id uint64) (*entity.LetterboxdTitle, error) {
 	p.calls++
-	return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Original", ReleaseYear: 2020, BackdropPath: "/a.jpg"}, p.err
+	return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Original", ReleaseYear: 2020, BackdropPath: "/a.jpg", ContentRatings: []entity.ContentRating{}}, p.err
 }
 
 type artwork struct {
