@@ -14,6 +14,7 @@ import (
 )
 
 type activityStore struct {
+	reviewText  *string
 	user        uint64
 	writes      int
 	rating      int
@@ -26,6 +27,9 @@ type activityStore struct {
 // Watch supplies only the actor's opinion for modal prefilling.
 func (s *activityStore) Watch(_ context.Context, user, title uint64) (*app.WatchState, error) {
 	text := "Old review"
+	if s.reviewText != nil {
+		text = *s.reviewText
+	}
 	state := &app.WatchState{Title: entity.LetterboxdTitle{ID: title}}
 	if user == 11 {
 		state.Rating = 4

@@ -52,7 +52,7 @@ func (h Handler) openWatch(ctx context.Context, r *discord.InteractionRequest) e
 	required := true
 	text := ""
 	if state.Review != nil {
-		text = *state.Review
+		text = app.NormalizeReview(*state.Review)
 	}
 	fields := []discordgo.MessageComponent{
 		discordgo.Label{Label: ptbr.LetterboxdStars, Component: discordgo.SelectMenu{MenuType: discordgo.StringSelectMenu, CustomID: "rating", Options: options, MinValues: new(1), MaxValues: 1, Required: &required}},
@@ -213,6 +213,7 @@ func (h Handler) historyPage(ctx context.Context, r *discord.InteractionRequest)
 
 // plainOpinion escapes Markdown and preserves readable short reviews.
 func plainOpinion(s string) string {
+	s = app.NormalizeReview(s)
 	return strings.NewReplacer("\\", "\\\\", "`", "\\`", "*", "\\*", "_", "\\_", "~", "\\~", "|", "\\|", ">", "\\>").Replace(s)
 }
 
