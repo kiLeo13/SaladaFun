@@ -27,7 +27,7 @@ while remaining independently buildable and deployable.
 | --- | --- | --- |
 | SaladaFun | Minecraft gameplay features and an optional Discord chat bridge | [`minecraft/purpur/saladafun`](minecraft/purpur/saladafun/README.md) |
 | Discord Utils | NeoForge Discord chat bridge | [`minecraft/neoforge/discord-utils`](minecraft/neoforge/discord-utils/README.md) |
-| Padinho | Typed Discord bot foundation for the guild | [`discord/padinho`](discord/padinho/README.md) |
+| Padinho | Discord bot for birthdays, movie tracking, and guild utilities | [`discord/padinho`](discord/padinho/README.md) |
 
 Infrastructure and migrations are shared operational concerns. Their runbooks
 live in [`infrastructure/terraform`](infrastructure/terraform/README.md),
