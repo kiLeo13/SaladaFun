@@ -168,8 +168,8 @@ func TestLetterboxdPayloadConstraints(t *testing.T) {
 	title := entity.LetterboxdTitle{ID: ^uint64(0), TMDBID: ^uint64(0), MediaType: "movie", OriginalTitle: strings.Repeat("🎬", 500), Synopsis: strings.Repeat("🎬", 5000)}
 	card := titleCard(&title, nil, app.Identity(title.MediaType, title.TMDBID))
 	checkPayload(t, card)
-	buttons := card.Components[1].(discordgo.ActionsRow).Components
-	if buttons[0].(discordgo.Button).CustomID != fmt.Sprintf("lb.watch:%d", title.ID) || buttons[1].(discordgo.Button).CustomID != fmt.Sprintf("lb.edit:%d", title.ID) {
+	buttons := card.Components[0].(discordgo.ActionsRow).Components
+	if buttons[0].(discordgo.Button).CustomID != fmt.Sprintf("lb.watch:%d", title.ID) || len(buttons) != 3 {
 		t.Fatal("watch/edit targets")
 	}
 	items := []entity.LetterboxdTitle{title, title}

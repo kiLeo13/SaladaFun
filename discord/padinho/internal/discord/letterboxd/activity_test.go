@@ -84,6 +84,13 @@ func TestWatchModalFlow(t *testing.T) {
 	if fields[1].(discordgo.Label).Component.(discordgo.TextInput).Value != "Old review" {
 		t.Fatal("review prefill")
 	}
+	// Clicking Assisti again must open the same editable state without writing.
+	if err := h.openWatch(ctx, request); err != nil || store.writes != 0 {
+		t.Fatal("repeat watch click", err)
+	}
+	if out.data.Components[1].(discordgo.Label).Component.(discordgo.TextInput).Value != "Old review" {
+		t.Fatal("repeat click lost existing review")
+	}
 	request.Actor.UserID = "12"
 	if err := h.openWatch(ctx, request); err != nil {
 		t.Fatal(err)
