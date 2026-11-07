@@ -153,6 +153,8 @@ Commands: `/letterboxd show title:`, `/letterboxd wishlist add title:`,
 `/letterboxd about`, `/letterboxd pick-random`, and
 `/letterboxd history [member] [sort] [order]`. Show supports TMDB autocomplete and free-text result lists;
 selected titles display artwork, community ratings, and a reviews button.
+`/letterboxd about` explains the feature and local fallback in a Components V2
+page, followed by TMDB attribution in pt-BR beside the provider logo.
 Search pages show `Resultados (x)` using TMDB's absolute total, including
 people counted by multi-search even though the menu lists only movies/TV.
 During provider failures, `⚠️ Resultados (x)` shows the count of all matching

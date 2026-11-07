@@ -403,6 +403,13 @@ anonymously and no registry token enters Terraform state.
 
 ## Movie tracking
 
+The informational `about` response uses a Components V2 container with feature
+and local-fallback text blocks, a separator, and an attribution section with a
+TMDB thumbnail accessory. Attribution is localized in pt-BR; the existing TMDB
+hosted image and website link are reused. It sets `IS_COMPONENTS_V2`, leaves
+legacy content empty and embeds nil, preserves ephemeral visibility, and requires no service
+or database lookup.
+
 `application/letterboxd` owns metadata freshness, discovery, and activity rules.
 Discord handlers orchestrate requests; `discord/letterboxd/presentation.go` builds
 result pages and title cards without querying repositories or the provider.
