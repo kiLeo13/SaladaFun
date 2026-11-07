@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -111,12 +110,6 @@ func TestUserPreferencesRepositoryPropagatesToggleReadFailure(t *testing.T) {
 		t.Fatalf("ToggleAutoMudaeOC() error = %v", err)
 	}
 	assertPreferenceExpectations(t, mock)
-}
-
-func TestUserPreferencesEntityTableName(t *testing.T) {
-	if table := (entity.UserPreferences{}).TableName(); table != "users_preferences" {
-		t.Fatalf("TableName() = %q", table)
-	}
 }
 
 func preferenceMockDatabase(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {

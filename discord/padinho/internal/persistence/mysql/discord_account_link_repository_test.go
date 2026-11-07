@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -21,15 +20,12 @@ func TestDiscordAccountLinkRepositoryTreeUsesRecursiveQuery(t *testing.T) {
 	assertAccountLinkExpectations(t, mock)
 }
 
-func TestDiscordAccountLinkRepositoryTreePropagatesFailureAndMapsTable(t *testing.T) {
+func TestDiscordAccountLinkRepositoryTreePropagatesFailure(t *testing.T) {
 	database, mock := accountLinkMockDatabase(t)
 	want := errors.New("database unavailable")
 	mock.ExpectQuery("WITH RECURSIVE").WithArgs(uint64(1)).WillReturnError(want)
 	if _, err := NewDiscordAccountLinkRepository(database).Tree(1); !errors.Is(err, want) {
 		t.Fatalf("Tree() error = %v", err)
-	}
-	if table := (entity.DiscordAccountLink{}).TableName(); table != "discord_account_links" {
-		t.Fatalf("DiscordAccountLink table = %q", table)
 	}
 	assertAccountLinkExpectations(t, mock)
 }

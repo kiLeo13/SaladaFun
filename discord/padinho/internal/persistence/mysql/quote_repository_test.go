@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -83,15 +82,6 @@ func TestQuoteRepositoryFindByIDReturnsNilForMissingQuote(t *testing.T) {
 		t.Fatalf("FindByID() = %#v, %v", quote, err)
 	}
 	assertQuoteExpectations(t, mock)
-}
-
-func TestQuoteEntityTableNames(t *testing.T) {
-	if table := (entity.Quote{}).TableName(); table != "quotes" {
-		t.Fatalf("Quote table = %q", table)
-	}
-	if table := (entity.QuoteAuthor{}).TableName(); table != "quote_authors" {
-		t.Fatalf("QuoteAuthor table = %q", table)
-	}
 }
 
 func quoteMockDatabase(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {

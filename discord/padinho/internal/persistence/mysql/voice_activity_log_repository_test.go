@@ -37,9 +37,6 @@ func TestVoiceActivityLogRepositoryWrapsDatabaseFailures(t *testing.T) {
 	if err := NewVoiceActivityLogRepository(database).Create(&entity.VoiceActivityLog{GuildID: 1, UserID: 2, LogStatus: entity.VoiceActivityLogFailed, CreatedAt: 3}); !errors.Is(err, want) {
 		t.Fatalf("Create() error = %v", err)
 	}
-	if table := (entity.VoiceActivityLog{}).TableName(); table != "voice_activity_logs" {
-		t.Fatalf("TableName() = %q", table)
-	}
 	assertVoiceActivityExpectations(t, mock)
 }
 

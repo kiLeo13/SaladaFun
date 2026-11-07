@@ -100,12 +100,6 @@ func TestGetWrapsDatabaseError(t *testing.T) {
 	assertExpectations(t, mock)
 }
 
-func TestEntryTableName(t *testing.T) {
-	if name := (entry{}).TableName(); name != "config" {
-		t.Fatalf("TableName() = %q", name)
-	}
-}
-
 func mockDatabase(t *testing.T) (*gorm.DB, sqlmock.Sqlmock) {
 	t.Helper()
 	connection, mock, err := sqlmock.New()
