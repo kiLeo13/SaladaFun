@@ -26,8 +26,8 @@ func (i *interests) Wishlist(context.Context, uint64) ([]entity.LetterboxdTitle,
 }
 
 // CachedSearch returns only complete fallback fixtures.
-func (i *interests) CachedSearch(context.Context, string) ([]entity.LetterboxdTitle, error) {
-	return i.cached, i.cacheErr
+func (i *interests) CachedSearch(context.Context, string, int) (SearchResults, error) {
+	return SearchResults{Items: i.cached, TotalResults: len(i.cached), TotalPages: 1}, i.cacheErr
 }
 
 // AddWishlist captures explicit selected-title mutations.
@@ -49,9 +49,9 @@ type searches struct {
 }
 
 // Search tracks whether local-only actions accidentally contact the provider.
-func (s *searches) Search(string, int) ([]entity.LetterboxdTitle, error) {
+func (s *searches) Search(string, int) (SearchResults, error) {
 	s.calls++
-	return s.items, s.err
+	return SearchResults{Items: s.items, TotalResults: 123, TotalPages: 7}, s.err
 }
 
 // TestDiscoverySearch covers namespaces, local-only reads, fallback and error paths.
@@ -63,17 +63,17 @@ func TestDiscoverySearch(t *testing.T) {
 	remote := &searches{items: []entity.LetterboxdTitle{movie, tv}}
 	d := Discovery{Catalog: store, SearchProvider: remote}
 	items, _, err := d.Search(ctx, 11, "add", "query", 1)
-	if err != nil || len(items) != 1 || items[0].MediaType != "tv" || store.writes != 0 {
+	if err != nil || len(items.Items) != 1 || items.TotalResults != 123 || items.TotalPages != 7 || items.Items[0].MediaType != "tv" || store.writes != 0 {
 		t.Fatal("duplicate filter")
 	}
 	before := remote.calls
 	for _, action := range []string{"remove", "list"} {
 		items, _, err := d.Search(ctx, 11, action, "MOV", 1)
-		if err != nil || len(items) != 1 || remote.calls != before {
+		if err != nil || len(items.Items) != 1 || remote.calls != before {
 			t.Fatal("local query")
 		}
 	}
-	if items, _, err := d.Search(ctx, 11, "remove", "absent", 1); err != nil || len(items) != 0 {
+	if items, _, err := d.Search(ctx, 11, "remove", "absent", 1); err != nil || len(items.Items) != 0 {
 		t.Fatal("local filter")
 	}
 	for _, page := range []int{0, 501} {
@@ -84,7 +84,7 @@ func TestDiscoverySearch(t *testing.T) {
 	remote.err = errors.New("offline")
 	store.cached = []entity.LetterboxdTitle{tv}
 	items, cached, err := d.Search(ctx, 11, "show", "Series", 1)
-	if err != nil || !cached || len(items) != 1 {
+	if err != nil || !cached || len(items.Items) != 1 {
 		t.Fatal("fallback")
 	}
 	store.cacheErr = errors.New("cache")

@@ -12,9 +12,19 @@ import (
 // ErrWishlistAbsent identifies an idempotent removal of an absent interest.
 var ErrWishlistAbsent = errors.New("wishlist title absent")
 
+// SearchPageSize bounds local fallback reads and Discord result menus.
+const SearchPageSize = 20
+
+// SearchResults preserves provider-wide totals independently of the displayed page.
+type SearchResults struct {
+	Items        []entity.LetterboxdTitle
+	TotalResults int
+	TotalPages   int
+}
+
 // Searcher returns provider suggestions without persisting partial metadata.
 type Searcher interface {
-	Search(string, int) ([]entity.LetterboxdTitle, error)
+	Search(string, int) (SearchResults, error)
 }
 
 // Catalog stores local interests and supplies cached fallback suggestions.
@@ -23,7 +33,7 @@ type Catalog interface {
 	Wishlist(context.Context, uint64) ([]entity.LetterboxdTitle, error)
 	AddWishlist(context.Context, uint64, uint64) error
 	RemoveWishlist(context.Context, uint64, uint64) (bool, error)
-	CachedSearch(context.Context, string) ([]entity.LetterboxdTitle, error)
+	CachedSearch(context.Context, string, int) (SearchResults, error)
 	Reviews(context.Context, uint64) ([]Opinion, error)
 }
 
@@ -43,31 +53,33 @@ type Discovery struct {
 }
 
 // Search filters wishlist additions and uses complete local metadata on outages.
-func (d *Discovery) Search(ctx context.Context, user uint64, action, query string, page int) ([]entity.LetterboxdTitle, bool, error) {
+func (d *Discovery) Search(ctx context.Context, user uint64, action, query string, page int) (SearchResults, bool, error) {
 	query = strings.TrimSpace(query)
 	if page < 1 || page > 500 {
-		return nil, false, ErrInvalid
+		return SearchResults{}, false, ErrInvalid
 	}
 	var items []entity.LetterboxdTitle
+	var results SearchResults
 	var err error
 	cached := false
 	if action == "remove" || action == "list" {
 		items, err = d.Catalog.Wishlist(ctx, user)
 	} else {
-		items, err = d.SearchProvider.Search(query, page)
+		results, err = d.SearchProvider.Search(query, page)
 		if err != nil {
-			items, err = d.Catalog.CachedSearch(ctx, query)
+			results, err = d.Catalog.CachedSearch(ctx, query, page)
 			cached = true
 		}
+		items = results.Items
 	}
 	if err != nil {
-		return nil, cached, err
+		return SearchResults{}, cached, err
 	}
 	existing := map[string]bool{}
 	if action == "add" {
 		list, e := d.Catalog.Wishlist(ctx, user)
 		if e != nil {
-			return nil, cached, e
+			return SearchResults{}, cached, e
 		}
 		for _, t := range list {
 			existing[Identity(t.MediaType, t.TMDBID)] = true
@@ -83,7 +95,12 @@ func (d *Discovery) Search(ctx context.Context, user uint64, action, query strin
 		}
 		result = append(result, t)
 	}
-	return result, cached, nil
+	results.Items = result
+	if action == "remove" || action == "list" {
+		results.TotalResults = len(result)
+		results.TotalPages = (len(result) + SearchPageSize - 1) / SearchPageSize
+	}
+	return results, cached, nil
 }
 
 // Identity creates a stable typed TMDB selection value.
