@@ -17,7 +17,8 @@ under platform and project directories add rules for their scope.
   root `ARCHITECTURE.md` when the ecosystem structure or project boundaries
   change.
 - Add or update tests for every behavior change and run the complete build for
-  each affected project before considering work complete.
+  each affected project before considering work complete. Persistence changes
+  require integration tests against a live database.
 - Never commit generated build output, runtime state, secrets, or IDE user
   settings.
 - Do not perform Git operations that affect a remote unless explicitly asked.

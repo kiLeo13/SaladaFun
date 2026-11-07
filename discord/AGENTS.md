@@ -16,5 +16,3 @@ repository guidance.
   application data.
 - Do not expose inbound application ports unless an architecture change
   explicitly requires and documents them.
-- Run the affected application's full test suite after changes. Persistence
-  changes require integration tests against a live database.

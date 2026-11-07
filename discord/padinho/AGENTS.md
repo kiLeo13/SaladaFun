@@ -18,14 +18,9 @@
   or bound methods and may group several handlers in one file when cohesive.
 - Put command names, descriptions, options, and middleware beside the feature's
   registration code. Keep handlers focused on execution.
-- Reserve `context.Context` for cancellation and deadlines. Add explicit typed
-  fields to `command.CommandRequest` for application data.
 - Preserve middleware order: registry, command group, subcommand group, route,
   then handler. Middleware may reject without calling `next`.
-- Add tests for every behavior change. Critical registry and dispatch paths must
-  retain 100% statement coverage; database changes require live MySQL tests.
-- Do not expose HTTP ports. The bot communicates outbound to Discord and over the
-  private subnet to MySQL.
+- Critical registry and dispatch paths must retain 100% statement coverage.
 - Give Padinho a dedicated DML-only MySQL account. Never put the MySQL
   administrator credential in Padinho's environment or Ansible variables; it is
   reserved for Terraform provisioning and interactive migration maintenance.
