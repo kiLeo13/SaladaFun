@@ -536,8 +536,12 @@ bounded heading and derives the footer total from all current member opinions,
 not just the current three-entry page. Each rating is bold, followed by one
 quoted review line or the localized italic “Sem comentário” placeholder.
 Entries are separated by one blank line; this fast view omits dates.
-Show title selections, show search pagination, and review buttons/pagination
-defer publicly so their completed replies are visible to the channel.
+Show title selections and initial review buttons defer publicly.
+Pagination uses deferred message updates and completes by editing the source
+message, preserving its visibility. Review pages use `lb.reviews-page`; legacy
+review-page buttons are recognized by their existing heading/footer.
+The responder supports both deferred reply and deferred-update acknowledgements;
+pagination errors retain the original embeds and controls so navigation can retry.
 The component helper defaults to private acknowledgements for personal actions;
 wishlist changes and other personal flows retain that default.
 
@@ -552,7 +556,8 @@ No schema migration is required.
 
 ### Public member history
 
-History commands and pagination defer publicly and render one embed with at most
+History commands defer publicly; pagination updates that message in place.
+History renders one embed with at most
 three entries. Release years are omitted; titles are escaped and capped at
 300 UTF-16 units, ratings are bold, and dates use `<t:seconds:d>`. Quoted reviews
 use the existing normalization and placeholder. Three worst-case 500-character

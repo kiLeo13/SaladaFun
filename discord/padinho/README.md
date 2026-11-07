@@ -159,8 +159,9 @@ During provider failures, `⚠️ Resultados (x)` shows the count of all matchin
 cached titles instead. The footer displays `Consulta: <query>` as plain text.
 Wishlist additions exclude existing interests. Removal/listing use local data
 and work during TMDB outages. Data is global across guilds; interactions require
-a server. Show replies, title selections, search pagination, and review-button
-replies (including review pagination) are public. Personal wishlist actions
+a server. Show replies, title selections, and review-button replies are public.
+All Letterboxd pagination updates the current message rather than posting
+another reply, retaining that message's visibility. Personal wishlist actions
 reply privately.
 
 Search text supports up to 200 Unicode characters. Click the green **Assisti**
