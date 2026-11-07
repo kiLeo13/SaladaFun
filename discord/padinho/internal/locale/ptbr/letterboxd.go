@@ -1,6 +1,12 @@
 package ptbr
 
 const (
+	LetterboxdResultsPrefix       = "Resultados ("
+	LetterboxdCachedResultsPrefix = "⚠️ Resultados ("
+	LetterboxdQueryPrefix         = "Consulta: "
+)
+
+const (
 	LetterboxdMovie        = "Filme"
 	LetterboxdTV           = "Série"
 	LetterboxdAbsent       = "Este título já foi removido da sua lista."

@@ -14,11 +14,9 @@ import (
 const synopsisLimit = 2000
 
 // resultPage renders already selected results without querying storage or TMDB.
-func resultPage(action, query string, page int, items []entity.LetterboxdTitle, cached, more bool) *discordgo.InteractionResponseData {
+func resultPage(action, query string, page int, items []entity.LetterboxdTitle, cached, more bool, total int) *discordgo.InteractionResponseData {
 	data := response("")
-	if cached {
-		data.Content = ptbr.LetterboxdCached
-	}
+
 	if len(items) == 0 {
 		data.Content += "\n" + ptbr.LetterboxdEmpty
 	} else {
@@ -45,8 +43,13 @@ func resultPage(action, query string, page int, items []entity.LetterboxdTitle, 
 	if len(data.Embeds) == 0 {
 		data.Embeds = []*discordgo.MessageEmbed{{Description: ptbr.LetterboxdEmpty}}
 	}
+	prefix := ptbr.LetterboxdResultsPrefix
+	if cached {
+		prefix = ptbr.LetterboxdCachedResultsPrefix
+	}
+	data.Embeds[0].Title = fmt.Sprintf("%s%d)", prefix, total)
 	if query != "" {
-		data.Embeds[0].Footer = &discordgo.MessageEmbedFooter{Text: query}
+		data.Embeds[0].Footer = &discordgo.MessageEmbedFooter{Text: ptbr.LetterboxdQueryPrefix + query}
 	}
 	buttons := []discordgo.MessageComponent{}
 	for _, nav := range []struct {

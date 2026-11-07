@@ -58,8 +58,8 @@ func (c *catalog) RemoveWishlist(_ context.Context, user, title uint64) (bool, e
 }
 
 // CachedSearch supplies complete fallback matches.
-func (c *catalog) CachedSearch(context.Context, string) ([]entity.LetterboxdTitle, error) {
-	return c.items, nil
+func (c *catalog) CachedSearch(context.Context, string, int) (app.SearchResults, error) {
+	return app.SearchResults{Items: c.items, TotalResults: len(c.items), TotalPages: 1}, nil
 }
 
 // Reviews supplies current opinions.
@@ -71,12 +71,12 @@ func (c *catalog) Details(k string, id uint64) (*entity.LetterboxdTitle, error) 
 }
 
 // Search tracks remote access independently of persistence.
-func (c *catalog) Search(string, int) ([]entity.LetterboxdTitle, error) {
+func (c *catalog) Search(string, int) (app.SearchResults, error) {
 	c.searches++
 	if c.offline {
-		return nil, errors.New("offline")
+		return app.SearchResults{}, errors.New("offline")
 	}
-	return []entity.LetterboxdTitle{{MediaType: "movie", TMDBID: 1, OriginalTitle: "First"}, {MediaType: "tv", TMDBID: 2, OriginalTitle: "Second"}}, nil
+	return app.SearchResults{Items: []entity.LetterboxdTitle{{MediaType: "movie", TMDBID: 1, OriginalTitle: "First"}, {MediaType: "tv", TMDBID: 2, OriginalTitle: "Second"}}, TotalResults: 123, TotalPages: 7}, nil
 }
 
 type responder struct {

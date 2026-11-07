@@ -18,7 +18,7 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const pageSize = 20
+const pageSize = app.SearchPageSize
 const reviewPageSize = 3
 
 // Handler keeps all discovery interactions on one application service.
@@ -116,7 +116,7 @@ func (h Handler) autocomplete(action string) discord.AutocompleteHandler {
 		if r.GuildID != "" && user > 0 && utf8.RuneCountInString(query) <= 200 {
 			items, _, err := h.service.Search(ctx, user, action, query, 1)
 			if err == nil {
-				for _, t := range items {
+				for _, t := range items.Items {
 					choices = append(choices, &discordgo.ApplicationCommandOptionChoice{Name: Ellipsis(label(t), 100), Value: app.Identity(t.MediaType, t.TMDBID)})
 					if len(choices) == 25 {
 						break
@@ -175,15 +175,16 @@ func (h Handler) page(ctx context.Context, r command.Responder, user uint64, act
 	if utf8.RuneCountInString(query) > 200 || page < 1 || page > 500 {
 		return command.RejectForbidden(ptbr.LetterboxdInvalid)
 	}
-	items, cached, err := h.service.Search(ctx, user, action, query, page)
+	results, cached, err := h.service.Search(ctx, user, action, query, page)
+	items := results.Items
 	if err != nil {
 		return err
 	}
-	if action == "show" && len(items) == 1 {
+	if action == "show" && !cached && results.TotalResults == 1 && len(items) == 1 {
 		return h.showSelection(ctx, r, user, action, app.Identity(items[0].MediaType, items[0].TMDBID))
 	}
-	more := len(items) > 0
-	if action == "remove" || action == "list" || cached {
+	more := page < results.TotalPages
+	if action == "remove" || action == "list" {
 		start := (page - 1) * pageSize
 		if start >= len(items) {
 			more = false
@@ -196,7 +197,7 @@ func (h Handler) page(ctx context.Context, r command.Responder, user uint64, act
 	if len(items) > pageSize {
 		items = items[:pageSize]
 	}
-	return finish(r, resultPage(action, query, page, items, cached, more))
+	return finish(r, resultPage(action, query, page, items, cached, more, results.TotalResults))
 }
 
 // showSelection performs the explicit selected-title action and renders its result.
@@ -270,7 +271,11 @@ func (h Handler) changePage(ctx context.Context, r *discord.InteractionRequest) 
 	page, err := strconv.Atoi(r.Parameters[1])
 	query := ""
 	if r.Interaction.Message != nil && len(r.Interaction.Message.Embeds) > 0 && r.Interaction.Message.Embeds[0].Footer != nil {
-		query = r.Interaction.Message.Embeds[0].Footer.Text
+		embed := r.Interaction.Message.Embeds[0]
+		query = embed.Footer.Text
+		if strings.HasPrefix(embed.Title, ptbr.LetterboxdResultsPrefix) || strings.HasPrefix(embed.Title, ptbr.LetterboxdCachedResultsPrefix) {
+			query = strings.TrimPrefix(query, ptbr.LetterboxdQueryPrefix)
+		}
 	}
 	if err != nil {
 		return command.RejectForbidden(ptbr.LetterboxdInvalid)

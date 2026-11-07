@@ -192,8 +192,8 @@ func TestLetterboxdPayloadConstraints(t *testing.T) {
 	}
 	for _, action := range []string{"show", "add", "remove", "list"} {
 		for _, page := range []int{1, 2, 500} {
-			checkPayload(t, resultPage(action, strings.Repeat("🎬", 200), page, items, true, true))
-			checkPayload(t, resultPage(action, "", page, nil, false, false))
+			checkPayload(t, resultPage(action, strings.Repeat("🎬", 200), page, items, true, true, 123))
+			checkPayload(t, resultPage(action, "", page, nil, false, false, 0))
 		}
 	}
 	c := &catalog{items: items}
