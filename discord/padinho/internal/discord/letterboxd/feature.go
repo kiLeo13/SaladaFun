@@ -141,11 +141,25 @@ func label(t entity.LetterboxdTitle) string {
 	return fmt.Sprintf("%s (%s, %s)", app.DisplayTitle(&t), year, kind)
 }
 
-// clip bounds Discord payload strings without splitting UTF-8 characters.
+// clip bounds Discord text by UTF-16 units without splitting Unicode characters.
 func clip(s string, n int) string {
-	r := []rune(s)
-	if len(r) > n {
-		return string(r[:n-1]) + "\u2026"
+	units := 0
+	cut := len(s)
+	for i, r := range s {
+		width := 1
+		if r > 0xffff {
+			width = 2
+		}
+		units += width
+		if units > n-1 && cut == len(s) {
+			cut = i
+		}
+		if units > n {
+			if n < 1 {
+				return ""
+			}
+			return s[:cut] + "\u2026"
+		}
 	}
 	return s
 }
