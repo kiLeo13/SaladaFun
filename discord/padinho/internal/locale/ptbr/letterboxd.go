@@ -60,4 +60,6 @@ const (
 	LetterboxdSeasons     = "Temporadas"
 	LetterboxdAgeRating   = "Faixa et\u00e1ria"
 	LetterboxdAgeUnknown  = "N\u00e3o informada"
+	LetterboxdAgeLivre    = "Livre"
+	LetterboxdAgeYears    = "%s anos"
 )

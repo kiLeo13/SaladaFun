@@ -75,7 +75,7 @@ func TestTitleCardFieldBudgets(t *testing.T) {
 	title.Genres = nil
 	card := titleCard(title, nil, "tv:1")
 	checkPayload(t, card)
-	if len(card.Embeds[0].Fields) != 2 {
+	if len(card.Embeds[0].Fields) != 3 {
 		t.Fatal("empty optional fields rendered")
 	}
 }

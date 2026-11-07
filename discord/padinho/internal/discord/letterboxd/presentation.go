@@ -87,6 +87,7 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 	}
 	embed.Author = &discordgo.MessageEmbedAuthor{Name: kind, URL: homepage}
 	embed.Fields = []*discordgo.MessageEmbedField{{Name: ptbr.LetterboxdReleaseYear, Value: strconv.Itoa(title.ReleaseYear), Inline: true}}
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: ptbr.LetterboxdAgeRating, Value: classificationText(title.ContentRatings), Inline: true})
 	creatorLabel := ptbr.LetterboxdDirectors
 	if title.MediaType == "tv" {
 		creatorLabel = ptbr.LetterboxdCreators
