@@ -37,7 +37,12 @@ func (h *interactionHandler) handle(session *discordgo.Session, interaction *dis
 	reply := ephemeralTextResponse(response)
 	var responseErr error
 	if responder.deferred {
-		responseErr = responder.Complete(&discordgo.InteractionResponseData{Content: response})
+		data := &discordgo.InteractionResponseData{Content: response}
+		if responder.updating && interaction.Message != nil {
+			data.Embeds = interaction.Message.Embeds
+			data.Components = interaction.Message.Components
+		}
+		responseErr = responder.Complete(data)
 	} else if interaction.Type == discordgo.InteractionApplicationCommandAutocomplete {
 		responseErr = responder.Respond(&discordgo.InteractionResponse{Type: discordgo.InteractionApplicationCommandAutocompleteResult})
 	} else {
@@ -124,6 +129,7 @@ type interactionResponder struct {
 	mu          sync.Mutex
 	didRespond  bool
 	deferred    bool
+	updating    bool
 }
 
 func newInteractionResponder(session *discordgo.Session, interaction *discordgo.InteractionCreate) *interactionResponder {
@@ -143,7 +149,9 @@ func (r *interactionResponder) Respond(response *discordgo.InteractionResponse) 
 		return fmt.Errorf("respond to Discord interaction: %w", err)
 	}
 	r.didRespond = true
-	r.deferred = response.Type == discordgo.InteractionResponseDeferredChannelMessageWithSource
+	r.deferred = response.Type == discordgo.InteractionResponseDeferredChannelMessageWithSource ||
+		response.Type == discordgo.InteractionResponseDeferredMessageUpdate
+	r.updating = response.Type == discordgo.InteractionResponseDeferredMessageUpdate
 	return nil
 }
 
@@ -163,7 +171,7 @@ func (r *interactionResponder) responded() bool {
 	return r.didRespond
 }
 
-// Complete edits a deferred initial response without sending a second acknowledgment.
+// Complete edits the deferred response, or the source message after a deferred component update.
 func (r *interactionResponder) Complete(data *discordgo.InteractionResponseData) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
