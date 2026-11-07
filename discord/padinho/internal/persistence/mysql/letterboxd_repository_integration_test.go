@@ -137,3 +137,88 @@ func TestLetterboxdAgainstMySQL(t *testing.T) {
 		t.Fatal("remove")
 	}
 }
+
+// TestActivityQueriesAgainstMySQL verifies random eligibility and stable history pages.
+func TestActivityQueriesAgainstMySQL(t *testing.T) {
+	setLiveEnvironment(t)
+	db, err := database.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { database.Close(db) })
+	tx := db.Begin()
+	if tx.Error != nil {
+		t.Fatal(tx.Error)
+	}
+	t.Cleanup(func() { tx.Rollback() })
+	r := NewLetterboxdRepository(tx)
+	ctx := context.Background()
+	ids := []uint64{}
+	base := uint64(time.Now().UnixNano())
+	ratings := []int{2, 5, 1, 5}
+	for i := 0; i < 5; i++ {
+		title := &entity.LetterboxdTitle{TMDBID: base + uint64(i), MediaType: "movie", OriginalTitle: fmt.Sprintf("History %d", i), ReleaseYear: 2020}
+		if err := r.SaveTitle(ctx, title); err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, title.ID)
+		if err := r.AddWishlist(ctx, 31, title.ID); err != nil {
+			t.Fatal(err)
+		}
+		if i < 4 {
+			if err := r.SaveWatch(ctx, 31, title.ID, base+uint64(i), ratings[i], "Original review"); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	for i := 0; i < 10; i++ {
+		title, err := r.RandomUnwatched(ctx, 31)
+		if err != nil || title == nil || title.ID != ids[4] {
+			t.Fatal("eligible pool")
+		}
+	}
+	if title, err := r.RandomUnwatched(ctx, 32); err != nil || title != nil {
+		t.Fatal("other wishlist")
+	}
+	if err := r.AddWishlist(ctx, 32, ids[0]); err != nil {
+		t.Fatal(err)
+	}
+	if title, err := r.RandomUnwatched(ctx, 32); err != nil || title.ID != ids[0] {
+		t.Fatal("another member watch excluded candidate")
+	}
+	if err := r.SaveWatch(ctx, 31, ids[0], base+10, 2, ""); err != nil {
+		t.Fatal(err)
+	}
+	state, err := r.Watch(ctx, 31, ids[0])
+	if err != nil || state.Rating != 2 || state.Review != nil || state.WatchedAt == 0 {
+		t.Fatal("withdrawal state")
+	}
+	fresh, err := r.Watch(ctx, 32, ids[0])
+	if err != nil || fresh.Rating != 0 || fresh.Review != nil {
+		t.Fatal("individual state")
+	}
+	for _, sort := range []string{"date", "rating"} {
+		for _, order := range []string{"asc", "desc"} {
+			first, err := r.History(ctx, 31, sort, order, 1)
+			if err != nil || len(first) != 4 {
+				t.Fatalf("first %v %v", first, err)
+			}
+			second, err := r.History(ctx, 31, sort, order, 2)
+			if err != nil || len(second) != 1 || first[3].ID != second[0].ID {
+				t.Fatal("pagination boundary")
+			}
+			if sort == "rating" && ((order == "asc" && first[0].Rating != 1) || (order == "desc" && first[0].Rating != 5)) {
+				t.Fatal("rating order")
+			}
+		}
+	}
+	if entries, err := r.History(ctx, 32, "date", "desc", 1); err != nil || len(entries) != 0 {
+		t.Fatal("history ownership")
+	}
+	if err := r.SaveWatch(ctx, 31, ids[4], base+11, 5, ""); err != nil {
+		t.Fatal(err)
+	}
+	if title, err := r.RandomUnwatched(ctx, 31); err != nil || title != nil {
+		t.Fatal("all watched")
+	}
+}

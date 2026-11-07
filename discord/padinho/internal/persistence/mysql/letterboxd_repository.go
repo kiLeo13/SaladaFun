@@ -129,3 +129,65 @@ func (r *LetterboxdRepository) Reviews(ctx context.Context, title uint64) ([]app
 	err := r.db.WithContext(ctx).Table("letterboxd_watches w").Select("w.user_id,w.rating,r.review").Joins("LEFT JOIN letterboxd_reviews r ON r.id=(SELECT MAX(v.id) FROM letterboxd_reviews v WHERE v.watch_id=w.id)").Where("w.title_id=?", title).Order("w.id").Scan(&opinions).Error
 	return opinions, err
 }
+
+// Watch loads cached metadata and only the requesting user's current opinion.
+func (r *LetterboxdRepository) Watch(ctx context.Context, user, title uint64) (*app.WatchState, error) {
+	var metadata entity.LetterboxdTitle
+	if err := r.db.WithContext(ctx).First(&metadata, title).Error; err != nil {
+		return nil, err
+	}
+	state := &app.WatchState{Title: metadata}
+	var watch entity.LetterboxdWatch
+	err := r.db.WithContext(ctx).Where("user_id=? AND title_id=?", user, title).Take(&watch).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return state, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	state.Rating = watch.Rating
+	state.WatchedAt = watch.WatchedAt
+	revision, err := r.CurrentReview(ctx, watch.ID)
+	if err != nil {
+		return nil, err
+	}
+	if revision != nil {
+		state.Review = revision.Review
+	}
+	return state, nil
+}
+
+// History pages current opinions using only whitelisted SQL ordering fragments.
+func (r *LetterboxdRepository) History(ctx context.Context, user uint64, sort, order string, page int) ([]app.HistoryEntry, error) {
+	column := "w.watched_at"
+	if sort == "rating" {
+		column = "w.rating"
+	} else if sort != "date" {
+		return nil, app.ErrInvalid
+	}
+	direction := "DESC"
+	if order == "asc" {
+		direction = "ASC"
+	} else if order != "desc" {
+		return nil, app.ErrInvalid
+	}
+	if page < 1 || page > 100000 {
+		return nil, app.ErrInvalid
+	}
+	var entries []app.HistoryEntry
+	err := r.db.WithContext(ctx).Table("letterboxd_watches w").Select("w.id,w.title_id,t.original_title,t.localized_title,t.media_type,t.tmdb_id,t.release_year,w.watched_at,w.rating,r.review").Joins("JOIN letterboxd_titles t ON t.id=w.title_id").Joins("LEFT JOIN letterboxd_reviews r ON r.id=(SELECT MAX(v.id) FROM letterboxd_reviews v WHERE v.watch_id=w.id)").Where("w.user_id=?", user).Order(column + " " + direction + ", w.id " + direction).Offset((page - 1) * app.HistoryPageSize).Limit(app.HistoryPageSize + 1).Scan(&entries).Error
+	return entries, err
+}
+
+// RandomUnwatched samples one unique personal interest without multiplying reviews.
+func (r *LetterboxdRepository) RandomUnwatched(ctx context.Context, user uint64) (*entity.LetterboxdTitle, error) {
+	var title entity.LetterboxdTitle
+	err := r.db.WithContext(ctx).Table("letterboxd_titles t").Select("t.*").Joins("JOIN letterboxd_wishlist_items i ON i.title_id=t.id AND i.user_id=?", user).Where("NOT EXISTS (SELECT 1 FROM letterboxd_watches w WHERE w.title_id=t.id AND w.user_id=?)", user).Order("RAND()").Take(&title).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &title, nil
+}
