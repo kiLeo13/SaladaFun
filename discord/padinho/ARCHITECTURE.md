@@ -469,3 +469,20 @@ Application tests cover all activity-service validation/forwarding statements;
 Discord fixtures cover required select values, review limits, modal prefilling,
 cancellation, actor ownership, history choices, and forged component parameters.
 No additional migration or scheduled work is required for step 3.
+
+
+Release validation compiles the feature's complete native command tree and
+serializes representative empty-page and maximum-review payloads. Empty queries
+omit the embed footer instead of emitting an invalid blank footer. Current
+reviews use bounded embeds rather than a truncated message body, and escaped
+review text remains complete. Registry freeze rejects the mutually exclusive
+fixed-choice/autocomplete combination before global command synchronization.
+Choice validation and declaration immutability are covered by regression tests.
+
+The release pass verifies a fresh embedded migration chain and runs the complete
+bot suite with a DML-only MySQL account. Command registry and Letterboxd
+application-service statement coverage are 100%. Local fixtures replace live
+Discord and external API checks, which are explicitly out of scope by request.
+The README owns manual configuration, migration, rollout order, and application
+rollback instructions. Publishing must follow schema/token provisioning because
+Watchtower may automatically deploy `latest` after publication.
