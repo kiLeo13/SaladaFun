@@ -15,6 +15,7 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/enus"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
@@ -34,8 +35,8 @@ func Register(routes *discord.Routes, service *app.Discovery) {
 	group.Sub("show", ptbr.LetterboxdShow, h.run("show"), option())
 	group.Sub("pick-random", ptbr.LetterboxdRandom, h.pickRandom)
 	memberOption := command.UserOption("member", ptbr.LetterboxdMember)
-	sortOption := command.StringOption("sort", ptbr.LetterboxdSort).Choices(command.OptionChoice{Name: ptbr.LetterboxdDate, Value: "date"}, command.OptionChoice{Name: ptbr.LetterboxdRatings, Value: "rating"})
-	orderOption := command.StringOption("order", ptbr.LetterboxdOrder).Choices(command.OptionChoice{Name: ptbr.LetterboxdAscending, Value: "asc"}, command.OptionChoice{Name: ptbr.LetterboxdDescending, Value: "desc"})
+	sortOption := command.StringOption("sort", ptbr.LetterboxdSort).Choices(command.OptionChoice{Name: enus.LetterboxdSortDate, Value: "date"}, command.OptionChoice{Name: enus.LetterboxdSortRating, Value: "rating"})
+	orderOption := command.StringOption("order", ptbr.LetterboxdOrder).Choices(command.OptionChoice{Name: enus.LetterboxdOrderAscending, Value: "asc"}, command.OptionChoice{Name: enus.LetterboxdOrderDescending, Value: "desc"})
 	group.Sub("history", ptbr.LetterboxdHistory, h.history, memberOption, sortOption, orderOption)
 	group.Sub("about", ptbr.LetterboxdAbout, h.about)
 	wishlist := group.Group("wishlist", ptbr.LetterboxdWishlist)
