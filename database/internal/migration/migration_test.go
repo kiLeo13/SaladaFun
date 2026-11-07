@@ -87,8 +87,8 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 11 {
-		t.Fatalf("embedded migrations = %d, want 11", len(files))
+	if len(files) != 12 {
+		t.Fatalf("embedded migrations = %d, want 12", len(files))
 	}
 }
 

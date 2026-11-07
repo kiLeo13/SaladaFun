@@ -53,19 +53,9 @@ ALTER USER 'padinho'@'10.42.10.%' IDENTIFIED BY 'replace-me';
 GRANT SELECT, INSERT, UPDATE, DELETE ON salada.* TO 'padinho'@'10.42.10.%';
 ```
 
-Padinho requires the non-null Discord token, birthday announcement channel, and
-voice activity log channel before it can start:
-
-```sql
-INSERT INTO config (name, value) VALUES ('app.token', 'replace-me');
-INSERT INTO config (name, value) VALUES ('birthday.channel_id', 'replace-me');
-INSERT INTO config (name, value) VALUES ('channels.logs.voice', 'replace-me');
-INSERT INTO config (name, value) VALUES ('urls.youtube.betaSpirit', 'https://www.youtube.com/watch?v=TI0f3xA5_gg');
-```
-
-Run that statement through a private, trusted MySQL session so the token does
-not leak into shell history or logs. Values are stored as plain text; restrict
-table access and protect database backups accordingly.
+Provision application configuration through a trusted private SQL session using
+[Padinho's configuration keys](../discord/padinho/README.md#database-configuration).
+Config values are plain text; restrict table access and protect backups.
 
 Never put credentials in this directory or upload an environment file with the
 binary. The migration executable reads
@@ -128,13 +118,7 @@ wiring. See [Padinho architecture](../discord/padinho/ARCHITECTURE.md) for
 transaction semantics and isolated live-MySQL verification.
 
 
-For the Letterboxd release, apply through migration `00009` and provision the
-required `tmdb.token` config value before publishing the dependent bot image.
-Watchtower follows `latest` automatically. The API Read Access Token is entered
-through a trusted private SQL session; do not store it in this directory or in
-command history. Padinho still requires only the four existing DML grants.
-Application rollback retains these additive tables and the immutable review
-ledger rather than executing destructive Down migrations.
+## Letterboxd metadata
 
 Migration `00010_letterboxd_metadata.sql` enriches the Letterboxd title cache with
 creators and genres as NOT NULL JSON arrays, a homepage URL, and an unsigned
@@ -147,11 +131,8 @@ in foreign-key order: `letterboxd_reviews`, `letterboxd_watches`,
 `letterboxd_wishlist_items`, then `letterboxd_titles`. The migration itself
 contains no deletion statements. Apply before deploying the rich title card.
 
-Migration `00011_letterboxd_future_metadata.sql` reserves the first batch of
-future metadata on **`letterboxd_titles` only**. It adds no tables, indexes, or
-JOINs and does not change existing values or expire the metadata cache. Padinho
-now consumes `content_ratings` for the Brazilian age-classification embed field;
-the other columns remain reserved for future features.
+Migration `00011_letterboxd_future_metadata.sql` adds the following nullable
+columns to `letterboxd_titles`. Padinho fetches and persists all of them.
 
 | Column | Storage | Intended meaning |
 | --- | --- | --- |
@@ -162,24 +143,22 @@ the other columns remain reserved for future features.
 | `origin_countries` | Nullable JSON array | Country codes, for example `["BR","US"]` |
 | `status` | Nullable `VARCHAR(64)` | Provider status text without a fixed database enum |
 | `episode_count` | Nullable unsigned integer | Total TV episodes; zero is allowed when known |
-| `external_ids` | Nullable JSON object | Provider IDs, for example `{"imdb":"tt1234567","tvdb":"123"}` |
+| `external_ids` | Nullable JSON object | TMDB-keyed string IDs, for example `{"imdb_id":"tt1234567","tvdb_id":"123"}` |
 
-All new fields default to SQL `NULL`, meaning unknown or not fetched. Once
-ingestion is implemented, empty arrays/objects may represent a successfully
-fetched empty result. Classification codes remain strings and retain their
-country; missing classification never means unrestricted. JSON checks enforce
-outer array/object shapes; future ingestion must validate entry structure,
-codes, positive episode runtimes, and external-ID values.
+SQL NULL means unknown, inapplicable or not fetched; empty JSON collections
+represent fetched empty results. JSON checks enforce array/object shapes.
+Classification codes retain their country; missing certification never means
+unrestricted. Movie runtime zero maps to NULL; episode runtimes are nonnegative.
 
-**Migration 00011 alone requires no record deletion.** Existing title metadata,
-`letterboxd_wishlist_items`, `letterboxd_watches`, and `letterboxd_reviews` are
-preserved. Goose updates its own migration ledger automatically. Apply the
-embedded migration executable through the existing manual process above.
-The current application can continue inserting titles without these fields.
+Migration `00012_letterboxd_unknown_release_year.sql` makes `release_year`
+nullable while retaining the 1..9999 constraint. Existing metadata, relationships
+and freshness timestamps are preserved. Rollback refuses unknown years; resolve
+them from real metadata before retrying.
 
-Live validation: set the `TEST_DATABASE_*` connection variables and run
-`go test -race ./...` from `database/`. Tests cover an empty version-9 catalog
-upgrade without metadata defaults, a populated version-10 upgrade, preserved
-relationships and metadata, SQL NULL defaults,
-legacy inserts, valid metadata round trips, empty results, invalid JSON shapes,
-numeric constraints, and repeated migration execution.
+The [TMDB OpenAPI](https://developer.themoviedb.org/openapi/tmdb-api.json) does not
+declare these response properties required. Nullable columns preserve unfetched
+and media-inapplicable values. Refresh and presentation rules belong to
+[Padinho](../discord/padinho/README.md#movie-and-tv-tracker).
+
+Live tests cover upgrades, preserved data, constraints, repeated execution,
+and guarded rollback/reapplication. Run them using the verification setup above.
