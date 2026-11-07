@@ -258,7 +258,50 @@ Live repository checks require the existing `TEST_DATABASE_*` contract and a
 migrated isolated MySQL database. Tests cover discovery without partial cache
 writes, owner-scoped wishlists, provider fallback, and deferred interaction
 handling. See [ARCHITECTURE.md](ARCHITECTURE.md) for persistence and cache rules.
-A test-guild smoke check should cover autocomplete, selection, pagination,
-add/remove/list, artwork/colors, and About attribution. Also check modal
-cancellation, saved ratings, edited/cleared review text, member history sorting
-and pagination, and random selection with empty and all-watched wishlists.
+Live Discord smoke tests and real TMDB/API tests are intentionally skipped by
+request. Native Discord payloads, compiled command definitions, provider HTTP
+fixtures, and live MySQL checks are the release verification boundary.
+
+### Manual release order
+
+1. Before publishing a new bot image, build and apply the independent migration
+   executable using [database instructions](../../database/README.md). Confirm
+   `00009_letterboxd.sql` has been applied. Provision the required `tmdb.token`
+   API Read Access Token through a trusted private database session. Neither
+   migrations nor tokens belong in the application image or committed files.
+2. Retain the existing DML-only runtime account; the feature needs only SELECT,
+   INSERT, UPDATE, and DELETE. Validate against isolated MySQL using the
+   `TEST_DATABASE_HOST`, `TEST_DATABASE_PORT`, `TEST_DATABASE_USERNAME`,
+   `TEST_DATABASE_PASSWORD`, and `TEST_DATABASE_NAME` environment contract.
+   Skipped database tests are not successful live validation. Run both Go
+   modules' race tests, vet, and builds, then the root container build.
+3. After separate authorization to publish/deploy, release the reviewed image
+   using the existing workflow. Complete schema/configuration first: Watchtower
+   automatically follows `latest`, so publishing can start rollout without a
+   later manual Compose command. No workflow publishes migrations.
+4. If an explicit manual rollout is chosen, run `docker compose pull bot` and
+   `docker compose up -d bot` from the deployed Compose directory. Check process
+   startup and logs for configuration/database/gateway errors without displaying
+   token values. Missing TMDB configuration fails before Discord connects.
+
+To roll back application code, select the previously recorded image digest with
+`SALADA_IMAGE` through the existing deployment configuration. Keep the additive
+schema and review ledger; do not run the migration Down section as an application
+rollback. No production migration, publication, or deployment is performed by
+local verification.
+
+### Release verification results
+
+The release checks pass for both modules: `go test -race ./...`, `go vet ./...`,
+and `go build ./...`. A fresh MySQL 8.4 database accepts the complete embedded
+migration chain. The full bot suite also passes with a separate DML-only test
+account against a freshly migrated database. The static, non-root image builds
+with its pinned Go 1.26.5 builder; local tests use Go 1.27.1 on Windows.
+Command registry and Letterboxd application-service statement coverage are 100%.
+The fixes verified during this pass include empty result-page embed validity,
+full-length review rendering, and rejection of choices combined with autocomplete.
+
+The database module also builds the CGO-disabled Linux migration executable.
+Existing HTTP fixtures cover both media types, authentication, incomplete
+metadata, malformed responses, rate limits, artwork failure, and stale fallback;
+no real provider credential or live Discord session is used.
