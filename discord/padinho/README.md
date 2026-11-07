@@ -163,6 +163,13 @@ button to open a rating/review modal. A rating of
 supplied. Existing opinions are prefilled; leaving the review empty withdraws
 its text while preserving the rating. Cancelling the modal saves nothing.
 
+The **Assisti** and **Editar avaliação** buttons have distinct component IDs;
+both open the same actor-owned, prefilled modal. Result menus filter repeated
+title values and show at most 20 options. Titles, summaries, and autocomplete
+labels are clipped safely for Discord text limits, including emoji.
+Payload regression checks run with
+`go test ./internal/discord/letterboxd`.
+
 Random selection uses only the caller's unwatched wishlist. History defaults to
 the caller, watched date, and descending order. Choose Avaliações to sort by
 numeric rating; member, sort, and order persist through pagination. Dates display

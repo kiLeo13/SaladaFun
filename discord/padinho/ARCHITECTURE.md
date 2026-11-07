@@ -436,3 +436,24 @@ member/order/page in validated custom IDs. Component routes survive restarts;
 no in-memory interaction session is required. Shared cards act on the clicking
 member, and personal replies suppress mentions. See [README.md](README.md) for
 commands, configuration, verification, and deployment.
+
+### Discord payload constraints
+
+Title cards use separate `lb.watch:<id>` and `lb.edit:<id>` routes, both
+registered to the same actor-owned modal handler; `lb.watch-save:<id>` handles
+submission. Custom IDs must be unique across the entire message, including
+different rows. Result selects deduplicate identity values and cap at 20 options.
+Text clipping budgets UTF-16 units without splitting Unicode characters.
+Reviews and history retain three entries per page, keeping even fully escaped
+500-character reviews below per-embed and aggregate text limits. Navigation
+disables next at the supported page ceiling.
+
+`constraints_test.go` checks serialized component placement, unique IDs and
+select values, option/row counts, label lengths, modal fields, autocomplete,
+embed text budgets, Unicode boundaries, and pagination ceilings. Existing flow
+tests cover modal prefilling, ownership, submission and empty/random paths.
+These are local contract checks; a Discord smoke test after deployment should
+exercise show, all four card buttons, wishlist selection, reviews, history,
+random selection, autocomplete, and modal submit/cancel.
+References: [components](https://docs.discord.com/developers/components/reference)
+and [embed limits](https://docs.discord.com/developers/resources/message#embed-object-embed-limits).
