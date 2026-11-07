@@ -72,10 +72,35 @@ func mapRequest(interaction *discordgo.InteractionCreate, responder command.Resp
 		values[option.Name] = value
 	}
 	return &command.CommandRequest{
-		Path: path, Actor: actor(interaction), GuildID: command.Snowflake(interaction.GuildID),
+		Users: interactionProfiles(interaction),
+		Path:  path, Actor: actor(interaction), GuildID: command.Snowflake(interaction.GuildID),
 		ChannelID: command.Snowflake(interaction.ChannelID), Options: command.NewOptionValues(values),
 		Responder: responder, RequestID: interaction.ID, ReceivedAt: time.Now().UTC(),
 	}, nil
+}
+
+// interactionProfiles captures caller and selected-member profiles already supplied by Discord.
+func interactionProfiles(interaction *discordgo.InteractionCreate) map[command.Snowflake]command.UserProfile {
+	profiles := map[command.Snowflake]command.UserProfile{}
+	profile := func(user *discordgo.User) command.UserProfile {
+		return command.UserProfile{GlobalName: user.GlobalName, Username: user.Username, AvatarURL: user.AvatarURL("128")}
+	}
+	caller := interaction.User
+	if interaction.Member != nil && interaction.Member.User != nil {
+		caller = interaction.Member.User
+	}
+	if caller != nil {
+		profiles[command.Snowflake(caller.ID)] = profile(caller)
+	}
+	data := interaction.ApplicationCommandData()
+	if data.Resolved != nil {
+		for id, user := range data.Resolved.Users {
+			if user != nil {
+				profiles[command.Snowflake(id)] = profile(user)
+			}
+		}
+	}
+	return profiles
 }
 
 func mapOption(option *discordgo.ApplicationCommandInteractionDataOption) (any, error) {

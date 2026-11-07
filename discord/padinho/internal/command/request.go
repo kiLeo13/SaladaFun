@@ -136,6 +136,8 @@ func (v OptionValues) Snowflake(name string) (Snowflake, error) {
 // CommandRequest contains all typed application data needed to execute a
 // command. context.Context is reserved for cancellation and deadlines.
 type CommandRequest struct {
+	// Users contains profiles supplied by Discord for the caller and resolved options.
+	Users map[Snowflake]UserProfile
 	// Path identifies the slash command, group, and subcommand being executed.
 	Path CommandPath
 	// Actor identifies the user and guild capabilities associated with it.
@@ -152,4 +154,11 @@ type CommandRequest struct {
 	RequestID string
 	// ReceivedAt is the UTC time at which Padinho mapped the Discord request.
 	ReceivedAt time.Time
+}
+
+// UserProfile carries presentation data from the interaction without a REST lookup.
+type UserProfile struct {
+	GlobalName string
+	Username   string
+	AvatarURL  string
 }
