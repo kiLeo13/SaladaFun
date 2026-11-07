@@ -252,19 +252,19 @@ func TestActivityQueriesAgainstMySQL(t *testing.T) {
 	for _, sort := range []string{"date", "rating"} {
 		for _, order := range []string{"asc", "desc"} {
 			first, err := r.History(ctx, 31, sort, order, 1)
-			if err != nil || len(first) != 4 {
+			if err != nil || len(first.Entries) != 3 || first.Total != 4 {
 				t.Fatalf("first %v %v", first, err)
 			}
 			second, err := r.History(ctx, 31, sort, order, 2)
-			if err != nil || len(second) != 1 || first[3].ID != second[0].ID {
+			if err != nil || len(second.Entries) != 1 || second.Total != 4 || first.Entries[2].ID == second.Entries[0].ID {
 				t.Fatal("pagination boundary")
 			}
-			if sort == "rating" && ((order == "asc" && first[0].Rating != 1) || (order == "desc" && first[0].Rating != 5)) {
+			if sort == "rating" && ((order == "asc" && first.Entries[0].Rating != 1) || (order == "desc" && first.Entries[0].Rating != 5)) {
 				t.Fatal("rating order")
 			}
 		}
 	}
-	if entries, err := r.History(ctx, 32, "date", "desc", 1); err != nil || len(entries) != 0 {
+	if entries, err := r.History(ctx, 32, "date", "desc", 1); err != nil || len(entries.Entries) != 0 || entries.Total != 0 {
 		t.Fatal("history ownership")
 	}
 	if err := r.SaveWatch(ctx, 31, ids[4], base+11, 5, ""); err != nil {

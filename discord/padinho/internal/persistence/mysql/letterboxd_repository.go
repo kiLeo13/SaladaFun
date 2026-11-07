@@ -180,25 +180,29 @@ func (r *LetterboxdRepository) Watch(ctx context.Context, user, title uint64) (*
 }
 
 // History pages current opinions using only whitelisted SQL ordering fragments.
-func (r *LetterboxdRepository) History(ctx context.Context, user uint64, sort, order string, page int) ([]app.HistoryEntry, error) {
+func (r *LetterboxdRepository) History(ctx context.Context, user uint64, sort, order string, page int) (app.HistoryResults, error) {
 	column := "w.watched_at"
 	if sort == "rating" {
 		column = "w.rating"
 	} else if sort != "date" {
-		return nil, app.ErrInvalid
+		return app.HistoryResults{}, app.ErrInvalid
 	}
 	direction := "DESC"
 	if order == "asc" {
 		direction = "ASC"
 	} else if order != "desc" {
-		return nil, app.ErrInvalid
+		return app.HistoryResults{}, app.ErrInvalid
 	}
 	if page < 1 || page > 100000 {
-		return nil, app.ErrInvalid
+		return app.HistoryResults{}, app.ErrInvalid
+	}
+	var total int64
+	if err := r.db.WithContext(ctx).Model(&entity.LetterboxdWatch{}).Where("user_id=?", user).Count(&total).Error; err != nil {
+		return app.HistoryResults{}, err
 	}
 	var entries []app.HistoryEntry
-	err := r.db.WithContext(ctx).Table("letterboxd_watches w").Select("w.id,w.title_id,t.original_title,t.localized_title,t.media_type,t.tmdb_id,t.release_year,w.watched_at,w.rating,r.review").Joins("JOIN letterboxd_titles t ON t.id=w.title_id").Joins("LEFT JOIN letterboxd_reviews r ON r.id=(SELECT MAX(v.id) FROM letterboxd_reviews v WHERE v.watch_id=w.id)").Where("w.user_id=?", user).Order(column + " " + direction + ", w.id " + direction).Offset((page - 1) * app.HistoryPageSize).Limit(app.HistoryPageSize + 1).Scan(&entries).Error
-	return entries, err
+	err := r.db.WithContext(ctx).Table("letterboxd_watches w").Select("w.id,w.title_id,t.original_title,t.localized_title,t.media_type,t.tmdb_id,t.release_year,w.watched_at,w.rating,r.review").Joins("JOIN letterboxd_titles t ON t.id=w.title_id").Joins("LEFT JOIN letterboxd_reviews r ON r.id=(SELECT MAX(v.id) FROM letterboxd_reviews v WHERE v.watch_id=w.id)").Where("w.user_id=?", user).Order(column + " " + direction + ", w.id " + direction).Offset((page - 1) * app.HistoryPageSize).Limit(app.HistoryPageSize).Scan(&entries).Error
+	return app.HistoryResults{Entries: entries, Total: int(total)}, err
 }
 
 // RandomUnwatched samples one unique personal interest without multiplying reviews.
