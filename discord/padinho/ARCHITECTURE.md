@@ -401,3 +401,43 @@ environment file and runs Compose. The MySQL administrator remains exclusive to
 Terraform provisioning and manual migrations. GitHub Actions publishes
 Padinho's `latest` image as a public GHCR package, so the VM pulls it
 anonymously and no registry token enters Terraform state.
+
+## Letterboxd foundation
+
+`application/letterboxd` resolves complete title metadata through owned repository,
+provider, and artwork interfaces. `integration/tmdb` isolates the pinned TMDB
+wrapper and bounded CDN downloads; `persistence/mysql` owns title snapshots,
+personal wishlists, serialized watch ratings, and append-only review revisions.
+The four tables are global and arrive through root migration `00009`. Refresh
+is request-driven with a 24-hour TTL; no scheduled work is added. The composition root now loads `tmdb.token`, wires separate search/detail
+clients, and registers the feature through `internal/commands`. Typed autocomplete
+routes share the frozen registry; deferred interaction completion uses the bound
+responder. The application discovery service filters personal interests, while
+MySQL provides cached fallback search and latest-review reads.
+
+
+Metadata snapshots preserve original/localized names and exact-date precision.
+Search results never update the full-detail cache. Failed refreshes return stale
+complete metadata; successful full-detail requests advance the 24-hour freshness
+clock. Separate immutable HTTP clients bound search to 1.5 seconds and details to
+five seconds. Autocomplete uses a two-second context budget and no retry sleeps.
+
+Artwork extraction downloads a small TMDB CDN rendition with a three-second
+budget, a 2 MiB limit, and a two-million-pixel decode limit. A deterministic
+center-weighted RGB histogram supplies the stored accent; unchanged artwork
+reuses it. Invalid images fall back to the theme without preventing metadata
+persistence. No image files or local interaction collectors persist.
+
+Watch writes serialize by member/title. Numeric interaction IDs reject stale or
+repeated mutations, and rating/review changes commit together. Reviews are
+immutable revisions: withdrawal appends NULL. Read the latest revision before
+interpreting NULL, so withdrawn text never reappears. Ratings belong to watches;
+revision rows must never multiply community votes. Wishlist names are obtained
+by joining cached titles, and every mutation derives ownership from the actor.
+
+Pagination reconstructs search queries from bot-owned result embed footers and
+validates bounded page/action parameters. Native payload and HTTP fixtures test
+partial autocomplete, deferred errors, selection, ownership, and provider failure.
+Live MySQL tests exercise duplicate imports, concurrent writes, revision
+withdrawal/rollback, local search, and current-review joins. Watch/review mutation
+modals, history, and random selection remain for step 3.

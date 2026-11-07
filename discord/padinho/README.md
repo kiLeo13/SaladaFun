@@ -226,3 +226,27 @@ for pull requests. Pushes to `master` publish only
 private on its first publication; make it public in the package settings before
 deploying, because the OCI host intentionally pulls it without registry
 credentials.
+
+## Movie and TV tracker
+
+Commands: `/letterboxd show title:`, `/letterboxd wishlist add title:`,
+`/letterboxd wishlist remove title:`, `/letterboxd wishlist list`, and
+`/letterboxd about`. Show supports TMDB autocomplete and free-text result lists;
+selected titles display artwork, community ratings, and a reviews button.
+Wishlist additions exclude existing interests. Removal/listing use local data
+and work during TMDB outages. Data is global across guilds; interactions require
+a server. Show replies publicly, while personal wishlist actions reply privately.
+
+Provision the TMDB API Read Access Token under database config key `tmdb.token`
+through a trusted private session. Manually apply migration `00009_letterboxd.sql`
+before deployment. Startup validates the token; never commit its value.
+Search text supports up to 200 Unicode characters. Watch/review editing, history,
+and random selection are deferred to step 3.
+
+Run `go test -race ./...`, `go vet ./...`, and `go build ./...` from this module.
+Live repository checks require the existing `TEST_DATABASE_*` contract and a
+migrated isolated MySQL database. Tests cover discovery without partial cache
+writes, owner-scoped wishlists, provider fallback, and deferred interaction
+handling. See [ARCHITECTURE.md](ARCHITECTURE.md) for persistence and cache rules.
+A test-guild smoke check should cover autocomplete, selection, pagination,
+add/remove/list, artwork/colors, and About attribution.

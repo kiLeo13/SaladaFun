@@ -124,5 +124,5 @@ Migration `00009_letterboxd.sql` adds global TMDB title metadata, personal
 wishlists, one rated watch per member/title, and append-only review revisions.
 Provider identity and membership/watch uniqueness are enforced by MySQL; review
 withdrawal is a new NULL-text revision. Apply manually before deploying feature
-wiring. See [Letterboxd foundation](../discord/padinho/LETTERBOXD.md) for
+wiring. See [Padinho architecture](../discord/padinho/ARCHITECTURE.md) for
 transaction semantics and isolated live-MySQL verification.
