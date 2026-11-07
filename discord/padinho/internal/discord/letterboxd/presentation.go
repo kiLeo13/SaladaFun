@@ -21,7 +21,13 @@ func resultPage(action, query string, page int, items []entity.LetterboxdTitle, 
 	} else {
 		options := []discordgo.SelectMenuOption{}
 		lines := []string{}
+		seen := map[string]bool{}
 		for _, t := range items {
+			value := app.Identity(t.MediaType, t.TMDBID)
+			if seen[value] || len(options) >= pageSize {
+				continue
+			}
+			seen[value] = true
 			lines = append(lines, label(t))
 			options = append(options, discordgo.SelectMenuOption{Label: clip(label(t), 100), Value: app.Identity(t.MediaType, t.TMDBID)})
 		}
