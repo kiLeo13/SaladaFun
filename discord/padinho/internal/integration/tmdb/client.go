@@ -136,16 +136,16 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 }
 
 // Search maps remote multi-search suggestions without writing cache records.
-func (c *Client) Search(query string, page int) ([]entity.LetterboxdTitle, error) {
+func (c *Client) Search(query string, page int) (app.SearchResults, error) {
 	if strings.TrimSpace(query) == "" {
-		return nil, nil
+		return app.SearchResults{}, nil
 	}
 	result, err := c.client.GetSearchMulti(query, map[string]string{"language": "pt-BR", "page": strconv.Itoa(page), "include_adult": "false"})
 	if err != nil {
-		return nil, errors.New("TMDB search unavailable")
+		return app.SearchResults{}, errors.New("TMDB search unavailable")
 	}
 	if result.SearchMultiResults == nil {
-		return nil, nil
+		return app.SearchResults{}, nil
 	}
 	var titles []entity.LetterboxdTitle
 	for _, m := range result.Results {
@@ -167,5 +167,5 @@ func (c *Client) Search(query string, page int) ([]entity.LetterboxdTitle, error
 		}
 		titles = append(titles, t)
 	}
-	return titles, nil
+	return app.SearchResults{Items: titles, TotalResults: int(result.TotalResults), TotalPages: int(result.TotalPages)}, nil
 }

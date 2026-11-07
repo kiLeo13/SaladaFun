@@ -193,13 +193,13 @@ func TestSearchMapping(t *testing.T) {
 		if r.URL.Path != "/3/search/multi" || r.URL.Query().Get("page") != "2" {
 			t.Fatal("search request")
 		}
-		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"results":[{"id":1,"media_type":"movie","original_title":"Movie","title":"Filme","release_date":"2020-01-02"},{"id":2,"media_type":"tv","original_name":"Series","name":"Serie","first_air_date":"2021-01-01"},{"id":3,"media_type":"person","name":"Person"}]}`))}, nil
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"total_results":125,"total_pages":7,"results":[{"id":1,"media_type":"movie","original_title":"Movie","title":"Filme","release_date":"2020-01-02"},{"id":2,"media_type":"tv","original_name":"Series","name":"Serie","first_air_date":"2021-01-01"},{"id":3,"media_type":"person","name":"Person"}]}`))}, nil
 	})})
 	titles, err := c.Search("name", 2)
-	if err != nil || len(titles) != 2 || titles[1].MediaType != "tv" || titles[1].OriginalTitle != "Series" {
+	if err != nil || len(titles.Items) != 2 || titles.TotalResults != 125 || titles.TotalPages != 7 || titles.Items[1].MediaType != "tv" || titles.Items[1].OriginalTitle != "Series" {
 		t.Fatalf("mapping %#v %v", titles, err)
 	}
-	if titles, err := c.Search(" ", 1); err != nil || len(titles) != 0 {
+	if titles, err := c.Search(" ", 1); err != nil || len(titles.Items) != 0 {
 		t.Fatal("blank search")
 	}
 }
