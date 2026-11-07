@@ -86,6 +86,14 @@ func TestLetterboxdAgainstMySQL(t *testing.T) {
 	if err := r.SaveWatch(ctx, 11, title.ID, 105, 4, "x"); err == nil {
 		t.Fatal("review")
 	}
+	cached, err := r.CachedSearch(ctx, "Translation")
+	if err != nil || len(cached) != 1 || cached[0].ID != title.ID {
+		t.Fatal("cached search")
+	}
+	opinions, err := r.Reviews(ctx, title.ID)
+	if err != nil || len(opinions) != 2 || opinions[0].Review != nil || opinions[0].Rating != 4 {
+		t.Fatalf("current opinions %#v %v", opinions, err)
+	}
 	originalDate := watch.WatchedAt
 	if err := r.SaveWatch(ctx, 11, title.ID, 106, 5, ""); err != nil {
 		t.Fatal(err)

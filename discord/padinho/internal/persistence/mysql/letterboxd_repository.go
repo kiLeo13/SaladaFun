@@ -114,3 +114,18 @@ func (r *LetterboxdRepository) CurrentReview(ctx context.Context, watch uint64) 
 	}
 	return &revision, err
 }
+
+// CachedSearch supplies bounded complete metadata when remote search fails.
+func (r *LetterboxdRepository) CachedSearch(ctx context.Context, query string) ([]entity.LetterboxdTitle, error) {
+	var titles []entity.LetterboxdTitle
+	pattern := "%" + query + "%"
+	err := r.db.WithContext(ctx).Where("original_title LIKE ? OR localized_title LIKE ?", pattern, pattern).Order("id").Limit(25).Find(&titles).Error
+	return titles, err
+}
+
+// Reviews reads one latest revision per rated watch, including withdrawals.
+func (r *LetterboxdRepository) Reviews(ctx context.Context, title uint64) ([]app.Opinion, error) {
+	var opinions []app.Opinion
+	err := r.db.WithContext(ctx).Table("letterboxd_watches w").Select("w.user_id,w.rating,r.review").Joins("LEFT JOIN letterboxd_reviews r ON r.id=(SELECT MAX(v.id) FROM letterboxd_reviews v WHERE v.watch_id=w.id)").Where("w.title_id=?", title).Order("w.id").Scan(&opinions).Error
+	return opinions, err
+}
