@@ -484,6 +484,9 @@ field and author text in Discord's aggregate embed budget. Author URLs accept
 absolute HTTP(S) homepages without credentials and otherwise use the TMDB title
 page; the title itself continues linking to TMDB. Ratings average the current
 database opinions, one vote per watch/member, with no TMDB rating substitution.
+Footer averages retain one decimal when needed and omit a trailing zero for
+whole-number displays (`5/5`, `4,5/5`). One vote uses `avaliado 1 vez`;
+multiple votes use `avaliado N vezes`, and no votes keep `Sem avaliações.`.
 The existing center-weighted dominant-color algorithm and artwork selection
 (backdrop, then poster) remain unchanged.
 
@@ -495,13 +498,14 @@ TMDB movie details append `release_dates` alongside credits; TV details append
 `content_ratings`. Country, certification, and movie release type are stored as
 project-owned `ContentRating` entries in the existing nullable JSON
 `letterboxd_titles.content_ratings` column from migration 00011. No new migration
-or record deletion is needed for classification rendering.
+or record deletion is needed for classification storage.
 
-The card always includes an inline “Faixa etária” field. It uses the provided
-application emoji plus “Livre” or “N anos” for recognized BR codes. Missing,
-foreign-only, and unknown codes render “Não informada”. When Brazilian release
-variants disagree, the highest recognized age wins regardless of provider order;
-all original entries remain cached, and foreign ratings never substitute for BR.
+Cards do not display age classifications or their emojis. The Discord formatting
+helper has been removed; emoji constants remain reserved for potential future
+display. Classification metadata, provider mapping, selection rules and database
+storage remain unchanged. When Brazilian release variants disagree, the
+application selector still chooses the highest recognized age regardless of
+provider order, retaining original entries and excluding foreign substitutions.
 
 SQL NULL (nil slice) marks metadata fetched before classification support and
 forces on-demand refresh even within the normal TTL. A successful detail fetch
