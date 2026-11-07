@@ -7,5 +7,4 @@ repository and Minecraft guidance.
   explicitly documented ecosystem migration changes it.
 - Scope the Purpur API as `provided`; the server supplies it at runtime, so it
   must not be shaded into deployable plugin JARs.
-- Verify behavior changes with the affected project's complete build and
-  document any live Purpur checks that mocks cannot reproduce.
+- Document live Purpur checks that mocks cannot reproduce.

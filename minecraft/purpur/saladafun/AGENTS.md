@@ -8,11 +8,6 @@
 - Keep SQLite/jOOQ implementations under
   `sld.saladafun.persistence.sqlite` and server adapters under
   `sld.saladafun.platform.purpur`.
-- Treat `shared-state.db`, the retired `shared-inventory.db`, their WAL/SHM
-  companions, and generated `target/` directories as runtime/build output; never
-  commit them.
-- Run `mvn clean package` from `minecraft/purpur/saladafun` after build or plugin changes.
-  From the repository root, use
-  `mvn -f minecraft/purpur/saladafun/pom.xml clean package`.
+- Use the build commands in [README.md](README.md#build-and-test).
 - Deploy only `target/saladafun-1.0.jar`; the `original-` JAR is an unshaded
   intermediate artifact.
