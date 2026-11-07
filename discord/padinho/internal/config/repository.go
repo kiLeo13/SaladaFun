@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	// TMDBToken identifies the TMDB API Read Access Token.
+	TMDBToken               = "tmdb.token"
 	AppToken                = "app.token"
 	BirthdayChannelID       = "birthday.channel_id"
 	VoiceActivityLogChannel = "channels.logs.voice"
