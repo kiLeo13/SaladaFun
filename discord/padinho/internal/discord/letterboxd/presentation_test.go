@@ -103,6 +103,23 @@ func TestRatingFooter(t *testing.T) {
 	}
 }
 
+// TestSynopsisEllipsis enforces the visible description budget at ASCII and Unicode boundaries.
+func TestSynopsisEllipsis(t *testing.T) {
+	for _, tc := range []struct{ synopsis, want string }{
+		{"", ""},
+		{strings.Repeat("a", 2000), strings.Repeat("a", 2000)},
+		{strings.Repeat("a", 2001), strings.Repeat("a", 1997) + "..."},
+		{strings.Repeat("🎬", 1000), strings.Repeat("🎬", 1000)},
+		{strings.Repeat("🎬", 1001), strings.Repeat("🎬", 998) + "..."},
+	} {
+		card := titleCard(&entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: "movie", ReleaseYear: 2020, Synopsis: tc.synopsis}, nil, "movie:1")
+		checkPayload(t, card)
+		if got := card.Embeds[0].Description; got != tc.want {
+			t.Fatalf("synopsis clipping: got %q, want %q", got, tc.want)
+		}
+	}
+}
+
 // TestReleaseFieldSeasons verifies media-specific formatting and missing season counts.
 func TestReleaseFieldSeasons(t *testing.T) {
 	for _, tc := range []struct {

@@ -11,6 +11,8 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
+const synopsisLimit = 2000
+
 // resultPage renders already selected results without querying storage or TMDB.
 func resultPage(action, query string, page int, items []entity.LetterboxdTitle, cached, more bool) *discordgo.InteractionResponseData {
 	data := response("")
@@ -76,7 +78,7 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 	}
 	embed := &discordgo.MessageEmbed{
 		Title:       Ellipsis(app.DisplayTitle(title), 256),
-		Description: Ellipsis(title.Synopsis, 3000),
+		Description: Ellipsis(title.Synopsis, synopsisLimit),
 		Color:       0x5865F2,
 		URL:         fmt.Sprintf("https://www.themoviedb.org/%s/%d", title.MediaType, title.TMDBID),
 		Footer:      &discordgo.MessageEmbedFooter{Text: rating},
