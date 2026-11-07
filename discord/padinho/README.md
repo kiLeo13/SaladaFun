@@ -230,8 +230,9 @@ credentials.
 ## Movie and TV tracker
 
 Commands: `/letterboxd show title:`, `/letterboxd wishlist add title:`,
-`/letterboxd wishlist remove title:`, `/letterboxd wishlist list`, and
-`/letterboxd about`. Show supports TMDB autocomplete and free-text result lists;
+`/letterboxd wishlist remove title:`, `/letterboxd wishlist list`,
+`/letterboxd about`, `/letterboxd pick-random`, and
+`/letterboxd history [member] [sort] [order]`. Show supports TMDB autocomplete and free-text result lists;
 selected titles display artwork, community ratings, and a reviews button.
 Wishlist additions exclude existing interests. Removal/listing use local data
 and work during TMDB outages. Data is global across guilds; interactions require
@@ -240,8 +241,17 @@ a server. Show replies publicly, while personal wishlist actions reply privately
 Provision the TMDB API Read Access Token under database config key `tmdb.token`
 through a trusted private session. Manually apply migration `00009_letterboxd.sql`
 before deployment. Startup validates the token; never commit its value.
-Search text supports up to 200 Unicode characters. Watch/review editing, history,
-and random selection are deferred to step 3.
+Search text supports up to 200 Unicode characters. Click the green **Assisti**
+button to open a rating/review modal. A rating of
+1-5 is required; review text is optional and must contain 2-500 characters when
+supplied. Existing opinions are prefilled; leaving the review empty withdraws
+its text while preserving the rating. Cancelling the modal saves nothing.
+
+Random selection uses only the caller's unwatched wishlist. History defaults to
+the caller, watched date, and descending order. Choose Avaliações to sort by
+numeric rating; member, sort, and order persist through pagination. Dates display
+in UTC. Review edits preserve the original watched date and retain old revisions
+in the database; ordinary views show only the latest text.
 
 Run `go test -race ./...`, `go vet ./...`, and `go build ./...` from this module.
 Live repository checks require the existing `TEST_DATABASE_*` contract and a
@@ -249,4 +259,6 @@ migrated isolated MySQL database. Tests cover discovery without partial cache
 writes, owner-scoped wishlists, provider fallback, and deferred interaction
 handling. See [ARCHITECTURE.md](ARCHITECTURE.md) for persistence and cache rules.
 A test-guild smoke check should cover autocomplete, selection, pagination,
-add/remove/list, artwork/colors, and About attribution.
+add/remove/list, artwork/colors, and About attribution. Also check modal
+cancellation, saved ratings, edited/cleared review text, member history sorting
+and pagination, and random selection with empty and all-watched wishlists.

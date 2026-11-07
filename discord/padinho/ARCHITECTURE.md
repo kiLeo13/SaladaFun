@@ -439,5 +439,33 @@ Pagination reconstructs search queries from bot-owned result embed footers and
 validates bounded page/action parameters. Native payload and HTTP fixtures test
 partial autocomplete, deferred errors, selection, ownership, and provider failure.
 Live MySQL tests exercise duplicate imports, concurrent writes, revision
-withdrawal/rollback, local search, and current-review joins. Watch/review mutation
-modals, history, and random selection remain for step 3.
+withdrawal/rollback, local search, and current-review joins. Watch/rating modals, sortable member history, and personal random selection
+are now registered through the same feature.
+
+
+`application/letterboxd.Activity` owns the validation boundary for local watch
+state, required ratings, history ordering, and random eligibility. The Discord
+adapter opens modals immediately after a bounded local lookup; it never contacts
+TMDB to prefill a form. Modal submission derives ownership from the actor and
+uses the submission interaction snowflake as the idempotency key. Cancelling a
+form performs no write. Clearing review text appends a NULL revision atomically
+with the current rating; old review rows remain immutable.
+
+History SQL uses whitelisted date/rating and ascending/descending order fragments
+with a watch-ID tie-breaker. Each page loads three rows plus one lookahead row;
+complete optional reviews fit within bounded Discord embeds. Native controls
+retain member/order/page in validated restart-safe custom IDs. History is global
+and read-only when viewing another member, and replies suppress mentions.
+
+Random selection joins only the caller's wishlist and uses a correlated NOT
+EXISTS watch filter plus ORDER BY RAND() LIMIT 1. Other members' watches and the
+number of review revisions cannot change eligibility. An empty pool produces a
+localized explanation; no broader catalog fallback occurs. Selected metadata may
+refresh on demand, retaining the existing stale-data fallback during outages.
+
+Live MySQL checks cover the unique eligible random candidate, all-watched and
+empty pools, independent users, NULL withdrawal, and history order/page boundaries.
+Application tests cover all activity-service validation/forwarding statements;
+Discord fixtures cover required select values, review limits, modal prefilling,
+cancellation, actor ownership, history choices, and forged component parameters.
+No additional migration or scheduled work is required for step 3.
