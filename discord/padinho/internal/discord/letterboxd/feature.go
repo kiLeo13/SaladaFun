@@ -198,13 +198,15 @@ func (h Handler) page(ctx context.Context, r command.Responder, user uint64, act
 	if len(data.Embeds) == 0 {
 		data.Embeds = []*discordgo.MessageEmbed{{Description: ptbr.LetterboxdEmpty}}
 	}
-	data.Embeds[0].Footer = &discordgo.MessageEmbedFooter{Text: query}
+	if query != "" {
+		data.Embeds[0].Footer = &discordgo.MessageEmbedFooter{Text: query}
+	}
 	buttons := []discordgo.MessageComponent{}
 	for _, nav := range []struct {
 		label    string
 		page     int
 		disabled bool
-	}{{ptbr.LetterboxdPrevious, page - 1, page == 1}, {ptbr.LetterboxdNext, page + 1, !more}} {
+	}{{ptbr.LetterboxdPrevious, page - 1, page == 1}, {ptbr.LetterboxdNext, page + 1, !more || page >= 500}} {
 		buttons = append(buttons, discordgo.Button{Label: nav.label, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.page:%s:%d", action, nav.page), Disabled: nav.disabled})
 	}
 	data.Components = append(data.Components, discordgo.ActionsRow{Components: buttons})
@@ -350,13 +352,14 @@ func (h Handler) reviews(ctx context.Context, r *discord.InteractionRequest) err
 		o := items[i]
 		text := ""
 		if o.Review != nil {
-			text = *o.Review
+			text = plainOpinion(*o.Review)
 		}
 		lines = append(lines, fmt.Sprintf("<@%d>: %d/5\n%s", o.UserID, o.Rating, text))
 	}
 	data := response(ptbr.LetterboxdNoRatings)
 	if len(lines) > 0 {
-		data.Content = clip(strings.Join(lines, "\n\n"), 1900)
+		data.Content = ""
+		data.Embeds = []*discordgo.MessageEmbed{{Description: strings.Join(lines, "\n\n")}}
 	}
 	buttons := []discordgo.MessageComponent{}
 	for _, n := range []struct {
