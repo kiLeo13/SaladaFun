@@ -35,9 +35,9 @@ const (
 )
 
 const (
-	LetterboxdAboutOverview = "## Sobre o Letterboxd\nUm espaço para descobrir filmes e séries, organizar o que você quer assistir e compartilhar notas e comentários com a comunidade. Use sua lista para guardar títulos, marque o que assistiu e consulte as avaliações e seu histórico."
-	LetterboxdAboutLocal    = "### ⚠️ Modo local\nQuando este símbolo aparecer, não foi possível consultar o TMDB. O recurso continua usando os dados locais disponíveis, mas a busca pode mostrar menos resultados. Esperamos que a indisponibilidade seja temporária."
-	LetterboxdAboutCredits  = "### Dados e imagens"
+	LetterboxdAboutOverview = "## Sobre o Salada Letterboxd\nUm espaço para descobrir filmes e séries, organizar o que você quer assistir e compartilhar notas e comentários com a comunidade. Use sua lista para guardar títulos, marque o que assistiu e consulte as avaliações e seu histórico."
+	LetterboxdAboutLocal    = "### ⚠️ Modo local\nQuando este símbolo aparecer, não foi possível consultar o TMDB. O recurso continua usando os dados locais disponíveis, mas a busca pode mostrar menos resultados."
+	LetterboxdAboutCredits  = "### 📜 Dados e Atribuições"
 	LetterboxdTMDBLogo      = "Logotipo do TMDB"
 )
 

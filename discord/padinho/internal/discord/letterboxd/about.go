@@ -14,7 +14,7 @@ func aboutPage() *discordgo.InteractionResponseData {
 	logoDescription := ptbr.LetterboxdTMDBLogo
 	attribution := discordgo.Section{
 		Components: []discordgo.MessageComponent{
-			discordgo.TextDisplay{Content: ptbr.LetterboxdAboutCredits + "\n" + ptbr.LetterboxdCredit + "\n[TMDB](" + tmdbWebsiteURL + ")"},
+			discordgo.TextDisplay{Content: ptbr.LetterboxdAboutCredits + "\n" + ptbr.LetterboxdCredit},
 		},
 		Accessory: discordgo.Thumbnail{
 			Media:       discordgo.UnfurledMediaItem{URL: tmdbLogoURL},

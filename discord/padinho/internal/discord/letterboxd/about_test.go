@@ -3,7 +3,6 @@ package letterboxd
 import (
 	"context"
 	"encoding/json"
-	"strings"
 	"testing"
 	"unicode/utf16"
 
@@ -39,8 +38,8 @@ func checkAboutPayload(t *testing.T, data *discordgo.InteractionResponseData) {
 		t.Fatal("attribution section")
 	}
 	text := section.Components[0].(discordgo.TextDisplay).Content
-	if !strings.Contains(text, ptbr.LetterboxdCredit) || !strings.Contains(text, tmdbWebsiteURL) {
-		t.Fatal("missing provider attribution")
+	if text != ptbr.LetterboxdAboutCredits+"\n"+ptbr.LetterboxdCredit {
+		t.Fatal("unexpected provider attribution")
 	}
 	logo, ok := section.Accessory.(discordgo.Thumbnail)
 	if !ok || logo.Media.URL != tmdbLogoURL || logo.Description == nil || *logo.Description != ptbr.LetterboxdTMDBLogo {
