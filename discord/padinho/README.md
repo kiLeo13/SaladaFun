@@ -1,130 +1,44 @@
 # Padinho
 
-Padinho is SaladaFun's Discord bot, written in Go 1.26 for a small private
-guild. Its `/birthdays [month:<January...December>] [full-date:<true|false>]`
-command displays a Components V2 calendar with one page per month, arrow-only navigation, a
-self-inspection button beside the title, and an add modal opened through the
-`Adicionar` button. When `month` is omitted, the command starts at the bot
-process's current calendar month. Birthday rows show day and month by default;
-`full-date:true` also shows the stored birth year and keeps that format while
-the user navigates between months. Its
-`/move-all destination:<voice channel> [origin:<voice channel>]` command moves
-every currently connected member from the chosen origin; if origin is omitted,
-it uses the caller's current voice channel. Destination capacity is not checked
-before moves are requested from Discord.
+Padinho is SaladaFun's Go 1.26 Discord bot for a small private guild.
 
-Padinho records every voice-channel join, move, and leave in `voice_activity_logs`
-and sends a matching embed to the text channel configured by
-`channels.logs.voice`. Each delivery attempt is stored as `SENT` or `FAILED`;
-there is no application-level retry. The footer is the guild name exactly as
-Discord provides it, including any emoji already present in that name.
+## Commands
 
-Padinho also follows Mudae `$oc` (Ourochest) boards in real time. It replies
-below an identified board with the top-ranked button in a Components V2
-container, including its probability and scoring explanation, then edits that
-reply after each reveal. The helper reply is deleted after five reveals, when Mudae
-disables the whole board, when the source message is deleted, or after three
-minutes without an update. Solving is local and does not call or scrape the
-Mudae Helper website.
+| Command | Behavior |
+| --- | --- |
+| `/birthdays [month] [full-date]` | Monthly birthday calendar; defaults to the process's current month and hides birth years unless requested. Navigation preserves that choice. |
+| `/move-all destination: [origin:]` | Moves everyone in the origin voice channel; defaults to the caller's channel. Discord evaluates each move, including destination capacity. |
+| `!quote [id]` | A positive decimal ID returns that exact quote, including disabled entries; otherwise picks an enabled random quote. Unknown IDs report not found. |
+| `!childrentree [@user-or-id]` | Shows the complete linked-account tree above the requested account, defaulting to the caller. Only the first argument is used. |
+| `!betaspirit` | Returns the configured BetaSpirit YouTube URL. |
+| `!toggleochelper`, `!toggleoqhelper` | Toggle automatic Mudae assistance independently for the caller; both default to enabled. |
+| `!ochelper`, `!oqhelper` | Start manual assistance by replying to a current Mudae board, regardless of the automatic preference. |
 
-Padinho also follows exactly correlated Mudae `$oq` boards. Its local solver
-filters all 12,650 possible four-purple layouts and uses bounded expectimax to
-maximize expected sphere payout. `!toggleoqhelper` controls automatic help per
-user, while `!oqhelper` starts it manually on a replied-to board.
+Movie tracking commands are described [below](#movie-and-tv-tracker).
+Literal message commands match the first token case-insensitively and accept
+repeated whitespace between arguments. Entity arguments accept raw IDs or
+Discord mention markup.
 
-`!quote [id]` replies with one enabled random quote when its first optional
-argument is not a positive decimal ID. A valid ID returns that exact quote even
-when it is disabled; an unknown valid ID reports a localized not-found error.
-It uses the Brazilian Portuguese translation when present and otherwise the
-original text, in the exact form `> quote` followed by `— author`. An author
-linked to a Discord user is rendered as that user mention. The quote reply
-enables only user mentions; role, `@everyone`, and reply-author mentions remain
-disabled. Source URLs are retained for provenance but deliberately are not
-rendered in the command's two-line response.
+The birthday calendar includes self-inspection and the next upcoming birthday
+in each member's local timezone without notifying them. Server managers can add
+a registration for a selected member; administrators can edit an existing
+registration's name, date, timezone, or custom message through prefilled modals.
+The Discord user ID is immutable. Dates use `DD/MM/AAAA`; timezone choices are
+Brasilia, Amazonas, and UTC. Announcements run at UTC hour boundaries and deliver
+once per local date as plain text with Discord's normal mention behavior.
 
-`!childrentree [@user-or-id]` displays the complete linked-account hierarchy
-rooted above the supplied account; without an argument it uses the invoking
-member. Only its first argument is interpreted, so trailing words are ignored.
-The command accepts a raw Discord snowflake or mention markup by extracting its
-numeric ID and looking up the matching guild member. Its non-pinging Components
-V2 reply uses one unaccented container with a title mention and a compact
-code-block hierarchy plus the full account count. The hierarchy query is one
-inline MySQL `WITH RECURSIVE` statement through GORM; it creates no persistent
-database object.
+Mudae helpers correlate exact `$oc`/`$ourochest` and `$oq`/`$ouroquest` requests,
+solve locally, and update a reply as reveals arrive. Helper replies disappear on
+completion, source deletion, or three idle minutes. Automatic assistance and
+manual activation share the same solver. `$oh`/`$ouroharvest` boards are ignored.
 
-Automatic help defaults to enabled per Discord user. `!toggleochelper` toggles
-only that automatic trigger and persists the choice; it does not disable the
-solver. A user can reply to an active Mudae `$oc` board with `!ochelper` at any
-time to start manual assistance from the board's current state.
-
-Both slash-command channel options are restricted to guild voice channels.
-Birthday announcements are evaluated at every UTC hour boundary with the cron
-expression `0 * * * *`. This precisely covers the UI's three hour-aligned
-timezone choices—Brasília, Amazonas, and UTC—and delivers each announcement
-once per local calendar date as plain Discord text. Discord applies its normal
-mention behavior and server/channel mention settings.
-The add-birthday modal
-lets a server manager select the member whose birthday is being registered and
-offers localized timezone choices for Brasília, Amazonas, and UTC instead of
-requiring an IANA timezone string. Its date field accepts `DD/MM/AAAA`.
-Saving a birthday for another member returns an ephemeral confirmation
-mentioning that member; saving for yourself retains the personal confirmation.
-The title's magnifier opens an ephemeral view of the caller's stored full date,
-name, raw IANA timezone, and custom-message state. This private legacy embed
-uses the cached guild name and guild icon in its footer; when cache data is
-unavailable, it renders a localized fallback instead. The public `Editar` button
-opens an ephemeral dashboard only for administrators. Its User Select loads one
-existing registration into the same dashboard, where name, full date, timezone,
-and message each have a pencil that opens a prefilled one-field modal. Timezone
-creation and editing share the same Brasília, Amazonas, and UTC select menu.
-The immutable user-ID label starts with the custom snowflake emoji. The
-Components V2 dashboard ends with a divider followed by the `Usuário` label and
-User Select inside the dashboard container.
-Submitting the modal atomically updates that column in `birthdays`, reloads the row, and
-replaces the same dashboard message. The Discord user ID is never editable.
-
-Each birthday page separates its capitalized month heading, mention-based list,
-and footer with Discord dividers. The footer identifies the next upcoming
-birthday across the server and renders its local-date start as a Discord
-relative timestamp without notifying the member.
-
-## Command composition
-
-All commands and their related component/modal routes are registered once in
-`internal/commands.Register`:
-
-```go
-routes := discord.NewRoutes()
-commands.Register(routes, birthdayService, quoteService, gateway, ouroChestListener)
-if err := routes.Freeze(); err != nil {
-    return err
-}
-```
-
-`HandlerFunc` is an ordinary function signature, so the final argument can be a
-free function or a method such as `memberService.HandleAdd`. Files and packages
-follow feature cohesion instead of one module per command. The birthday package
-therefore owns its slash handler, page buttons, modal, Components V2 rendering,
-and announcement sender together.
-
-Slash metadata remains project-owned and is translated when global commands are
-synchronized. Fixed string choices are declared in the command framework and
-compiled into Discord dropdown options; birthday month labels are kept in
-`internal/locale/enus`. Response bodies are native `discordgo.InteractionResponse`
-values passed through a small responder that binds the originating interaction
-and rejects a second initial response. Component IDs encode validated page,
-direction, edit field, and target user; the source message remains attached to
-component-opened modal submissions, so no in-memory dashboard session is lost
-during Watchtower restarts. Brazilian
-Portuguese response text and English command metadata are centralized as typed
-constants in `internal/locale` without a runtime translation dependency.
+Quotes prefer Portuguese translations and render two lines: a block quote and
+author attribution. Linked authors permit only user mentions; role/everyone and
+reply-author mentions are suppressed. Account trees do not ping members.
+Voice joins, moves, and leaves produce log embeds and a `SENT`/`FAILED` database
+record for each delivery attempt, with no application retry.
 
 ## Gateway lifecycle
-
-Padinho pins the official `github.com/bwmarrin/discordgo` repository at
-`v0.29.1-0.20260214123928-f43dd94faaac`. That upstream revision includes the
-Label component and submitted modal-select values required by the birthday UI;
-no module replacement or third-party DiscordGo fork is used.
 
 DiscordGo's internal gateway reconnect is deliberately disabled. A gateway
 disconnect is treated as a process-fatal condition rather than attempting to
@@ -134,12 +48,6 @@ returns to `cmd/padinho`, which logs the error and exits non-zero. The bot
 service's Compose `restart: unless-stopped` policy then creates a new process,
 DiscordGo session, and WebSocket connection. SIGINT and SIGTERM remain graceful
 shutdown paths and do not report a gateway failure.
-
-The pinned upstream revision does not include the DAVE voice implementation
-previously carried by the removed fork. Padinho does not currently establish
-Discord voice connections. Any future speech playback feature must verify
-upstream DAVE support or deliberately introduce a separately reviewed voice
-implementation before joining voice channels.
 
 ## Database configuration
 
@@ -159,8 +67,7 @@ Schema creation and migration belong exclusively to the root
 [`database`](../../database/README.md) project. Build its self-contained Linux
 executable locally, upload it to the Padinho VM, and run it there before
 deploying code that requires a new schema. Compose never applies migrations.
-Apply `00002_user_preferences.sql` and
-`00003_user_preferences_ouroquest.sql` before deploying this version.
+Apply all pending migrations before deploying dependent bot code.
 Insert the following values through a trusted private database session. Mudae's
 emoji values are custom emoji IDs only, without names or Discord `<:...:...>`
 markup:
@@ -170,6 +77,8 @@ app.token
 birthday.channel_id
 channels.logs.voice
 birthday.defaultMessage
+urls.youtube.betaSpirit
+tmdb.token
 bots.mudae.id
 bots.mudae.oc.emoji.blue
 bots.mudae.oc.emoji.teal
@@ -209,13 +118,23 @@ mentions and raw IDs without relying on the event's mention collection.
 
 ## Verification and container
 
+Run the Go checks from `discord/padinho`. Automated Discord/TMDB tests use
+local fixtures; persistence checks require a migrated, isolated live MySQL
+database and the `TEST_DATABASE_*` environment variables listed below.
+
 ```sh
 go test -race ./...
-go test -cover ./internal/command ./internal/application/birthday ./internal/application/ourochest ./internal/discord/birthday ./internal/discord/ourochest ./internal/job/...
+go vet ./...
+go build ./...
+```
+
+From the repository root, build the image:
+
+```sh
 docker build -f discord/padinho/Dockerfile -t salada:local .
 ```
 
-Run Docker builds from the repository root. The image contains only Padinho;
+The image contains only Padinho;
 migrations remain an independently built manual tool. See
 [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed boundaries.
 
@@ -238,9 +157,6 @@ Wishlist additions exclude existing interests. Removal/listing use local data
 and work during TMDB outages. Data is global across guilds; interactions require
 a server. Show replies publicly, while personal wishlist actions reply privately.
 
-Provision the TMDB API Read Access Token under database config key `tmdb.token`
-through a trusted private session. Manually apply migration `00009_letterboxd.sql`
-before deployment. Startup validates the token; never commit its value.
 Search text supports up to 200 Unicode characters. Click the green **Assisti**
 button to open a rating/review modal. A rating of
 1-5 is required; review text is optional and must contain 2-500 characters when
@@ -252,15 +168,6 @@ the caller, watched date, and descending order. Choose Avaliações to sort by
 numeric rating; member, sort, and order persist through pagination. Dates display
 in UTC. Review edits preserve the original watched date and retain old revisions
 in the database; ordinary views show only the latest text.
-
-Run `go test -race ./...`, `go vet ./...`, and `go build ./...` from this module.
-Live repository checks require the existing `TEST_DATABASE_*` contract and a
-migrated isolated MySQL database. Tests cover discovery without partial cache
-writes, owner-scoped wishlists, provider fallback, and deferred interaction
-handling. See [ARCHITECTURE.md](ARCHITECTURE.md) for persistence and cache rules.
-Live Discord smoke tests and real TMDB/API tests are intentionally skipped by
-request. Native Discord payloads, compiled command definitions, provider HTTP
-fixtures, and live MySQL checks are the release verification boundary.
 
 ### Manual release order
 
@@ -287,21 +194,4 @@ fixtures, and live MySQL checks are the release verification boundary.
 To roll back application code, select the previously recorded image digest with
 `SALADA_IMAGE` through the existing deployment configuration. Keep the additive
 schema and review ledger; do not run the migration Down section as an application
-rollback. No production migration, publication, or deployment is performed by
-local verification.
-
-### Release verification results
-
-The release checks pass for both modules: `go test -race ./...`, `go vet ./...`,
-and `go build ./...`. A fresh MySQL 8.4 database accepts the complete embedded
-migration chain. The full bot suite also passes with a separate DML-only test
-account against a freshly migrated database. The static, non-root image builds
-with its pinned Go 1.26.5 builder; local tests use Go 1.27.1 on Windows.
-Command registry and Letterboxd application-service statement coverage are 100%.
-The fixes verified during this pass include empty result-page embed validity,
-full-length review rendering, and rejection of choices combined with autocomplete.
-
-The database module also builds the CGO-disabled Linux migration executable.
-Existing HTTP fixtures cover both media types, authentication, incomplete
-metadata, malformed responses, rate limits, artwork failure, and stale fallback;
-no real provider credential or live Discord session is used.
+rollback.
