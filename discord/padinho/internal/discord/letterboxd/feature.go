@@ -117,7 +117,7 @@ func (h Handler) autocomplete(action string) discord.AutocompleteHandler {
 			items, _, err := h.service.Search(ctx, user, action, query, 1)
 			if err == nil {
 				for _, t := range items {
-					choices = append(choices, &discordgo.ApplicationCommandOptionChoice{Name: clip(label(t), 100), Value: app.Identity(t.MediaType, t.TMDBID)})
+					choices = append(choices, &discordgo.ApplicationCommandOptionChoice{Name: Ellipsis(label(t), 100), Value: app.Identity(t.MediaType, t.TMDBID)})
 					if len(choices) == 25 {
 						break
 					}
@@ -141,8 +141,17 @@ func label(t entity.LetterboxdTitle) string {
 	return fmt.Sprintf("%s (%s, %s)", app.DisplayTitle(&t), year, kind)
 }
 
-// clip bounds Discord text by UTF-16 units without splitting Unicode characters.
-func clip(s string, n int) string {
+// Ellipsis limits Discord text to n UTF-16 units, including a trailing "..."
+// when truncated. It preserves whole Unicode characters and uses fewer dots
+// when n is less than three; nonpositive limits return an empty string.
+func Ellipsis(s string, n int) string {
+	if n <= 0 {
+		return ""
+	}
+	suffix := "..."
+	if n < len(suffix) {
+		suffix = suffix[:n]
+	}
 	units := 0
 	cut := len(s)
 	for i, r := range s {
@@ -151,14 +160,11 @@ func clip(s string, n int) string {
 			width = 2
 		}
 		units += width
-		if units > n-1 && cut == len(s) {
+		if units > n-len(suffix) && cut == len(s) {
 			cut = i
 		}
 		if units > n {
-			if n < 1 {
-				return ""
-			}
-			return s[:cut] + "\u2026"
+			return s[:cut] + suffix
 		}
 	}
 	return s

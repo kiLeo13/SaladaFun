@@ -239,7 +239,7 @@ func (h Handler) renderHistory(ctx context.Context, r command.Responder, user ui
 		if e.Review != nil {
 			text = plainOpinion(*e.Review)
 		}
-		data.Embeds = append(data.Embeds, &discordgo.MessageEmbed{Description: fmt.Sprintf(ptbr.LetterboxdHistoryEntry, clip(plainOpinion(label(title)), 300), time.UnixMilli(e.WatchedAt).UTC().Format("02/01/2006 15:04"), e.Rating, text)})
+		data.Embeds = append(data.Embeds, &discordgo.MessageEmbed{Description: fmt.Sprintf(ptbr.LetterboxdHistoryEntry, Ellipsis(plainOpinion(label(title)), 300), time.UnixMilli(e.WatchedAt).UTC().Format("02/01/2006 15:04"), e.Rating, text)})
 	}
 	buttons := []discordgo.MessageComponent{}
 	for _, n := range []struct {

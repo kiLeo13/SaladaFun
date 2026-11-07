@@ -250,17 +250,26 @@ func TestLetterboxdPayloadConstraints(t *testing.T) {
 	checkPayload(t, out.data)
 }
 
-// TestClipUTF16 checks exact boundaries without corrupting multibyte characters.
-func TestClipUTF16(t *testing.T) {
+// TestEllipsisUTF16 checks inclusive limits without corrupting Unicode characters.
+func TestEllipsisUTF16(t *testing.T) {
 	for _, tc := range []struct {
 		s    string
 		n    int
 		want string
 	}{
-		{"abc", 3, "abc"}, {"abc", 2, "a…"}, {"🎬🎬", 4, "🎬🎬"}, {"🎬🎬", 3, "🎬…"}, {"🎬", 1, "…"}, {"abc", 0, ""}, {"a🎬b", 3, "a…"},
+		{"abcdefghijk", 10, "abcdefg..."}, {"abcdefghij", 10, "abcdefghij"},
+		{"abc", 3, "abc"}, {"abc", 2, ".."}, {"abc", 1, "."},
+		{"a", 2, "a"}, {"ab", 2, "ab"}, {"", 10, ""},
+		{"🎬🎬", 4, "🎬🎬"}, {"🎬🎬", 3, "..."},
+		{"🎬🎬🎬", 5, "🎬..."}, {"🎬", 1, "."},
+		{"abc", 0, ""}, {"abc", -1, ""}, {"", 0, ""},
+		{"a🎬b", 3, "..."},
 	} {
-		if got := clip(tc.s, tc.n); got != tc.want || !utf8.ValidString(got) {
-			t.Fatalf("clip(%q,%d) = %q, want %q", tc.s, tc.n, got, tc.want)
+		if got := Ellipsis(tc.s, tc.n); got != tc.want || !utf8.ValidString(got) {
+			t.Fatalf("Ellipsis(%q,%d) = %q, want %q", tc.s, tc.n, got, tc.want)
+		}
+		if got := Ellipsis(tc.s, tc.n); tc.n > 0 && len(utf16.Encode([]rune(got))) > tc.n {
+			t.Fatal("ellipsis exceeded the final output limit")
 		}
 	}
 }

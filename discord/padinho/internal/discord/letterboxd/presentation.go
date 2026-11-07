@@ -30,9 +30,9 @@ func resultPage(action, query string, page int, items []entity.LetterboxdTitle, 
 			}
 			seen[value] = true
 			lines = append(lines, label(t))
-			options = append(options, discordgo.SelectMenuOption{Label: clip(label(t), 100), Value: app.Identity(t.MediaType, t.TMDBID)})
+			options = append(options, discordgo.SelectMenuOption{Label: Ellipsis(label(t), 100), Value: app.Identity(t.MediaType, t.TMDBID)})
 		}
-		data.Embeds = []*discordgo.MessageEmbed{{Description: clip(strings.Join(lines, "\n"), 3500)}}
+		data.Embeds = []*discordgo.MessageEmbed{{Description: Ellipsis(strings.Join(lines, "\n"), 3500)}}
 		target := action
 		if action == "list" {
 			target = "show"
@@ -75,8 +75,8 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		}
 	}
 	embed := &discordgo.MessageEmbed{
-		Title:       clip(app.DisplayTitle(title), 256),
-		Description: clip(title.Synopsis, 3000),
+		Title:       Ellipsis(app.DisplayTitle(title), 256),
+		Description: Ellipsis(title.Synopsis, 3000),
 		Color:       0x5865F2,
 		URL:         fmt.Sprintf("https://www.themoviedb.org/%s/%d", title.MediaType, title.TMDBID),
 		Footer:      &discordgo.MessageEmbedFooter{Text: rating},
@@ -110,7 +110,7 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		{creatorLabel, title.Creators}, {ptbr.LetterboxdGenres, title.Genres},
 	} {
 		if names := app.MetadataNames(field.values); len(names) > 0 {
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: field.name, Value: clip(plainOpinion(strings.Join(names, ", ")), 600), Inline: true})
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: field.name, Value: Ellipsis(plainOpinion(strings.Join(names, ", ")), 600), Inline: true})
 		}
 	}
 	if title.Accent != nil {

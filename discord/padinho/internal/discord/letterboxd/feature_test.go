@@ -148,7 +148,7 @@ func TestComponentValidation(t *testing.T) {
 			t.Fatal("forged route")
 		}
 	}
-	if clip("abc", 2) != "a\u2026" {
-		t.Fatal("clip")
+	if Ellipsis("abc", 2) != ".." {
+		t.Fatal("ellipsis")
 	}
 }
