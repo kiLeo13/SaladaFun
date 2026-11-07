@@ -30,8 +30,17 @@ func TestReleasePayloads(t *testing.T) {
 	if err != nil || len(commands) != 1 {
 		t.Fatal("compiled commands", err)
 	}
-	if len(commands[0].Options) != 5 {
-		t.Fatalf("root routes: %d", len(commands[0].Options))
+	expected := map[string]bool{"show": false, "about": false, "pick-random": false, "history": false, "wishlist": false}
+	for _, option := range commands[0].Options {
+		if _, ok := expected[option.Name]; !ok {
+			t.Fatalf("unexpected command %q", option.Name)
+		}
+		expected[option.Name] = true
+	}
+	for name, present := range expected {
+		if !present {
+			t.Fatalf("missing command %q", name)
+		}
 	}
 	h := Handler{service}
 	out := &responder{}
