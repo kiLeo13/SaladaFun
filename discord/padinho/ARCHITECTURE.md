@@ -478,7 +478,8 @@ The release field combines TV first-air year and a positive season count
 (`2018 - 8 temporadas`, or `2018 - 1 temporada`); movies and TV with zero/unknown
 seasons show only the year. There is no separate season field. Season counts
 refresh with normal TMDB metadata. Exact release dates remain cached but are not
-rendered. List fields
+rendered. Synopsis descriptions are capped at 2,000 UTF-16 units including the
+`...` suffix; `Ellipsis` preserves whole Unicode characters. List fields
 are escaped and clipped to 600 UTF-16 units each; the payload checker includes
 field and author text in Discord's aggregate embed budget. Author URLs accept
 absolute HTTP(S) homepages without credentials and otherwise use the TMDB title
