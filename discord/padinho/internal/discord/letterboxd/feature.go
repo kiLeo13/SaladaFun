@@ -137,8 +137,8 @@ func label(t entity.LetterboxdTitle) string {
 		kind = ptbr.LetterboxdTV
 	}
 	year := "?"
-	if t.ReleaseYear > 0 {
-		year = strconv.Itoa(t.ReleaseYear)
+	if t.ReleaseYear != nil {
+		year = strconv.Itoa(*t.ReleaseYear)
 	}
 	return fmt.Sprintf("%s (%s, %s)", app.DisplayTitle(&t), year, kind)
 }

@@ -13,7 +13,7 @@ import (
 func TestClassificationEmbeds(t *testing.T) {
 	for _, code := range []string{"L", "6", "10", "12", "14", "16", "18", "", "unknown"} {
 		for _, kind := range []string{"movie", "tv"} {
-			title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: kind, ReleaseYear: 2020, ContentRatings: []entity.ContentRating{{Country: "BR", Certification: code}}}
+			title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: kind, ReleaseYear: new(2020), ContentRatings: []entity.ContentRating{{Country: "BR", Certification: code}}}
 			card := titleCard(title, nil, kind+":1")
 			checkPayload(t, card)
 			if len(card.Embeds[0].Fields) != 1 {

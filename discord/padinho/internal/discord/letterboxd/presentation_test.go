@@ -15,7 +15,7 @@ func TestTitleCardMetadata(t *testing.T) {
 	accent := uint32(0x123456)
 	for _, kind := range []string{"movie", "tv"} {
 		for _, homepage := range []string{"https://example.test/title", "", "javascript:bad"} {
-			title := &entity.LetterboxdTitle{ID: 7, TMDBID: 42, MediaType: kind, OriginalTitle: "Title", ReleaseYear: 2021, Creators: []string{"Ross Duffer", "Matt Duffer"}, Genres: []string{"Drama", "Mystery"}, Homepage: homepage, SeasonCount: 5, Accent: &accent, BackdropPath: "/back.jpg", PosterPath: "/poster.jpg"}
+			title := &entity.LetterboxdTitle{ID: 7, TMDBID: 42, MediaType: kind, OriginalTitle: "Title", ReleaseYear: new(2021), Creators: []string{"Ross Duffer", "Matt Duffer"}, Genres: []string{"Drama", "Mystery"}, Homepage: homepage, SeasonCount: 5, Accent: &accent, BackdropPath: "/back.jpg", PosterPath: "/poster.jpg"}
 			card := titleCard(title, []app.Opinion{{Rating: 5}, {Rating: 4}}, kind+":42")
 			checkPayload(t, card)
 			embed := card.Embeds[0]
@@ -66,7 +66,7 @@ func TestTitleCardMetadata(t *testing.T) {
 
 // TestTitleCardFieldBudgets covers maximum metadata text and absent optional fields.
 func TestTitleCardFieldBudgets(t *testing.T) {
-	title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: "tv", OriginalTitle: strings.Repeat("🎬", 500), Synopsis: strings.Repeat("🎬", 5000), ReleaseYear: 2020, Creators: []string{strings.Repeat("*", 4000)}, Genres: []string{strings.Repeat("🎬", 4000)}}
+	title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: "tv", OriginalTitle: strings.Repeat("🎬", 500), Synopsis: strings.Repeat("🎬", 5000), ReleaseYear: new(2020), Creators: []string{strings.Repeat("*", 4000)}, Genres: []string{strings.Repeat("🎬", 4000)}}
 	checkPayload(t, titleCard(title, []app.Opinion{{Rating: 5}}, "tv:1"))
 	title.Creators = nil
 	title.Genres = nil
@@ -96,7 +96,7 @@ func TestRatingFooter(t *testing.T) {
 		for i, rating := range tc.ratings {
 			opinions[i].Rating = rating
 		}
-		card := titleCard(&entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: "movie", OriginalTitle: "Title", ReleaseYear: 2020}, opinions, "movie:1")
+		card := titleCard(&entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: "movie", OriginalTitle: "Title", ReleaseYear: new(2020)}, opinions, "movie:1")
 		checkPayload(t, card)
 		if got := card.Embeds[0].Footer.Text; got != tc.want {
 			t.Fatalf("ratings %v: %q, want %q", tc.ratings, got, tc.want)
@@ -113,7 +113,7 @@ func TestSynopsisEllipsis(t *testing.T) {
 		{strings.Repeat("🎬", 1000), strings.Repeat("🎬", 1000)},
 		{strings.Repeat("🎬", 1001), strings.Repeat("🎬", 998) + "..."},
 	} {
-		card := titleCard(&entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: "movie", ReleaseYear: 2020, Synopsis: tc.synopsis}, nil, "movie:1")
+		card := titleCard(&entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: "movie", ReleaseYear: new(2020), Synopsis: tc.synopsis}, nil, "movie:1")
 		checkPayload(t, card)
 		if got := card.Embeds[0].Description; got != tc.want {
 			t.Fatalf("synopsis clipping: got %q, want %q", got, tc.want)
@@ -132,7 +132,7 @@ func TestReleaseFieldSeasons(t *testing.T) {
 		{"tv", 0, "2018"}, {"tv", 1, "2018 - 1 temporada"},
 		{"tv", 8, "2018 - 8 temporadas"},
 	} {
-		title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: tc.kind, OriginalTitle: "Title", ReleaseYear: 2018, SeasonCount: tc.seasons}
+		title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: tc.kind, OriginalTitle: "Title", ReleaseYear: new(2018), SeasonCount: tc.seasons}
 		card := titleCard(title, nil, tc.kind+":1")
 		checkPayload(t, card)
 		if got := card.Embeds[0].Fields[0]; got.Name != ptbr.LetterboxdReleaseYear || got.Value != tc.want {

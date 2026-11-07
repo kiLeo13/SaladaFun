@@ -67,7 +67,7 @@ func (c *catalog) Reviews(context.Context, uint64) ([]app.Opinion, error) { retu
 
 // Details supplies one complete selected title.
 func (c *catalog) Details(k string, id uint64) (*entity.LetterboxdTitle, error) {
-	return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Original", ReleaseYear: 2020}, nil
+	return &entity.LetterboxdTitle{MediaType: k, TMDBID: id, OriginalTitle: "Original", ReleaseYear: new(2020)}, nil
 }
 
 // Search tracks remote access independently of persistence.

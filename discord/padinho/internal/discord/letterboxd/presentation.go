@@ -95,15 +95,7 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		kind = ptbr.LetterboxdTV
 	}
 	embed.Author = &discordgo.MessageEmbedAuthor{Name: kind, URL: homepage}
-	release := strconv.Itoa(title.ReleaseYear)
-	if title.MediaType == "tv" && title.SeasonCount > 0 {
-		if title.SeasonCount == 1 {
-			release = fmt.Sprintf(ptbr.LetterboxdReleaseSeason, title.ReleaseYear)
-		} else {
-			release = fmt.Sprintf(ptbr.LetterboxdReleaseSeasons, title.ReleaseYear, title.SeasonCount)
-		}
-	}
-	embed.Fields = []*discordgo.MessageEmbedField{{Name: ptbr.LetterboxdReleaseYear, Value: release, Inline: true}}
+	embed.Fields = []*discordgo.MessageEmbedField{releaseField(title)}
 	creatorLabel := ptbr.LetterboxdDirectors
 	if title.MediaType == "tv" {
 		creatorLabel = ptbr.LetterboxdCreators
@@ -134,4 +126,35 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		discordgo.ActionsRow{Components: []discordgo.MessageComponent{watchedButton, reviewButton, wishlistButton}},
 	}
 	return data
+}
+
+// releaseField distinguishes announced premieres from missing historical dates.
+func releaseField(title *entity.LetterboxdTitle) *discordgo.MessageEmbedField {
+	name, value := ptbr.LetterboxdReleaseYear, ptbr.LetterboxdReleaseUnknown
+	status := ""
+	if title.Status != nil {
+		status = *title.Status
+	}
+	upcoming := status == "Planned" || status == "In Production"
+	if title.MediaType == "movie" {
+		upcoming = upcoming || status == "Rumored" || status == "Post Production"
+	} else if title.MediaType == "tv" {
+		upcoming = upcoming || status == "Pilot"
+	}
+	if upcoming {
+		name, value = ptbr.LetterboxdReleaseExpected, ptbr.LetterboxdReleaseUnannounced
+	} else if status == "Canceled" && title.ReleaseYear == nil {
+		value = ptbr.LetterboxdReleaseCanceled
+	}
+	if title.ReleaseYear != nil {
+		value = strconv.Itoa(*title.ReleaseYear)
+	}
+	if title.MediaType == "tv" && title.SeasonCount > 0 {
+		if title.SeasonCount == 1 {
+			value = fmt.Sprintf(ptbr.LetterboxdReleaseSeason, value)
+		} else {
+			value = fmt.Sprintf(ptbr.LetterboxdReleaseSeasons, value, title.SeasonCount)
+		}
+	}
+	return &discordgo.MessageEmbedField{Name: name, Value: value, Inline: true}
 }

@@ -75,14 +75,18 @@ const (
 )
 
 const (
-	LetterboxdReleaseYear    = "Lan\u00e7amento"
-	LetterboxdCreators       = "Criadores"
-	LetterboxdDirectors      = "Dire\u00e7\u00e3o"
-	LetterboxdGenres         = "G\u00eaneros"
-	LetterboxdReleaseSeason  = "%d - 1 temporada"
-	LetterboxdReleaseSeasons = "%d - %d temporadas"
-	LetterboxdAgeRating      = "Faixa et\u00e1ria"
-	LetterboxdAgeUnknown     = "N\u00e3o informada"
-	LetterboxdAgeLivre       = "Livre"
-	LetterboxdAgeYears       = "%s anos"
+	LetterboxdReleaseYear        = "Lan\u00e7amento"
+	LetterboxdCreators           = "Criadores"
+	LetterboxdDirectors          = "Dire\u00e7\u00e3o"
+	LetterboxdGenres             = "G\u00eaneros"
+	LetterboxdReleaseSeason      = "%s - 1 temporada"
+	LetterboxdReleaseSeasons     = "%s - %d temporadas"
+	LetterboxdReleaseUnknown     = "Desconhecido"
+	LetterboxdReleaseExpected    = "Previs\u00e3o de lan\u00e7amento"
+	LetterboxdReleaseUnannounced = "Sem data anunciada"
+	LetterboxdReleaseCanceled    = "Cancelado"
+	LetterboxdAgeRating          = "Faixa et\u00e1ria"
+	LetterboxdAgeUnknown         = "N\u00e3o informada"
+	LetterboxdAgeLivre           = "Livre"
+	LetterboxdAgeYears           = "%s anos"
 )
