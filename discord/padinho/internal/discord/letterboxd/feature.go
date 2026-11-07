@@ -228,9 +228,9 @@ func (h Handler) showSelection(ctx context.Context, r command.Responder, user ui
 	return finish(r, card)
 }
 
-// component validates actor context and acknowledges a button/select interaction.
-func component(r *discord.InteractionRequest) (uint64, error) {
-	if err := deferReply(r.Responder, r.GuildID); err != nil {
+// component validates actor context and acknowledges privately unless explicitly public.
+func component(r *discord.InteractionRequest, private ...bool) (uint64, error) {
+	if err := deferReply(r.Responder, r.GuildID, private...); err != nil {
 		return 0, err
 	}
 	id, err := strconv.ParseUint(string(r.Actor.UserID), 10, 64)
@@ -242,7 +242,8 @@ func component(r *discord.InteractionRequest) (uint64, error) {
 
 // selectTitle resolves one selected remote identity.
 func (h Handler) selectTitle(ctx context.Context, r *discord.InteractionRequest) error {
-	user, err := component(r)
+	private := len(r.Parameters) != 1 || r.Parameters[0] != "show"
+	user, err := component(r, private)
 	if err != nil {
 		return err
 	}
@@ -261,7 +262,8 @@ func validAction(s string) bool { return s == "show" || s == "add" || s == "remo
 
 // changePage reconstructs a bounded query without server-side state.
 func (h Handler) changePage(ctx context.Context, r *discord.InteractionRequest) error {
-	user, err := component(r)
+	private := len(r.Parameters) != 2 || r.Parameters[0] != "show"
+	user, err := component(r, private)
 	if err != nil {
 		return err
 	}
@@ -297,7 +299,7 @@ func (h Handler) add(ctx context.Context, r *discord.InteractionRequest) error {
 
 // reviews shows current opinions, hiding withdrawn historical text.
 func (h Handler) reviews(ctx context.Context, r *discord.InteractionRequest) error {
-	_, err := component(r)
+	_, err := component(r, false)
 	if err != nil {
 		return err
 	}
