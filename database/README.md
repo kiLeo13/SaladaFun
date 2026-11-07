@@ -146,3 +146,39 @@ Before applying it to the disposable development data, clear related records
 in foreign-key order: `letterboxd_reviews`, `letterboxd_watches`,
 `letterboxd_wishlist_items`, then `letterboxd_titles`. The migration itself
 contains no deletion statements. Apply before deploying the rich title card.
+
+Migration `00011_letterboxd_future_metadata.sql` reserves the first batch of
+future metadata on **`letterboxd_titles` only**. It adds no tables, indexes, or
+JOINs and does not change existing values or expire the metadata cache. The bot
+does not fetch or render these new fields yet.
+
+| Column | Storage | Intended meaning |
+| --- | --- | --- |
+| `content_ratings` | Nullable JSON array | Entries such as `{"country":"BR","certification":"14","release_type":3}`; TV entries omit movie-only release type |
+| `runtime_minutes` | Nullable unsigned small integer, positive when present | Movie runtime in minutes |
+| `episode_runtime_minutes` | Nullable JSON array | TV runtime alternatives, for example `[45,50]` |
+| `original_language` | Nullable `VARCHAR(10)` | Provider language code |
+| `origin_countries` | Nullable JSON array | Country codes, for example `["BR","US"]` |
+| `status` | Nullable `VARCHAR(64)` | Provider status text without a fixed database enum |
+| `episode_count` | Nullable unsigned integer | Total TV episodes; zero is allowed when known |
+| `external_ids` | Nullable JSON object | Provider IDs, for example `{"imdb":"tt1234567","tvdb":"123"}` |
+
+All new fields default to SQL `NULL`, meaning unknown or not fetched. Once
+ingestion is implemented, empty arrays/objects may represent a successfully
+fetched empty result. Classification codes remain strings and retain their
+country; missing classification never means unrestricted. JSON checks enforce
+outer array/object shapes; future ingestion must validate entry structure,
+codes, positive episode runtimes, and external-ID values.
+
+**Migration 00011 alone requires no record deletion.** Existing title metadata,
+`letterboxd_wishlist_items`, `letterboxd_watches`, and `letterboxd_reviews` are
+preserved. Goose updates its own migration ledger automatically. Apply the
+embedded migration executable through the existing manual process above.
+The current application can continue inserting titles without these fields.
+
+Live validation: set the `TEST_DATABASE_*` connection variables and run
+`go test -race ./...` from `database/`. Tests cover an empty version-9 catalog
+upgrade without metadata defaults, a populated version-10 upgrade, preserved
+relationships and metadata, SQL NULL defaults,
+legacy inserts, valid metadata round trips, empty results, invalid JSON shapes,
+numeric constraints, and repeated migration execution.

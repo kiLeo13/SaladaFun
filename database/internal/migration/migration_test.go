@@ -87,8 +87,8 @@ func TestEmbeddedMigrations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 10 {
-		t.Fatalf("embedded migrations = %d, want 10", len(files))
+	if len(files) != 11 {
+		t.Fatalf("embedded migrations = %d, want 11", len(files))
 	}
 }
 
@@ -168,7 +168,7 @@ func TestUpAgainstMySQL(t *testing.T) {
 		INSERT INTO birthdays
 			(user_id, name, birthday, time_zone, message, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		userID, "Leo", "2000-03-04", "America/Sao_Paulo", "OlÃ¡", 1, 1,
+		userID, "Leo", "2000-03-04", "America/Sao_Paulo", "Olá", 1, 1,
 	); err != nil {
 		t.Fatalf("insert birthday: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestUpAgainstMySQL(t *testing.T) {
 			(author_id, original_quote, translated_quote, source_url, enabled, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		authorID, "Time you enjoy wasting, was not wasted.",
-		"O tempo que vocÃª gosta de desperdiÃ§ar nÃ£o foi desperdiÃ§ado.",
+		"O tempo que você gosta de desperdiçar não foi desperdiçado.",
 		"https://example.test/quotes/190", true, 5, 5,
 	); err != nil {
 		t.Fatalf("insert quote: %v", err)
