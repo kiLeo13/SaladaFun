@@ -43,20 +43,22 @@ type InteractionHandler func(context.Context, *InteractionRequest) error
 
 // Routes owns Padinho's one command registry and its component/modal routes.
 type Routes struct {
-	mu         sync.RWMutex
-	commands   *command.Registry
-	messages   *messagecommand.Registry
-	components map[string]InteractionHandler
-	modals     map[string]InteractionHandler
-	frozen     bool
+	mu           sync.RWMutex
+	commands     *command.Registry
+	messages     *messagecommand.Registry
+	components   map[string]InteractionHandler
+	modals       map[string]InteractionHandler
+	autocomplete map[string]AutocompleteHandler
+	frozen       bool
 }
 
 func NewRoutes() *Routes {
 	return &Routes{
-		commands:   command.NewRegistry(),
-		messages:   messagecommand.NewRegistry(),
-		components: make(map[string]InteractionHandler),
-		modals:     make(map[string]InteractionHandler),
+		commands:     command.NewRegistry(),
+		messages:     messagecommand.NewRegistry(),
+		components:   make(map[string]InteractionHandler),
+		modals:       make(map[string]InteractionHandler),
+		autocomplete: make(map[string]AutocompleteHandler),
 	}
 }
 
@@ -129,6 +131,29 @@ func (r *Routes) dispatch(
 	r.mu.RUnlock()
 
 	switch interaction.Type {
+	case discordgo.InteractionApplicationCommandAutocomplete:
+		request, err := mapRequest(interaction, responder)
+		if err != nil {
+			return true, err
+		}
+		data := interaction.ApplicationCommandData()
+		options := data.Options
+		for len(options) > 0 && (options[0].Type == discordgo.ApplicationCommandOptionSubCommand || options[0].Type == discordgo.ApplicationCommandOptionSubCommandGroup) {
+			options = options[0].Options
+		}
+		focused := ""
+		for _, option := range options {
+			if option.Focused {
+				focused = option.Name
+			}
+		}
+		r.mu.RLock()
+		handler := r.autocomplete[strings.Join(request.Path.Segments(), ".")+"."+focused]
+		r.mu.RUnlock()
+		if handler == nil {
+			return true, ErrUnknownRoute
+		}
+		return true, handler(ctx, &AutocompleteRequest{CommandRequest: request, Focused: focused})
 	case discordgo.InteractionApplicationCommand:
 		request, err := mapRequest(interaction, responder)
 		if err != nil {
@@ -183,4 +208,29 @@ func actor(interaction *discordgo.InteractionCreate) command.Actor {
 		result.UserID = command.Snowflake(interaction.User.ID)
 	}
 	return result
+}
+
+// AutocompleteRequest carries partial options without completed-command validation.
+type AutocompleteRequest struct {
+	*command.CommandRequest
+	Focused string
+}
+
+// AutocompleteHandler supplies bounded suggestions for a focused option.
+type AutocompleteHandler func(context.Context, *AutocompleteRequest) error
+
+// Autocomplete registers a command-path/option key before routes freeze.
+func (r *Routes) Autocomplete(key string, handler AutocompleteHandler) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.frozen {
+		panic(ErrRoutesFrozen)
+	}
+	if key == "" || handler == nil {
+		panic("invalid autocomplete route")
+	}
+	if r.autocomplete[key] != nil {
+		panic("duplicate autocomplete route")
+	}
+	r.autocomplete[key] = handler
 }
