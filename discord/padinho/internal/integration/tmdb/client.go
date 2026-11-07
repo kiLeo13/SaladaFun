@@ -99,3 +99,38 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 	}
 	return t, nil
 }
+
+// Search maps remote multi-search suggestions without writing cache records.
+func (c *Client) Search(query string, page int) ([]entity.LetterboxdTitle, error) {
+	if strings.TrimSpace(query) == "" {
+		return nil, nil
+	}
+	result, err := c.client.GetSearchMulti(query, map[string]string{"language": "pt-BR", "page": strconv.Itoa(page), "include_adult": "false"})
+	if err != nil {
+		return nil, errors.New("TMDB search unavailable")
+	}
+	if result.SearchMultiResults == nil {
+		return nil, nil
+	}
+	var titles []entity.LetterboxdTitle
+	for _, m := range result.Results {
+		if !app.ValidIdentity(m.MediaType, uint64(m.ID)) || m.ID <= 0 {
+			continue
+		}
+		t := entity.LetterboxdTitle{MediaType: m.MediaType, TMDBID: uint64(m.ID), OriginalTitle: m.OriginalTitle, LocalizedTitle: m.Title}
+		date := m.ReleaseDate
+		if m.MediaType == "tv" {
+			t.OriginalTitle = m.OriginalName
+			t.LocalizedTitle = m.Name
+			date = m.FirstAirDate
+		}
+		if t.OriginalTitle == "" {
+			t.OriginalTitle = t.LocalizedTitle
+		}
+		if len(date) >= 4 {
+			t.ReleaseYear, _ = strconv.Atoi(date[:4])
+		}
+		titles = append(titles, t)
+	}
+	return titles, nil
+}
