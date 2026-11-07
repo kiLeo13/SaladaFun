@@ -26,3 +26,28 @@ const (
 	LetterboxdPrevious    = "Anterior"
 	LetterboxdCredit      = "This product uses the TMDB API but is not endorsed or certified by TMDB."
 )
+
+const (
+	LetterboxdWatched       = "Assisti"
+	LetterboxdEdit          = "Editar avalia\u00e7\u00e3o"
+	LetterboxdModal         = "Avaliar t\u00edtulo"
+	LetterboxdStars         = "Sua nota (1 a 5)"
+	LetterboxdReview        = "Coment\u00e1rio opcional (2 a 500 caracteres)"
+	LetterboxdReviewHint    = "Deixe vazio para remover o coment\u00e1rio anterior."
+	LetterboxdSaved         = "Avalia\u00e7\u00e3o salva."
+	LetterboxdInvalidReview = "Escolha uma nota de 1 a 5 e um coment\u00e1rio opcional de 2 a 500 caracteres."
+	LetterboxdHistory       = "Ver hist\u00f3rico e opini\u00f5es de um membro."
+	LetterboxdMember        = "Membro cujo hist\u00f3rico deseja ver."
+	LetterboxdSort          = "Ordenar por"
+	LetterboxdDate          = "Data"
+	LetterboxdOrder         = "Dire\u00e7\u00e3o da ordena\u00e7\u00e3o"
+	LetterboxdAscending     = "Crescente"
+	LetterboxdDescending    = "Decrescente"
+	LetterboxdHistoryTitle  = "Hist\u00f3rico de <@%d>"
+	LetterboxdNoHistory     = "Nenhum t\u00edtulo assistido."
+	LetterboxdHistoryEntry  = "%s\nAssistido em %s (UTC) | %d/5\n%s"
+	LetterboxdRandom        = "Sortear um t\u00edtulo n\u00e3o assistido da minha lista."
+	LetterboxdNoRandom      = "Sua lista n\u00e3o tem t\u00edtulos n\u00e3o assistidos. Adicione novos t\u00edtulos para sortear."
+)
+
+const LetterboxdRatings = "Avalia\u00e7\u00f5es"
