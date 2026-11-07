@@ -119,3 +119,10 @@ activity delivery ledger. It stores the guild and member snowflakes, nullable
 old/new channel snowflakes that encode join, leave, or move, the final `SENT`
 or `FAILED` delivery result, and the observed UTC millisecond timestamp. The
 schema rejects invalid statuses, channel-less rows, and unchanged channel pairs.
+
+Migration `00009_letterboxd.sql` adds global TMDB title metadata, personal
+wishlists, one rated watch per member/title, and append-only review revisions.
+Provider identity and membership/watch uniqueness are enforced by MySQL; review
+withdrawal is a new NULL-text revision. Apply manually before deploying feature
+wiring. See [Letterboxd foundation](../discord/padinho/LETTERBOXD.md) for
+transaction semantics and isolated live-MySQL verification.
