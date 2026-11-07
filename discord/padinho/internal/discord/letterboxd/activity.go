@@ -246,7 +246,7 @@ func (h Handler) renderHistory(ctx context.Context, r command.Responder, user ui
 		label, emoji string
 		page         int
 		disabled     bool
-	}{{ptbr.LetterboxdPrevious, "\u2b05\ufe0f", page - 1, page == 1}, {ptbr.LetterboxdNext, "\u27a1\ufe0f", page + 1, !more}} {
+	}{{ptbr.LetterboxdPrevious, "\u2b05\ufe0f", page - 1, page == 1}, {ptbr.LetterboxdNext, "\u27a1\ufe0f", page + 1, !more || page >= 100000}} {
 		buttons = append(buttons, discordgo.Button{Label: n.label, Emoji: &discordgo.ComponentEmoji{Name: n.emoji}, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.history:%d:%s:%s:%d", user, sort, order, n.page), Disabled: n.disabled})
 	}
 	data.Components = []discordgo.MessageComponent{discordgo.ActionsRow{Components: buttons}}

@@ -325,7 +325,7 @@ func (h Handler) reviews(ctx context.Context, r *discord.InteractionRequest) err
 		label    string
 		page     int
 		disabled bool
-	}{{ptbr.LetterboxdPrevious, page - 1, page == 1}, {ptbr.LetterboxdNext, page + 1, start+reviewPageSize >= len(items)}} {
+	}{{ptbr.LetterboxdPrevious, page - 1, page == 1}, {ptbr.LetterboxdNext, page + 1, start+reviewPageSize >= len(items) || page >= 100000}} {
 		buttons = append(buttons, discordgo.Button{Label: n.label, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.reviews:%d:%d", id, n.page), Disabled: n.disabled})
 	}
 	data.Components = []discordgo.MessageComponent{discordgo.ActionsRow{Components: buttons}}
