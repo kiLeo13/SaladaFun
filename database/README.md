@@ -135,3 +135,14 @@ through a trusted private SQL session; do not store it in this directory or in
 command history. Padinho still requires only the four existing DML grants.
 Application rollback retains these additive tables and the immutable review
 ledger rather than executing destructive Down migrations.
+
+Migration `00010_letterboxd_metadata.sql` enriches the Letterboxd title cache with
+creators and genres as NOT NULL JSON arrays, a homepage URL, and an unsigned
+season count. These columns have no defaults; the application supplies every
+value, including empty arrays, an empty homepage, and zero seasons when needed.
+JSON array checks reject objects/scalars. This unreleased migration assumes
+`letterboxd_titles` is empty; it performs no backfill or cache invalidation.
+Before applying it to the disposable development data, clear related records
+in foreign-key order: `letterboxd_reviews`, `letterboxd_watches`,
+`letterboxd_wishlist_items`, then `letterboxd_titles`. The migration itself
+contains no deletion statements. Apply before deploying the rich title card.

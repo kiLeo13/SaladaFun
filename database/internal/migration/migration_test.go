@@ -2,6 +2,7 @@ package migration
 
 import (
 	"database/sql"
+	"fmt"
 	"io/fs"
 	"os"
 	"testing"
@@ -9,15 +10,85 @@ import (
 
 	mysqldriver "github.com/go-sql-driver/mysql"
 	migrationfiles "github.com/kiLeo13/SaladaFun/database/migrations"
+	"github.com/pressly/goose/v3"
 )
 
+// TestMetadataUpgradeAgainstMySQL upgrades an empty version-nine catalog and enforces explicit metadata.
+func TestMetadataUpgradeAgainstMySQL(t *testing.T) {
+	setLiveEnvironment(t)
+	t.Setenv("DB_NAME", fmt.Sprintf("salada_metadata_upgrade_%d", time.Now().UnixNano()))
+	db, err := Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	goose.SetBaseFS(migrationfiles.Files)
+	if err := goose.SetDialect("mysql"); err != nil {
+		t.Fatal(err)
+	}
+	if err := goose.UpTo(db, migrationsPath, 9); err != nil {
+		t.Fatal(err)
+	}
+	if err := Up(db); err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	if err := db.QueryRow("SELECT COUNT(*) FROM letterboxd_titles").Scan(&count); err != nil || count != 0 {
+		t.Fatal("empty catalog", err)
+	}
+	rows, err := db.Query(`SELECT column_name, is_nullable, column_default
+ FROM information_schema.columns WHERE table_schema = DATABASE()
+ AND table_name = 'letterboxd_titles' AND column_name IN ('creators', 'genres', 'homepage', 'season_count')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	columns := 0
+	for rows.Next() {
+		var name, nullable string
+		var defaultValue sql.NullString
+		if err := rows.Scan(&name, &nullable, &defaultValue); err != nil {
+			t.Fatal(err)
+		}
+		if nullable != "NO" || defaultValue.Valid {
+			t.Fatalf("%s must be NOT NULL without a default", name)
+		}
+		columns++
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if columns != 4 {
+		t.Fatalf("metadata columns = %d", columns)
+	}
+	if _, err := db.Exec(`INSERT INTO letterboxd_titles
+ (id, tmdb_id, media_type, original_title, localized_title, release_year,
+ synopsis, poster_path, backdrop_path, accent_source, metadata_fetched_at,
+ creators, genres, homepage, season_count, created_at, updated_at)
+ VALUES (1, 42, 'tv', 'Series', '', 2021, '', '', '', '', 999,
+ JSON_ARRAY(), JSON_ARRAY(), '', 0, 1, 1)`); err != nil {
+		t.Fatal("explicit metadata insert", err)
+	}
+	for _, assignment := range []string{"creators = NULL", "genres = JSON_OBJECT()", "creators = JSON_QUOTE('name')", "season_count = -1"} {
+		if _, err := db.Exec("UPDATE letterboxd_titles SET " + assignment + " WHERE id=1"); err == nil {
+			t.Fatalf("invalid metadata accepted: %s", assignment)
+		}
+	}
+	for _, column := range []string{"homepage", "season_count"} {
+		if _, err := db.Exec("UPDATE letterboxd_titles SET " + column + " = DEFAULT WHERE id=1"); err == nil {
+			t.Fatalf("unexpected default for %s", column)
+		}
+	}
+}
+
+// TestEmbeddedMigrations verifies every ordered SQL migration is packaged.
 func TestEmbeddedMigrations(t *testing.T) {
 	files, err := fs.Glob(migrationfiles.Files, "*.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 9 {
-		t.Fatalf("embedded migrations = %d, want 9", len(files))
+	if len(files) != 10 {
+		t.Fatalf("embedded migrations = %d, want 10", len(files))
 	}
 }
 
@@ -97,7 +168,7 @@ func TestUpAgainstMySQL(t *testing.T) {
 		INSERT INTO birthdays
 			(user_id, name, birthday, time_zone, message, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		userID, "Leo", "2000-03-04", "America/Sao_Paulo", "Olá", 1, 1,
+		userID, "Leo", "2000-03-04", "America/Sao_Paulo", "OlÃ¡", 1, 1,
 	); err != nil {
 		t.Fatalf("insert birthday: %v", err)
 	}
@@ -156,7 +227,7 @@ func TestUpAgainstMySQL(t *testing.T) {
 			(author_id, original_quote, translated_quote, source_url, enabled, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		authorID, "Time you enjoy wasting, was not wasted.",
-		"O tempo que você gosta de desperdiçar não foi desperdiçado.",
+		"O tempo que vocÃª gosta de desperdiÃ§ar nÃ£o foi desperdiÃ§ado.",
 		"https://example.test/quotes/190", true, 5, 5,
 	); err != nil {
 		t.Fatalf("insert quote: %v", err)
