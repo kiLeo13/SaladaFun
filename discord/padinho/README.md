@@ -57,7 +57,8 @@ and `DB_NAME` directly and returns `*gorm.DB`. Optional pool limits use
 configuration struct and callers never provide a DSN.
 
 `cmd/padinho` passes GORM directly to `internal/config`, loads `app.token`,
-`birthday.channel_id`, `channels.logs.voice`, and the Mudae settings below, and then constructs Discord. Padinho derives its
+`birthday.channel_id`, `channels.logs.voice`, and the Mudae settings below,
+then constructs Discord. Padinho derives its
 application ID after connecting and always synchronizes global commands; there
 are no Discord environment switches. When an announced birthday has no custom
 message, Padinho reads `birthday.defaultMessage` from `config` and applies
@@ -67,7 +68,6 @@ Schema creation and migration belong exclusively to the root
 [`database`](../../database/README.md) project. Build its self-contained Linux
 executable locally, upload it to the Padinho VM, and run it there before
 deploying code that requires a new schema. Compose never applies migrations.
-Apply all pending migrations before deploying dependent bot code.
 Insert the following values through a trusted private database session. Mudae's
 emoji values are custom emoji IDs only, without names or Discord `<:...:...>`
 markup:
@@ -93,28 +93,10 @@ Enable the privileged **Message Content Intent** for Padinho in Discord's
 Developer Portal. The gateway also requests `GUILD_MESSAGES`; both are needed
 to receive user commands and Mudae's message components.
 
-Padinho never infers `$oc` from an arbitrary 5-by-5 button grid and never adds
-a reaction as a confirmation step. Automatic assistance requires correlation
-with an exact recent `$oc`/`$ourochest` command and therefore has an invoking
-user whose preference can be respected. Exact `$oh` and `$ouroharvest`
-commands are tracked separately and ignored. A numeric suffix from 1 through
-10 correlates that many consecutive boards. Correlations expire after five
-seconds. Mudae responses reporting that the user has no `$oc` available or is
-waiting for its recharge cancel the failed correlation before a subsequent
-`$oh` board can consume it.
-
-Message-command triggers include their prefix in the registered literal. They
-are case-insensitive, must be the first complete whitespace-separated token,
-and currently expose `!toggleochelper`, `!ochelper`, `!toggleoqhelper`,
-`!oqhelper`, `!quote`, and `!betaspirit`. `!betaspirit` replies with the URL
-stored in `urls.youtube.betaSpirit`. The first `!quote` argument is interpreted
-only when it is a positive decimal quote ID; otherwise it is ignored. Arguments use Go's
-`strings.Fields` behavior, so repeated spaces and tabs do not create empty
-values.
-
-When a message command accepts a Discord entity argument, it extracts the
-numeric snowflake and resolves the expected entity by ID. This accepts both
-mentions and raw IDs without relying on the event's mention collection.
+Automatic Mudae assistance requires a recent matching command from the invoking
+user. Numeric suffixes from 1 through 10 correlate consecutive boards; `$oh` and
+`$ouroharvest` are ignored. See [ARCHITECTURE.md](ARCHITECTURE.md) for correlation
+and solver rules.
 
 ## Verification and container
 
@@ -181,28 +163,16 @@ each written review appears on one quoted line, with a blank line between
 members. Ratings without text show `> *Sem comentário*`. Dates remain in
 personal history rather than this quick view.
 
-The **Assisti** button appears first and opens the member's prefilled rating/review
-modal on every click, including later edits. Cards show release year, creators
-(TV) or directors (movies), and genres as embed fields. For TV, Lançamento
-combines the first-air year and known season count: `2018 - 8 temporadas`
-(`2018 - 1 temporada` for one). Movies and TV with unknown/zero seasons show
-only the year. Season counts follow cached TMDB metadata as new seasons appear.
-The author links to the official homepage when available, otherwise to the
-TMDB title page. Community ratings come from the database and display as
-“Nota geral: 4,5/5 · avaliado 2 vezes”. Whole-number averages omit the decimal
-(`5/5`), and a single rating uses `avaliado 1 vez`. Unrated titles show
-“Sem avaliações.” Artwork keeps its existing dominant-color extraction and
-fallback behavior. Age classifications are not displayed in cards; existing
-TMDB fetching, caching, and database storage remain in place.
-Result menus filter repeated title values and show at most 20 options. Titles,
-summaries, and autocomplete labels respect Discord limits, including emoji.
-Apply migration `00010_letterboxd_metadata.sql` before deploying this version.
-This unreleased migration requires an empty title catalog; see the
-[database instructions](../../database/README.md) for clearing disposable test
-data in foreign-key order. Creators/genres use JSON arrays on the
-title row, with no new tables or JOINs.
-Payload regression checks run with
-`go test ./internal/discord/letterboxd`.
+Cards show release information, directors/creators, genres, artwork, and community
+ratings. TV release text includes known season counts. Upcoming titles without
+a date show `Previsão de lançamento: Sem data anunciada`; missing historical
+dates show `Lançamento: Desconhecido`. Canceled titles without a year show
+`Cancelado`. Age classifications are cached but not displayed.
+
+Selected titles cache TMDB metadata for 24 hours. To refresh existing gaps,
+manually set `metadata_fetched_at` to zero; search/autocomplete alone never
+writes metadata. Storage and mapping rules are in
+[ARCHITECTURE.md](ARCHITECTURE.md#rich-title-metadata).
 
 Random selection uses only the caller's unwatched wishlist. History defaults to
 the caller, watched date, and descending order. The `sort` choices are `Date`
@@ -220,8 +190,8 @@ in the database; ordinary views show only the latest text.
 
 1. Before publishing a new bot image, build and apply the independent migration
    executable using [database instructions](../../database/README.md). Confirm
-   `00009_letterboxd.sql` has been applied. Provision the required `tmdb.token`
-   API Read Access Token through a trusted private database session. Neither
+   all pending migrations, including `00012`, have been applied. Provision the
+   required `tmdb.token` API Read Access Token through a trusted private database session. Neither
    migrations nor tokens belong in the application image or committed files.
 2. Retain the existing DML-only runtime account; the feature needs only SELECT,
    INSERT, UPDATE, and DELETE. Validate against isolated MySQL using the

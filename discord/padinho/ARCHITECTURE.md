@@ -26,13 +26,8 @@ level. It intentionally has no recursive groups that Discord cannot represent.
 
 Metadata belongs in feature registration functions. Handlers receive a typed
 `CommandRequest`; `context.Context` is reserved for cancellation and deadlines.
-`Freeze` first validates the declaration tree by command level, then compiles
-each root according to its route shape. Focused compilation helpers snapshot
-definitions and compose the matching dispatch entry without obscuring the
-top-level lifecycle:
-
-Registration methods acquire the declaration lock directly, making their
-state changes explicit while rejecting every post-freeze mutation.
+`Freeze` validates declarations, snapshots definitions and rejects further
+registration. Middleware runs in this order:
 
 ```text
 registry -> command group -> subcommand group -> route -> handler
@@ -474,67 +469,45 @@ select values, option/row counts, label lengths, modal fields, autocomplete,
 embed text budgets, Unicode boundaries, and pagination ceilings. Existing flow
 tests cover modal prefilling, ownership, submission and empty/random paths.
 These are local contract checks; a Discord smoke test after deployment should
-exercise show, all four card buttons, wishlist selection, reviews, history,
+exercise show, card actions, wishlist selection, reviews, history,
 random selection, autocomplete, and modal submit/cancel.
 References: [components](https://docs.discord.com/developers/components/reference)
 and [embed limits](https://docs.discord.com/developers/resources/message#embed-object-embed-limits).
 
 ### Rich title metadata
 
-Migration `00010_letterboxd_metadata.sql` adds NOT NULL JSON-array creators and
-genres, an official homepage, and a nonnegative season count to the existing title
-row. GORM's JSON serializer maps arrays to project-owned string slices. Writes
-trim names, remove empty/duplicate entries, and preserve punctuation and order;
-empty lists persist as `[]`. No additional tables or JOINs are needed.
-TV details supply `created_by` and `number_of_seasons`; movies request
-`append_to_response=credits` in the same detail call and retain Director crew.
-Genre names use the existing pt-BR request. Refresh/upsert replaces all fields.
-This unreleased migration assumes an empty title catalog and adds required
-columns directly, without defaults, backfill, or cache invalidation. The
-application supplies explicit values on every insert. Clear disposable test
-records in foreign-key order before migrating; see the database README.
+The title row stores creators and genres as normalized JSON arrays, an optional
+release year/date, homepage, season count, and the nullable metadata columns
+listed in the [database schema notes](../../database/README.md#letterboxd-metadata).
+GORM serializers preserve SQL NULL versus known-empty JSON arrays/objects.
+Upserts replace all metadata, including NULL and empty values.
 
-Cards use ordinary embed fields for release, creators/directors and genres.
-The release field combines TV first-air year and a positive season count
-(`2018 - 8 temporadas`, or `2018 - 1 temporada`); movies and TV with zero/unknown
-seasons show only the year. There is no separate season field. Season counts
-refresh with normal TMDB metadata. Exact release dates remain cached but are not
-rendered. Synopsis descriptions are capped at 2,000 UTF-16 units including the
-`...` suffix; `Ellipsis` preserves whole Unicode characters. List fields
-are escaped and clipped to 600 UTF-16 units each; the payload checker includes
-field and author text in Discord's aggregate embed budget. Author URLs accept
-absolute HTTP(S) homepages without credentials and otherwise use the TMDB title
-page; the title itself continues linking to TMDB. Ratings average the current
-database opinions, one vote per watch/member, with no TMDB rating substitution.
-Footer averages retain one decimal when needed and omit a trailing zero for
-whole-number displays (`5/5`, `4,5/5`). One vote uses `avaliado 1 vez`;
-multiple votes use `avaliado N vezes`, and no votes keep `Sem avaliações.`.
-The existing center-weighted dominant-color algorithm and artwork selection
-(backdrop, then poster) remain unchanged.
+Movie details append `credits,release_dates,external_ids`; TV details append
+`content_ratings,external_ids`. Movies retain Director crew; TV uses `created_by`.
+Both map original language, origin countries, status and external IDs. Movie
+runtime zero maps to NULL; TV episode counts and runtime alternatives retain
+nonnegative provider values. Media-inapplicable fields remain NULL. External
+IDs use TMDB keys and string values, including decimal strings for numeric IDs;
+empty identifiers and the response's own `id` are excluded. Missing appended
+IDs remain NULL unless the movie's top-level IMDb ID is available.
 
-Brazilian classification codes (`BR`, `L`, `6`, `10`, `12`, `14`, `16`, `18`)
-are named constants in `application/letterboxd/classification.go`. Application
-emoji markup is kept separately in `discord/letterboxd/classification.go`;
-the label “Faixa etária” and unknown text “Não informada” live in the pt-BR locale.
-TMDB movie details append `release_dates` alongside credits; TV details append
-`content_ratings`. Country, certification, and movie release type are stored as
-project-owned `ContentRating` entries in the existing nullable JSON
-`letterboxd_titles.content_ratings` column from migration 00011. No new migration
-or record deletion is needed for classification storage.
+Missing/empty dates map to nil year/date; year-only dates retain their precision.
+Malformed nonempty dates fail validation. `releaseField` uses explicit upcoming
+states (`Planned`, `In Production`, movie `Rumored`/`Post Production`, TV `Pilot`)
+for the forecast label. Other states use the release label; returning/ended TV
+series are not upcoming. Positive TV season counts remain appended. See the
+[README](README.md#movie-and-tv-tracker) for visible text and refresh instructions.
 
-Cards do not display age classifications or their emojis. The Discord formatting
-helper has been removed; emoji constants remain reserved for potential future
-display. Classification metadata, provider mapping, selection rules and database
-storage remain unchanged. When Brazilian release variants disagree, the
-application selector still chooses the highest recognized age regardless of
-provider order, retaining original entries and excluding foreign substitutions.
+Cards clip synopsis text to 2,000 UTF-16 units and list fields to 600, preserving
+Unicode characters and the aggregate embed budget. Author URLs accept absolute
+HTTP(S) homepages without credentials and otherwise use TMDB. Artwork selects
+backdrop, then poster. Ratings average one current opinion per watch/member.
 
-SQL NULL (nil slice) marks metadata fetched before classification support and
-forces on-demand refresh even within the normal TTL. A successful detail fetch
-stores an empty JSON array when no classifications are available, preventing
-repeated requests for known-empty results. Provider failure retains the stale
-card without inventing a classification. Metadata upserts replace content ratings
-including empty lists; local title readers retain the JSON data.
+Classifications retain country, certification, and movie release type. The
+application selects the highest recognized Brazilian age when variants disagree;
+foreign entries never substitute. Cards do not display classifications.
+SQL NULL content ratings trigger refresh even within the TTL; a successful fetch
+stores `[]` when none are available. Provider failure retains stale metadata.
 
 ### Review presentation and whitespace
 
@@ -559,13 +532,11 @@ Whitespace-only text remains a review withdrawal. Rendering and modal prefilling
 normalize legacy text without rewriting stored revisions. The shared opinion
 renderer escapes Markdown after normalization, preventing input line breaks from
 breaking quote layout in shared reviews or expanding personal history.
-No schema migration is required.
 
 ### Public member history
 
-History sort/order choice labels are English command metadata from `locale/enus`
-(Date, Rating, Ascending, Descending); wire values, pt-BR descriptions, and
-pt-BR responses are unchanged.
+History sort/order labels come from `locale/enus`
+(Date, Rating, Ascending, Descending); descriptions and responses use pt-BR.
 
 History commands defer publicly; pagination updates that message in place.
 History renders one embed with at most
