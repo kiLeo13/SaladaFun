@@ -53,6 +53,7 @@ func Register(routes *discord.Routes, service *app.Discovery) {
 	routes.Component("lb.page", h.changePage)
 	routes.Component("lb.add", h.add)
 	routes.Component("lb.reviews", h.reviews)
+	routes.Component("lb.reviews-page", h.reviewsPage)
 	routes.Component("lb.watch", h.openWatch)
 	routes.Component("lb.edit", h.openWatch)
 	routes.Modal("lb.watch-save", h.saveWatch)
@@ -240,6 +241,19 @@ func component(r *discord.InteractionRequest, private ...bool) (uint64, error) {
 	return id, nil
 }
 
+// updateComponent acknowledges pagination by deferring an edit of its source message.
+func updateComponent(r *discord.InteractionRequest) (uint64, error) {
+	if r.GuildID == "" {
+		return 0, command.RejectForbidden(ptbr.LetterboxdGuild)
+	}
+	id, err := strconv.ParseUint(string(r.Actor.UserID), 10, 64)
+	if err != nil || id == 0 {
+		return 0, command.RejectForbidden(ptbr.LetterboxdInvalid)
+	}
+	err = r.Responder.Respond(&discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredMessageUpdate})
+	return id, err
+}
+
 // selectTitle resolves one selected remote identity.
 func (h Handler) selectTitle(ctx context.Context, r *discord.InteractionRequest) error {
 	private := len(r.Parameters) != 1 || r.Parameters[0] != "show"
@@ -262,8 +276,7 @@ func validAction(s string) bool { return s == "show" || s == "add" || s == "remo
 
 // changePage reconstructs a bounded query without server-side state.
 func (h Handler) changePage(ctx context.Context, r *discord.InteractionRequest) error {
-	private := len(r.Parameters) != 2 || r.Parameters[0] != "show"
-	user, err := component(r, private)
+	user, err := updateComponent(r)
 	if err != nil {
 		return err
 	}
@@ -297,9 +310,33 @@ func (h Handler) add(ctx context.Context, r *discord.InteractionRequest) error {
 	return h.showSelection(ctx, r.Responder, user, "add", strings.Join(r.Parameters, ":"))
 }
 
-// reviews shows current opinions, hiding withdrawn historical text.
+// reviews opens opinions and recognizes pagination buttons on already-rendered legacy review pages.
 func (h Handler) reviews(ctx context.Context, r *discord.InteractionRequest) error {
-	_, err := component(r, false)
+	update := false
+	if len(r.Parameters) == 2 {
+		page, err := strconv.Atoi(r.Parameters[1])
+		update = err == nil && page > 1
+	}
+	if r.Interaction != nil && r.Interaction.Message != nil && len(r.Interaction.Message.Embeds) > 0 {
+		embed := r.Interaction.Message.Embeds[0]
+		update = update || (embed.Footer != nil && strings.HasPrefix(embed.Title, strings.TrimSuffix(ptbr.LetterboxdReviewTitle, "%s")) && strings.HasPrefix(embed.Footer.Text, strings.SplitN(ptbr.LetterboxdReviewTotal, "%d", 2)[0]))
+	}
+	return h.reviewResponse(ctx, r, update)
+}
+
+// reviewsPage handles the dedicated restart-safe pagination route.
+func (h Handler) reviewsPage(ctx context.Context, r *discord.InteractionRequest) error {
+	return h.reviewResponse(ctx, r, true)
+}
+
+// reviewResponse renders current opinions after acknowledging a new reply or a source-message update.
+func (h Handler) reviewResponse(ctx context.Context, r *discord.InteractionRequest, update bool) error {
+	var err error
+	if update {
+		_, err = updateComponent(r)
+	} else {
+		_, err = component(r, false)
+	}
 	if err != nil {
 		return err
 	}
@@ -355,7 +392,7 @@ func (h Handler) reviews(ctx context.Context, r *discord.InteractionRequest) err
 		page     int
 		disabled bool
 	}{{ptbr.LetterboxdPrevious, page - 1, page == 1}, {ptbr.LetterboxdNext, page + 1, start+reviewPageSize >= len(items) || page >= 100000}} {
-		buttons = append(buttons, discordgo.Button{Label: n.label, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.reviews:%d:%d", id, n.page), Disabled: n.disabled})
+		buttons = append(buttons, discordgo.Button{Label: n.label, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.reviews-page:%d:%d", id, n.page), Disabled: n.disabled})
 	}
 	data.Components = []discordgo.MessageComponent{discordgo.ActionsRow{Components: buttons}}
 	return finish(r.Responder, data)

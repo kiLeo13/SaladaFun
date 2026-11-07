@@ -13,12 +13,17 @@ import (
 
 type visibilityResponder struct {
 	responder
-	flags discordgo.MessageFlags
+	flags        discordgo.MessageFlags
+	responseType discordgo.InteractionResponseType
 }
 
 // Respond retains acknowledgement flags before Complete replaces the captured payload.
 func (r *visibilityResponder) Respond(response *discordgo.InteractionResponse) error {
-	r.flags = response.Data.Flags
+	r.flags = 0
+	r.responseType = response.Type
+	if response.Data != nil {
+		r.flags = response.Data.Flags
+	}
 	return r.responder.Respond(response)
 }
 
@@ -33,8 +38,8 @@ func TestComponentVisibility(t *testing.T) {
 		{"select", []string{"add"}, true},
 		{"select", []string{"remove"}, true},
 		{"page", []string{"show", "2"}, false},
-		{"page", []string{"list", "1"}, true},
-		{"page", []string{"remove", "1"}, true},
+		{"page", []string{"list", "1"}, false},
+		{"page", []string{"remove", "1"}, false},
 		{"reviews", []string{"1", "1"}, false},
 		{"reviews", []string{"1", "2"}, false},
 	} {
@@ -58,6 +63,9 @@ func TestComponentVisibility(t *testing.T) {
 			}
 			if private := out.flags&discordgo.MessageFlagsEphemeral != 0; private != tc.private || out.initial != 1 {
 				t.Fatalf("acknowledgement: private=%v, initial=%d", private, out.initial)
+			}
+			if tc.name == "page" && out.responseType != discordgo.InteractionResponseDeferredMessageUpdate {
+				t.Fatal("pagination created a new reply")
 			}
 		})
 	}
