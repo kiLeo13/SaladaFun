@@ -67,8 +67,12 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		for _, o := range opinions {
 			sum += o.Rating
 		}
-		average := strings.ReplaceAll(fmt.Sprintf("%.1f", float64(sum)/float64(len(opinions))), ".", ",")
-		rating = fmt.Sprintf(ptbr.LetterboxdRating, average, len(opinions))
+		average := strings.ReplaceAll(strings.TrimSuffix(fmt.Sprintf("%.1f", float64(sum)/float64(len(opinions))), ".0"), ".", ",")
+		if len(opinions) == 1 {
+			rating = fmt.Sprintf(ptbr.LetterboxdRatingSingle, average)
+		} else {
+			rating = fmt.Sprintf(ptbr.LetterboxdRating, average, len(opinions))
+		}
 	}
 	embed := &discordgo.MessageEmbed{
 		Title:       clip(app.DisplayTitle(title), 256),

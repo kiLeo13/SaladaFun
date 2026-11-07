@@ -77,6 +77,32 @@ func TestTitleCardFieldBudgets(t *testing.T) {
 	}
 }
 
+// TestRatingFooter checks whole averages, decimal rounding, and singular Portuguese text.
+func TestRatingFooter(t *testing.T) {
+	for _, tc := range []struct {
+		ratings []int
+		want    string
+	}{
+		{nil, "Sem avaliações."},
+		{[]int{5}, "Nota geral: 5/5 · avaliado 1 vez"},
+		{[]int{1}, "Nota geral: 1/5 · avaliado 1 vez"},
+		{[]int{5, 5}, "Nota geral: 5/5 · avaliado 2 vezes"},
+		{[]int{3, 5}, "Nota geral: 4/5 · avaliado 2 vezes"},
+		{[]int{4, 5}, "Nota geral: 4,5/5 · avaliado 2 vezes"},
+		{[]int{4, 5, 5}, "Nota geral: 4,7/5 · avaliado 3 vezes"},
+	} {
+		opinions := make([]app.Opinion, len(tc.ratings))
+		for i, rating := range tc.ratings {
+			opinions[i].Rating = rating
+		}
+		card := titleCard(&entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: "movie", OriginalTitle: "Title", ReleaseYear: 2020}, opinions, "movie:1")
+		checkPayload(t, card)
+		if got := card.Embeds[0].Footer.Text; got != tc.want {
+			t.Fatalf("ratings %v: %q, want %q", tc.ratings, got, tc.want)
+		}
+	}
+}
+
 // TestReleaseFieldSeasons verifies media-specific formatting and missing season counts.
 func TestReleaseFieldSeasons(t *testing.T) {
 	for _, tc := range []struct {
