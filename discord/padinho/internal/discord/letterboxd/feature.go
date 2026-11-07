@@ -308,6 +308,10 @@ func (h Handler) reviews(ctx context.Context, r *discord.InteractionRequest) err
 	if err != nil {
 		return err
 	}
+	title, err := h.service.Catalog.TitleByID(ctx, id)
+	if err != nil {
+		return err
+	}
 	lines := []string{}
 	start := (page - 1) * reviewPageSize
 	if start < 0 || start > len(items) {
@@ -315,17 +319,29 @@ func (h Handler) reviews(ctx context.Context, r *discord.InteractionRequest) err
 	}
 	for i := start; i < len(items) && i < start+reviewPageSize; i++ {
 		o := items[i]
-		text := ""
+		text := ptbr.LetterboxdReviewAbsent
 		if o.Review != nil {
-			text = plainOpinion(*o.Review)
+			if review := plainOpinion(*o.Review); review != "" {
+				text = review
+			}
 		}
-		lines = append(lines, fmt.Sprintf("<@%d>: %d/5\n%s", o.UserID, o.Rating, text))
+		lines = append(lines, fmt.Sprintf(ptbr.LetterboxdReviewEntry, o.UserID, o.Rating, text))
 	}
-	data := response(ptbr.LetterboxdNoRatings)
-	if len(lines) > 0 {
-		data.Content = ""
-		data.Embeds = []*discordgo.MessageEmbed{{Description: strings.Join(lines, "\n\n")}}
+	description := strings.Join(lines, "\n\n")
+	if len(lines) == 0 {
+		description = ptbr.LetterboxdNoRatings
 	}
+	total := fmt.Sprintf(ptbr.LetterboxdReviewTotal, len(items))
+	if len(items) == 1 {
+		total = ptbr.LetterboxdReviewTotalSingle
+	}
+	embed := &discordgo.MessageEmbed{
+		Title:       Ellipsis(fmt.Sprintf(ptbr.LetterboxdReviewTitle, plainOpinion(app.DisplayTitle(title))), 256),
+		Description: description,
+		Footer:      &discordgo.MessageEmbedFooter{Text: total},
+	}
+	data := response("")
+	data.Embeds = []*discordgo.MessageEmbed{embed}
 	buttons := []discordgo.MessageComponent{}
 	for _, n := range []struct {
 		label    string

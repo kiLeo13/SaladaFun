@@ -54,6 +54,14 @@ const (
 const LetterboxdRatings = "Avalia\u00e7\u00f5es"
 
 const (
+	LetterboxdReviewTitle       = "Avaliações de %s"
+	LetterboxdReviewTotal       = "Total: %d avaliações."
+	LetterboxdReviewTotalSingle = "Total: 1 avaliação."
+	LetterboxdReviewAbsent      = "*Sem comentário*"
+	LetterboxdReviewEntry       = "<@%d>: **%d/5**\n> %s"
+)
+
+const (
 	LetterboxdReleaseYear    = "Lan\u00e7amento"
 	LetterboxdCreators       = "Criadores"
 	LetterboxdDirectors      = "Dire\u00e7\u00e3o"
