@@ -437,6 +437,20 @@ no in-memory interaction session is required. Shared cards act on the clicking
 member, and personal replies suppress mentions. See [README.md](README.md) for
 commands, configuration, verification, and deployment.
 
+Search results carry items, `total_results`, and `total_pages` separately.
+TMDB totals survive supported-media filtering and page truncation; the header
+uses that absolute provider total. Local-only wishlist results count filtered
+matches. On provider failure, cached search counts all matching title rows and
+reads a bounded 20-title page with stable ID ordering, rather than limiting the
+entire fallback search to 25 titles. Its warning appears only in the
+`⚠️ Resultados (x)` heading. Cached pages are not paginated a second time in the
+handler, and a one-item fallback still shows the outage warning.
+
+Footers use plain `Consulta: <query>`. Pagination strips that prefix only when
+the message has the new result heading; legacy unlabelled footers remain valid,
+including queries that themselves begin with `Consulta:`. Navigation follows
+the source's page count and retains the existing 500-page ceiling.
+
 ### Discord payload constraints
 
 Title cards place `lb.watch:<id>` first and use it for both initial ratings and

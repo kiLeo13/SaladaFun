@@ -153,6 +153,10 @@ Commands: `/letterboxd show title:`, `/letterboxd wishlist add title:`,
 `/letterboxd about`, `/letterboxd pick-random`, and
 `/letterboxd history [member] [sort] [order]`. Show supports TMDB autocomplete and free-text result lists;
 selected titles display artwork, community ratings, and a reviews button.
+Search pages show `Resultados (x)` using TMDB's absolute total, including
+people counted by multi-search even though the menu lists only movies/TV.
+During provider failures, `⚠️ Resultados (x)` shows the count of all matching
+cached titles instead. The footer displays `Consulta: <query>` as plain text.
 Wishlist additions exclude existing interests. Removal/listing use local data
 and work during TMDB outages. Data is global across guilds; interactions require
 a server. Show replies publicly, while personal wishlist actions reply privately.
