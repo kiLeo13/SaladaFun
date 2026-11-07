@@ -35,6 +35,7 @@ type Opinion struct {
 // Discovery coordinates remote search with personal wishlist ownership.
 type Discovery struct {
 	Metadata       *Service
+	Activity       *Activity
 	Catalog        Catalog
 	SearchProvider Searcher
 }
