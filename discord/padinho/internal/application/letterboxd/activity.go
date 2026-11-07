@@ -33,11 +33,17 @@ type HistoryEntry struct {
 	Review         *string
 }
 
+// HistoryResults contains one bounded page and the member's total current ratings.
+type HistoryResults struct {
+	Entries []HistoryEntry
+	Total   int
+}
+
 // ActivityStore persists independently owned opinions and local selection queries.
 type ActivityStore interface {
 	Watch(context.Context, uint64, uint64) (*WatchState, error)
 	SaveWatch(context.Context, uint64, uint64, uint64, int, string) error
-	History(context.Context, uint64, string, string, int) ([]HistoryEntry, error)
+	History(context.Context, uint64, string, string, int) (HistoryResults, error)
 	RandomUnwatched(context.Context, uint64) (*entity.LetterboxdTitle, error)
 }
 
@@ -69,9 +75,9 @@ func (a *Activity) Save(ctx context.Context, user, title, interaction uint64, ra
 }
 
 // History validates SQL ordering inputs and bounds page offsets.
-func (a *Activity) History(ctx context.Context, user uint64, sort, order string, page int) ([]HistoryEntry, error) {
+func (a *Activity) History(ctx context.Context, user uint64, sort, order string, page int) (HistoryResults, error) {
 	if user == 0 || page < 1 || page > 100000 || (sort != "date" && sort != "rating") || (order != "asc" && order != "desc") {
-		return nil, ErrInvalid
+		return HistoryResults{}, ErrInvalid
 	}
 	return a.Store.History(ctx, user, sort, order, page)
 }

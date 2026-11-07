@@ -26,8 +26,8 @@ func (a *activities) SaveWatch(context.Context, uint64, uint64, uint64, int, str
 }
 
 // History returns the injected persistence error.
-func (a *activities) History(context.Context, uint64, string, string, int) ([]HistoryEntry, error) {
-	return nil, a.err
+func (a *activities) History(context.Context, uint64, string, string, int) (HistoryResults, error) {
+	return HistoryResults{}, a.err
 }
 
 // RandomUnwatched returns only the injected eligible candidate.
