@@ -27,8 +27,8 @@ const (
 	LetterboxdRemoved      = "Removido da sua lista."
 	LetterboxdReviews      = "Ver avaliações"
 	LetterboxdNoRatings    = "Sem avaliações."
-	LetterboxdRating       = "Nota geral: %s/5 \u00b7 avaliado %d vezes"
-	LetterboxdRatingSingle = "Nota geral: %s/5 \u00b7 avaliado 1 vez"
+	LetterboxdRating       = "Nota Geral: %s/5 \u00b7 avaliado %d vezes"
+	LetterboxdRatingSingle = "Nota Geral: %s/5 \u00b7 avaliado 1 vez"
 	LetterboxdNext         = "Próxima"
 	LetterboxdPrevious     = "Anterior"
 	LetterboxdCredit       = "Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB."
@@ -36,7 +36,7 @@ const (
 
 const (
 	LetterboxdAboutOverview = "## Sobre o Salada Letterboxd\nUm espaço para descobrir filmes e séries, organizar o que você quer assistir e compartilhar notas e comentários com a comunidade. Use sua lista para guardar títulos, marque o que assistiu e consulte as avaliações e seu histórico."
-	LetterboxdAboutLocal    = "### ⚠️ Modo local\nQuando este símbolo aparecer, não foi possível consultar o TMDB. O recurso continua usando os dados locais disponíveis, mas a busca pode mostrar menos resultados."
+	LetterboxdAboutLocal    = "### ⚠️ Modo Local\nQuando este símbolo aparecer, não foi possível consultar o TMDB. O recurso continua usando os dados locais disponíveis, mas a busca pode mostrar menos resultados."
 	LetterboxdAboutCredits  = "### 📜 Dados e Atribuições"
 	LetterboxdTMDBLogo      = "Logotipo do TMDB"
 )
@@ -82,10 +82,10 @@ const (
 	LetterboxdReleaseSeason      = "%s - 1 temporada"
 	LetterboxdReleaseSeasons     = "%s - %d temporadas"
 	LetterboxdReleaseUnknown     = "Desconhecido"
-	LetterboxdReleaseExpected    = "Previs\u00e3o de lan\u00e7amento"
+	LetterboxdReleaseExpected    = "Previs\u00e3o de Lan\u00e7amento"
 	LetterboxdReleaseUnannounced = "Sem data anunciada"
 	LetterboxdReleaseCanceled    = "Cancelado"
-	LetterboxdAgeRating          = "Faixa et\u00e1ria"
+	LetterboxdAgeRating          = "Faixa Et\u00e1ria"
 	LetterboxdAgeUnknown         = "N\u00e3o informada"
 	LetterboxdAgeLivre           = "Livre"
 	LetterboxdAgeYears           = "%s anos"

@@ -26,7 +26,7 @@ func TestTitleCardMetadata(t *testing.T) {
 			if embed.Author.URL != wantURL || embed.URL != "https://www.themoviedb.org/"+kind+"/42" {
 				t.Fatal("author/title URLs")
 			}
-			if embed.Footer.Text != "Nota geral: 4,5/5 · avaliado 2 vezes" {
+			if embed.Footer.Text != "Nota Geral: 4,5/5 · avaliado 2 vezes" {
 				t.Fatal(embed.Footer.Text)
 			}
 			fields := map[string]string{}
@@ -84,13 +84,13 @@ func TestRatingFooter(t *testing.T) {
 		want    string
 	}{
 		{nil, "Sem avaliações."},
-		{[]int{5}, "Nota geral: 5/5 · avaliado 1 vez"},
-		{[]int{1}, "Nota geral: 1/5 · avaliado 1 vez"},
-		{[]int{5, 5}, "Nota geral: 5/5 · avaliado 2 vezes"},
-		{[]int{3, 5}, "Nota geral: 4/5 · avaliado 2 vezes"},
-		{[]int{4, 5}, "Nota geral: 4,5/5 · avaliado 2 vezes"},
-		{[]int{4, 5, 5}, "Nota geral: 4,7/5 · avaliado 3 vezes"},
-		{[]int{5, 5, 5, 4, 4, 4, 4}, "Nota geral: 4,4/5 · avaliado 7 vezes"},
+		{[]int{5}, "Nota Geral: 5/5 · avaliado 1 vez"},
+		{[]int{1}, "Nota Geral: 1/5 · avaliado 1 vez"},
+		{[]int{5, 5}, "Nota Geral: 5/5 · avaliado 2 vezes"},
+		{[]int{3, 5}, "Nota Geral: 4/5 · avaliado 2 vezes"},
+		{[]int{4, 5}, "Nota Geral: 4,5/5 · avaliado 2 vezes"},
+		{[]int{4, 5, 5}, "Nota Geral: 4,7/5 · avaliado 3 vezes"},
+		{[]int{5, 5, 5, 4, 4, 4, 4}, "Nota Geral: 4,4/5 · avaliado 7 vezes"},
 	} {
 		opinions := make([]app.Opinion, len(tc.ratings))
 		for i, rating := range tc.ratings {

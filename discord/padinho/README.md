@@ -165,9 +165,13 @@ personal history rather than this quick view.
 
 Cards show release information, directors/creators, genres, artwork, and community
 ratings. TV release text includes known season counts. Upcoming titles without
-a date show `Previsão de lançamento: Sem data anunciada`; missing historical
+a date show `Previsão de Lançamento: Sem data anunciada`; missing historical
 dates show `Lançamento: Desconhecido`. Canceled titles without a year show
 `Cancelado`. Age classifications are cached but not displayed.
+
+Letterboxd headings capitalize their main words: `Previsão de Lançamento`,
+`Nota Geral`, and `Modo Local`. The reserved age label follows the same style:
+`Faixa Etária`.
 
 Selected titles cache TMDB metadata for 24 hours. To refresh existing gaps,
 manually set `metadata_fetched_at` to zero; search/autocomplete alone never
