@@ -2,8 +2,8 @@
 
 ## Purpose
 
-The project at `minecraft/purpur/saladafun` is a Java 25 Purpur 26.2 plugin providing shared player vitals,
-player-scoped batch breaking, and a Discord chat bridge. Domain rules are isolated
+This Java 25/Purpur 26.2 plugin provides shared player vitals, player-scoped
+batch breaking, and a Discord chat bridge. Domain rules are isolated
 from Bukkit so they can be reused by another Minecraft server adapter.
 
 ## Source layout
@@ -28,16 +28,10 @@ Maven compiles these packages together and shades required runtime dependencies
 into one deployable plugin JAR. Package boundaries keep responsibilities clear
 without introducing separate Maven modules.
 
-Java packages retain the collision-safe `sld.saladafun` root and are
-feature-first, for example `sld.saladafun.batchbreaking`.
-
 ## Shared health, food, and effects
 
 Health, food, and effects are independent session modules under
 `sld.saladafun.shared`.
-Their aggregates, lifecycle managers, models, and repository interfaces have no
-Bukkit, Paper, Purpur, JDBC, jOOQ, or SQLite dependency.
-
 Players are replicas of one in-memory canonical state per enabled module. At
 `ServerTickEndEvent`, the Purpur adapters reconcile only players marked dirty by
 accepted gameplay events. Idle ticks do no polling or aggregate work. A periodic
