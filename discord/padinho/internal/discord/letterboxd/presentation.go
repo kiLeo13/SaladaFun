@@ -2,6 +2,7 @@ package letterboxd
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -66,14 +67,40 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		for _, o := range opinions {
 			sum += o.Rating
 		}
-		rating = fmt.Sprintf(ptbr.LetterboxdRating, float64(sum)/float64(len(opinions)), len(opinions))
+		average := strings.ReplaceAll(fmt.Sprintf("%.1f", float64(sum)/float64(len(opinions))), ".", ",")
+		rating = fmt.Sprintf(ptbr.LetterboxdRating, average, len(opinions))
 	}
 	embed := &discordgo.MessageEmbed{
-		Title:       clip(label(*title), 256),
+		Title:       clip(app.DisplayTitle(title), 256),
 		Description: clip(title.Synopsis, 3000),
 		Color:       0x5865F2,
 		URL:         fmt.Sprintf("https://www.themoviedb.org/%s/%d", title.MediaType, title.TMDBID),
 		Footer:      &discordgo.MessageEmbedFooter{Text: rating},
+	}
+	homepage := app.HomepageURL(title.Homepage)
+	if homepage == "" {
+		homepage = embed.URL
+	}
+	kind := ptbr.LetterboxdMovie
+	if title.MediaType == "tv" {
+		kind = ptbr.LetterboxdTV
+	}
+	embed.Author = &discordgo.MessageEmbedAuthor{Name: kind, URL: homepage}
+	embed.Fields = []*discordgo.MessageEmbedField{{Name: ptbr.LetterboxdReleaseYear, Value: strconv.Itoa(title.ReleaseYear), Inline: true}}
+	creatorLabel := ptbr.LetterboxdDirectors
+	if title.MediaType == "tv" {
+		creatorLabel = ptbr.LetterboxdCreators
+		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: ptbr.LetterboxdSeasons, Value: strconv.Itoa(title.SeasonCount), Inline: true})
+	}
+	for _, field := range []struct {
+		name   string
+		values []string
+	}{
+		{creatorLabel, title.Creators}, {ptbr.LetterboxdGenres, title.Genres},
+	} {
+		if names := app.MetadataNames(field.values); len(names) > 0 {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: field.name, Value: clip(plainOpinion(strings.Join(names, ", ")), 600), Inline: true})
+		}
 	}
 	if title.Accent != nil {
 		embed.Color = int(*title.Accent)

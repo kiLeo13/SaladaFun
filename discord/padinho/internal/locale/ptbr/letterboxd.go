@@ -20,8 +20,8 @@ const (
 	LetterboxdAdded       = "Adicionado \u00e0 sua lista."
 	LetterboxdRemoved     = "Removido da sua lista."
 	LetterboxdReviews     = "Ver avalia\u00e7\u00f5es"
-	LetterboxdNoRatings   = "Sem avalia\u00e7\u00f5es"
-	LetterboxdRating      = "M\u00e9dia: %.1f/5 (%d avalia\u00e7\u00f5es)"
+	LetterboxdNoRatings   = "Sem avalia\u00e7\u00f5es."
+	LetterboxdRating      = "Nota geral: %s/5 \u00b7 avaliado %d vezes"
 	LetterboxdNext        = "Pr\u00f3xima"
 	LetterboxdPrevious    = "Anterior"
 	LetterboxdCredit      = "This product uses the TMDB API but is not endorsed or certified by TMDB."
@@ -51,3 +51,11 @@ const (
 )
 
 const LetterboxdRatings = "Avalia\u00e7\u00f5es"
+
+const (
+	LetterboxdReleaseYear = "Lan\u00e7amento"
+	LetterboxdCreators    = "Criadores"
+	LetterboxdDirectors   = "Dire\u00e7\u00e3o"
+	LetterboxdGenres      = "G\u00eaneros"
+	LetterboxdSeasons     = "Temporadas"
+)

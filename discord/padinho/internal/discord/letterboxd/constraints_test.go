@@ -55,6 +55,18 @@ func checkPayload(t *testing.T, data *discordgo.InteractionResponseData) {
 		bound(e.Title, 0, 256)
 		bound(e.Description, 0, 4096)
 		total += length(e.Title) + length(e.Description)
+		if e.Author != nil {
+			bound(e.Author.Name, 1, 256)
+			total += length(e.Author.Name)
+		}
+		if len(e.Fields) > 25 {
+			t.Fatal("embed field count")
+		}
+		for _, f := range e.Fields {
+			bound(f.Name, 1, 256)
+			bound(f.Value, 1, 1024)
+			total += length(f.Name) + length(f.Value)
+		}
 		if e.Footer != nil {
 			bound(e.Footer.Text, 1, 2048)
 			total += length(e.Footer.Text)
