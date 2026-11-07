@@ -29,10 +29,13 @@ func TestDetails(t *testing.T) {
 				if r.Header.Get("Authorization") != "Bearer secret" || r.URL.Query().Get("language") != "pt-BR" {
 					t.Fatal("auth/options")
 				}
-				if kind == "movie" && r.URL.Query().Get("append_to_response") != "credits" {
+				if kind == "movie" && r.URL.Query().Get("append_to_response") != "credits,release_dates" {
 					t.Fatal("movie credits missing")
 				}
-				body := `{"id":1,"original_title":"Original","title":"Traduzido","release_date":"2020-02-03","original_name":"Series","name":"Serie","first_air_date":"2021","homepage":"https://example.test/title","genres":[{"name":" Drama "},{"name":"Drama"},{"name":""},{"name":"Comedy, Drama"}],"created_by":[{"name":" Ross Duffer "},{"name":"Matt Duffer"},{"name":"Ross Duffer"}],"number_of_seasons":5,"credits":{"crew":[{"name":" Director, Jr. ","job":"Director"},{"name":"Director, Jr.","job":"Director"},{"name":"Writer","job":"Writer"}]},"belongs_to_collection":{"backdrop_path":"/collection.jpg"}}`
+				if kind == "tv" && r.URL.Query().Get("append_to_response") != "content_ratings" {
+					t.Fatal("TV classifications missing")
+				}
+				body := `{"id":1,"original_title":"Original","title":"Traduzido","release_date":"2020-02-03","original_name":"Series","name":"Serie","first_air_date":"2021","homepage":"https://example.test/title","genres":[{"name":" Drama "},{"name":"Drama"},{"name":""},{"name":"Comedy, Drama"}],"created_by":[{"name":" Ross Duffer "},{"name":"Matt Duffer"},{"name":"Ross Duffer"}],"number_of_seasons":5,"credits":{"crew":[{"name":" Director, Jr. ","job":"Director"},{"name":"Director, Jr.","job":"Director"},{"name":"Writer","job":"Writer"}]},"release_dates":{"results":[{"iso_3166_1":"BR","release_dates":[{"certification":"16","type":3}]}]},"content_ratings":{"results":[{"iso_3166_1":"BR","rating":"16"}]},"belongs_to_collection":{"backdrop_path":"/collection.jpg"}}`
 				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 			})})
 			if err != nil {
@@ -41,6 +44,15 @@ func TestDetails(t *testing.T) {
 			title, err := c.Details(kind, 1)
 			if err != nil || title.ReleaseYear < 2020 {
 				t.Fatalf("details: %#v %v", title, err)
+			}
+			if len(title.ContentRatings) != 1 || title.ContentRatings[0].Country != "BR" || title.ContentRatings[0].Certification != "16" {
+				t.Fatalf("classification mapping: %#v", title.ContentRatings)
+			}
+			if kind == "movie" && title.ContentRatings[0].ReleaseType != 3 {
+				t.Fatal("release type lost")
+			}
+			if kind == "tv" && title.ContentRatings[0].ReleaseType != 0 {
+				t.Fatal("TV release type")
 			}
 			if title.Homepage != "https://example.test/title" || len(title.Genres) != 2 || title.Genres[1] != "Comedy, Drama" {
 				t.Fatalf("metadata %#v", title)

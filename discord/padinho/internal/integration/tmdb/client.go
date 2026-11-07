@@ -50,11 +50,11 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 	if !app.ValidIdentity(kind, id) || id > uint64(^uint(0)>>1) {
 		return nil, app.ErrInvalid
 	}
-	t := &entity.LetterboxdTitle{MediaType: kind, TMDBID: id}
+	t := &entity.LetterboxdTitle{MediaType: kind, TMDBID: id, ContentRatings: []entity.ContentRating{}}
 	options := map[string]string{"language": "pt-BR"}
 	var date string
 	if kind == "movie" {
-		options["append_to_response"] = "credits"
+		options["append_to_response"] = "credits,release_dates"
 		m, err := c.client.GetMovieDetails(int(id), options)
 		if err != nil {
 			return nil, errors.New("TMDB movie details unavailable")
@@ -79,10 +79,18 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 			}
 		}
 		date = m.ReleaseDate
+		if m.MovieReleaseDatesAppend != nil && m.ReleaseDates != nil && m.ReleaseDates.MovieReleaseDatesResults != nil {
+			for _, country := range m.ReleaseDates.Results {
+				for _, release := range country.ReleaseDates {
+					t.ContentRatings = append(t.ContentRatings, entity.ContentRating{Country: country.Iso3166_1, Certification: release.Certification, ReleaseType: release.Type})
+				}
+			}
+		}
 		if t.BackdropPath == "" {
 			t.BackdropPath = m.BelongsToCollection.BackdropPath
 		}
 	} else {
+		options["append_to_response"] = "content_ratings"
 		m, err := c.client.GetTVDetails(int(id), options)
 		if err != nil {
 			return nil, errors.New("TMDB series details unavailable")
@@ -96,6 +104,11 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 		t.PosterPath = m.PosterPath
 		t.BackdropPath = m.BackdropPath
 		date = m.FirstAirDate
+		if m.TVContentRatingsAppend != nil && m.ContentRatings != nil && m.ContentRatings.TVContentRatingsResults != nil {
+			for _, rating := range m.ContentRatings.Results {
+				t.ContentRatings = append(t.ContentRatings, entity.ContentRating{Country: rating.Iso3166_1, Certification: rating.Rating})
+			}
+		}
 		t.Homepage = app.HomepageURL(m.Homepage)
 		t.SeasonCount = m.NumberOfSeasons
 		for _, person := range m.CreatedBy {
