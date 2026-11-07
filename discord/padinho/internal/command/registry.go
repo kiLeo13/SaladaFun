@@ -564,6 +564,9 @@ func validateOptions(location string, options []OptionDefinition) []string {
 		if option.Autocomplete && option.Type != OptionTypeString && option.Type != OptionTypeInteger {
 			problems = append(problems, fmt.Sprintf("%s cannot use autocomplete", optionLocation))
 		}
+		if option.Autocomplete && len(option.Choices) > 0 {
+			problems = append(problems, fmt.Sprintf("%s cannot combine choices and autocomplete", optionLocation))
+		}
 		if len(option.Choices) > maximumOptionChoices {
 			problems = append(problems, fmt.Sprintf("%s has more than %d choices", optionLocation, maximumOptionChoices))
 		}
