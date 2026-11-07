@@ -47,17 +47,17 @@ func (s *activityStore) SaveWatch(_ context.Context, user, title, interaction ui
 	return nil
 }
 
-// History captures ordering and includes a sentinel lookahead row.
-func (s *activityStore) History(_ context.Context, user uint64, sort, order string, page int) ([]app.HistoryEntry, error) {
+// History captures ordering and supplies one bounded page with its absolute total.
+func (s *activityStore) History(_ context.Context, user uint64, sort, order string, page int) (app.HistoryResults, error) {
 	s.user = user
 	s.sort = sort
 	s.order = order
 	s.page = page
 	if s.empty {
-		return nil, nil
+		return app.HistoryResults{}, nil
 	}
 	text := strings.Repeat("*", 500)
-	return []app.HistoryEntry{{ID: 1, OriginalTitle: "Title", Review: &text}, {ID: 2}, {ID: 3}, {ID: 4}}, nil
+	return app.HistoryResults{Entries: []app.HistoryEntry{{ID: 1, OriginalTitle: "Title", Review: &text, Rating: 5, WatchedAt: 1000}, {ID: 2}, {ID: 3}}, Total: 4}, nil
 }
 
 // RandomUnwatched supplies a candidate independently of remote search.
@@ -140,7 +140,7 @@ func TestHistoryAndRandom(t *testing.T) {
 	out := &responder{}
 	ctx := context.Background()
 	request := &command.CommandRequest{GuildID: "1", Actor: command.Actor{UserID: "11"}, Responder: out, Options: command.NewOptionValues(nil)}
-	if err := h.history(ctx, request); err != nil || store.user != 11 || store.sort != "date" || store.order != "desc" || len(out.data.Embeds) != 3 {
+	if err := h.history(ctx, request); err != nil || store.user != 11 || store.sort != "date" || store.order != "desc" || len(out.data.Embeds) != 1 {
 		t.Fatal("defaults", err)
 	}
 	if !strings.Contains(out.data.Embeds[0].Description, "\\*") || len(out.data.Embeds[0].Description) > 4096 {
@@ -165,7 +165,7 @@ func TestHistoryAndRandom(t *testing.T) {
 	if err := h.pickRandom(ctx, request); err != nil || out.data.Content != ptbr.LetterboxdNoRandom {
 		t.Fatal("empty random")
 	}
-	if err := h.history(ctx, request); err != nil || !strings.Contains(out.data.Content, ptbr.LetterboxdNoHistory) {
+	if err := h.history(ctx, request); err != nil || !strings.Contains(out.data.Embeds[0].Description, ptbr.LetterboxdNoHistory) {
 		t.Fatal("empty history")
 	}
 }

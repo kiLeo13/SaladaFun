@@ -50,9 +50,9 @@ const (
 	LetterboxdOrder         = "Direção da ordenação"
 	LetterboxdAscending     = "Crescente"
 	LetterboxdDescending    = "Decrescente"
-	LetterboxdHistoryTitle  = "Histórico de <@%d>"
+	LetterboxdHistoryTitle  = "Avaliações de %s"
 	LetterboxdNoHistory     = "Nenhum título assistido."
-	LetterboxdHistoryEntry  = "%s\nAssistido em %s (UTC) | %d/5\n%s"
+	LetterboxdHistoryEntry  = "**%s**: **%d/5** · <t:%d:d>\n> %s"
 	LetterboxdRandom        = "Sortear um título não assistido da minha lista."
 	LetterboxdNoRandom      = "Sua lista não tem títulos não assistidos. Adicione novos títulos para sortear."
 )

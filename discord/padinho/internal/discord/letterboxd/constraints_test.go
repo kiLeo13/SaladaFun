@@ -19,13 +19,13 @@ import (
 type boundaryHistoryStore struct{ *activityStore }
 
 // History supplies a full page of maximum-length escaped titles and opinions.
-func (s boundaryHistoryStore) History(context.Context, uint64, string, string, int) ([]app.HistoryEntry, error) {
+func (s boundaryHistoryStore) History(context.Context, uint64, string, string, int) (app.HistoryResults, error) {
 	text := strings.Repeat("*", 500)
 	entries := make([]app.HistoryEntry, app.HistoryPageSize+1)
 	for i := range entries {
 		entries[i] = app.HistoryEntry{OriginalTitle: strings.Repeat("🎬", 500), MediaType: "movie", Review: &text, Rating: 5}
 	}
-	return entries, nil
+	return app.HistoryResults{Entries: entries, Total: len(entries)}, nil
 }
 
 // checkPayload validates the serialized shapes and limits used by Letterboxd.

@@ -189,15 +189,15 @@ func (h Handler) history(ctx context.Context, r *command.CommandRequest) error {
 	if value, err := r.Options.String("order"); err == nil {
 		order = value
 	}
-	if err := deferReply(r.Responder, r.GuildID); err != nil {
+	if err := deferReply(r.Responder, r.GuildID, false); err != nil {
 		return err
 	}
-	return h.renderHistory(ctx, r.Responder, user, sort, order, 1)
+	return h.renderHistory(ctx, r.Responder, user, sort, order, 1, historyAuthor(user, r.Users))
 }
 
 // historyPage validates navigation and retains the requested member and ordering.
 func (h Handler) historyPage(ctx context.Context, r *discord.InteractionRequest) error {
-	if _, err := component(r); err != nil {
+	if _, err := component(r, false); err != nil {
 		return err
 	}
 	if len(r.Parameters) != 4 {
@@ -208,7 +208,15 @@ func (h Handler) historyPage(ctx context.Context, r *discord.InteractionRequest)
 	if err != nil || e != nil {
 		return command.RejectForbidden(ptbr.LetterboxdInvalid)
 	}
-	return h.renderHistory(ctx, r.Responder, user, r.Parameters[1], r.Parameters[2], page)
+	author := historyAuthor(user, nil)
+	if r.Interaction != nil && r.Interaction.Message != nil && len(r.Interaction.Message.Embeds) > 0 {
+		previous := r.Interaction.Message.Embeds[0].Author
+		if previous != nil && previous.URL == author.URL {
+			copy := *previous
+			author = &copy
+		}
+	}
+	return h.renderHistory(ctx, r.Responder, user, r.Parameters[1], r.Parameters[2], page, author)
 }
 
 // plainOpinion escapes Markdown and preserves readable short reviews.
@@ -217,31 +225,45 @@ func plainOpinion(s string) string {
 	return strings.NewReplacer("\\", "\\\\", "`", "\\`", "*", "\\*", "_", "\\_", "~", "\\~", "|", "\\|", ">", "\\>").Replace(s)
 }
 
-// renderHistory shows complete reviews in bounded embeds, with stable pagination.
-func (h Handler) renderHistory(ctx context.Context, r command.Responder, user uint64, sort, order string, page int) error {
-	entries, err := h.service.Activity.History(ctx, user, sort, order, page)
+// renderHistory renders up to three compact entries in one public history embed.
+func (h Handler) renderHistory(ctx context.Context, r command.Responder, user uint64, sort, order string, page int, authors ...*discordgo.MessageEmbedAuthor) error {
+	results, err := h.service.Activity.History(ctx, user, sort, order, page)
 	if errors.Is(err, app.ErrInvalid) {
 		return command.RejectForbidden(ptbr.LetterboxdInvalid)
 	}
 	if err != nil {
 		return err
 	}
-	more := len(entries) > app.HistoryPageSize
-	if more {
+	entries := results.Entries
+	if len(entries) > app.HistoryPageSize {
 		entries = entries[:app.HistoryPageSize]
 	}
-	data := response(fmt.Sprintf(ptbr.LetterboxdHistoryTitle, user))
-	if len(entries) == 0 {
-		data.Content += "\n" + ptbr.LetterboxdNoHistory
+	more := page*app.HistoryPageSize < results.Total
+	author := historyAuthor(user, nil)
+	if len(authors) > 0 && authors[0] != nil {
+		author = authors[0]
 	}
+	lines := []string{}
 	for _, e := range entries {
-		title := entity.LetterboxdTitle{OriginalTitle: e.OriginalTitle, LocalizedTitle: e.LocalizedTitle, MediaType: e.MediaType, ReleaseYear: e.ReleaseYear}
-		text := ""
+		title := entity.LetterboxdTitle{OriginalTitle: e.OriginalTitle, LocalizedTitle: e.LocalizedTitle}
+		text := ptbr.LetterboxdReviewAbsent
 		if e.Review != nil {
-			text = plainOpinion(*e.Review)
+			if review := plainOpinion(*e.Review); review != "" {
+				text = review
+			}
 		}
-		data.Embeds = append(data.Embeds, &discordgo.MessageEmbed{Description: fmt.Sprintf(ptbr.LetterboxdHistoryEntry, Ellipsis(plainOpinion(label(title)), 300), time.UnixMilli(e.WatchedAt).UTC().Format("02/01/2006 15:04"), e.Rating, text)})
+		lines = append(lines, fmt.Sprintf(ptbr.LetterboxdHistoryEntry, Ellipsis(plainOpinion(app.DisplayTitle(&title)), 300), e.Rating, time.UnixMilli(e.WatchedAt).Unix(), text))
 	}
+	description := strings.Join(lines, "\n\n")
+	if len(entries) == 0 {
+		description = ptbr.LetterboxdNoHistory
+	}
+	total := fmt.Sprintf(ptbr.LetterboxdReviewTotal, results.Total)
+	if results.Total == 1 {
+		total = ptbr.LetterboxdReviewTotalSingle
+	}
+	data := response("")
+	data.Embeds = []*discordgo.MessageEmbed{{Author: author, Description: description, Footer: &discordgo.MessageEmbedFooter{Text: total}}}
 	buttons := []discordgo.MessageComponent{}
 	for _, n := range []struct {
 		label, emoji string
@@ -252,4 +274,18 @@ func (h Handler) renderHistory(ctx context.Context, r command.Responder, user ui
 	}
 	data.Components = []discordgo.MessageComponent{discordgo.ActionsRow{Components: buttons}}
 	return finish(r, data)
+}
+
+// historyAuthor uses interaction profile data and falls back to the member snowflake.
+func historyAuthor(user uint64, profiles map[command.Snowflake]command.UserProfile) *discordgo.MessageEmbedAuthor {
+	id := strconv.FormatUint(user, 10)
+	profile := profiles[command.Snowflake(id)]
+	name := strings.TrimSpace(profile.GlobalName)
+	if name == "" {
+		name = strings.TrimSpace(profile.Username)
+	}
+	if name == "" {
+		name = id
+	}
+	return &discordgo.MessageEmbedAuthor{Name: Ellipsis(fmt.Sprintf(ptbr.LetterboxdHistoryTitle, app.NormalizeReview(name)), 256), URL: "https://discord.com/users/" + id, IconURL: profile.AvatarURL}
 }
