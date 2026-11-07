@@ -29,7 +29,10 @@ func TestDetails(t *testing.T) {
 				if r.Header.Get("Authorization") != "Bearer secret" || r.URL.Query().Get("language") != "pt-BR" {
 					t.Fatal("auth/options")
 				}
-				body := `{"id":1,"original_title":"Original","title":"Traduzido","release_date":"2020-02-03","original_name":"Series","name":"Serie","first_air_date":"2021","belongs_to_collection":{"backdrop_path":"/collection.jpg"}}`
+				if kind == "movie" && r.URL.Query().Get("append_to_response") != "credits" {
+					t.Fatal("movie credits missing")
+				}
+				body := `{"id":1,"original_title":"Original","title":"Traduzido","release_date":"2020-02-03","original_name":"Series","name":"Serie","first_air_date":"2021","homepage":"https://example.test/title","genres":[{"name":" Drama "},{"name":"Drama"},{"name":""},{"name":"Comedy, Drama"}],"created_by":[{"name":" Ross Duffer "},{"name":"Matt Duffer"},{"name":"Ross Duffer"}],"number_of_seasons":5,"credits":{"crew":[{"name":" Director, Jr. ","job":"Director"},{"name":"Director, Jr.","job":"Director"},{"name":"Writer","job":"Writer"}]},"belongs_to_collection":{"backdrop_path":"/collection.jpg"}}`
 				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
 			})})
 			if err != nil {
@@ -38,6 +41,15 @@ func TestDetails(t *testing.T) {
 			title, err := c.Details(kind, 1)
 			if err != nil || title.ReleaseYear < 2020 {
 				t.Fatalf("details: %#v %v", title, err)
+			}
+			if title.Homepage != "https://example.test/title" || len(title.Genres) != 2 || title.Genres[1] != "Comedy, Drama" {
+				t.Fatalf("metadata %#v", title)
+			}
+			if kind == "tv" && (len(title.Creators) != 2 || title.Creators[0] != "Ross Duffer" || title.SeasonCount != 5) {
+				t.Fatal("TV creators/seasons")
+			}
+			if kind == "movie" && (len(title.Creators) != 1 || title.Creators[0] != "Director, Jr." || title.SeasonCount != 0) {
+				t.Fatal("movie directors")
 			}
 			if kind == "movie" && title.BackdropPath != "/collection.jpg" {
 				t.Fatal("collection")

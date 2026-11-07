@@ -54,6 +54,7 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 	options := map[string]string{"language": "pt-BR"}
 	var date string
 	if kind == "movie" {
+		options["append_to_response"] = "credits"
 		m, err := c.client.GetMovieDetails(int(id), options)
 		if err != nil {
 			return nil, errors.New("TMDB movie details unavailable")
@@ -66,6 +67,17 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 		t.Synopsis = m.Overview
 		t.PosterPath = m.PosterPath
 		t.BackdropPath = m.BackdropPath
+		t.Homepage = app.HomepageURL(m.Homepage)
+		for _, genre := range m.Genres {
+			t.Genres = append(t.Genres, genre.Name)
+		}
+		if m.MovieCreditsAppend != nil && m.Credits.MovieCredits != nil {
+			for _, person := range m.Credits.Crew {
+				if person.Job == "Director" {
+					t.Creators = append(t.Creators, person.Name)
+				}
+			}
+		}
 		date = m.ReleaseDate
 		if t.BackdropPath == "" {
 			t.BackdropPath = m.BelongsToCollection.BackdropPath
@@ -84,10 +96,20 @@ func (c *Client) Details(kind string, id uint64) (*entity.LetterboxdTitle, error
 		t.PosterPath = m.PosterPath
 		t.BackdropPath = m.BackdropPath
 		date = m.FirstAirDate
+		t.Homepage = app.HomepageURL(m.Homepage)
+		t.SeasonCount = m.NumberOfSeasons
+		for _, person := range m.CreatedBy {
+			t.Creators = append(t.Creators, person.Name)
+		}
+		for _, genre := range m.Genres {
+			t.Genres = append(t.Genres, genre.Name)
+		}
 	}
 	if t.OriginalTitle == "" {
 		t.OriginalTitle = t.LocalizedTitle
 	}
+	t.Creators = app.MetadataNames(t.Creators)
+	t.Genres = app.MetadataNames(t.Genres)
 	if len(date) == 4 {
 		t.ReleaseYear, _ = strconv.Atoi(date)
 	} else if d, err := time.Parse("2006-01-02", date); err == nil {
