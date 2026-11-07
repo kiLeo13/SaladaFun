@@ -168,8 +168,14 @@ modal on every click, including later edits. Cards show release year, creators
 (TV) or directors (movies), genres, and TV season count as embed fields.
 The author links to the official homepage when available, otherwise to the
 TMDB title page. Community ratings come from the database and display as
-?Nota geral: 4,5/5 ? avaliado 2 vezes?; unrated titles show ?Sem avalia??es.?
-Artwork keeps its existing dominant-color extraction and fallback behavior.
+“Nota geral: 4,5/5 · avaliado 2 vezes”; unrated titles show “Sem avaliações.”
+Artwork keeps its existing dominant-color extraction and fallback behavior. The
+**Faixa etária** field uses application emojis for Brazilian L/6/10/12/14/16/18
+classifications and shows “Não informada” when no recognized BR value exists.
+If movie release variants disagree, the highest recognized BR age is displayed.
+Apply through migration `00011_letterboxd_future_metadata.sql` for classification
+storage. Existing cached titles refresh classifications on the next request;
+no data deletion is required once that migration is applied.
 Result menus filter repeated title values and show at most 20 options. Titles,
 summaries, and autocomplete labels respect Discord limits, including emoji.
 Apply migration `00010_letterboxd_metadata.sql` before deploying this version.

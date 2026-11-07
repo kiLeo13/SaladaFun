@@ -482,3 +482,26 @@ page; the title itself continues linking to TMDB. Ratings average the current
 database opinions, one vote per watch/member, with no TMDB rating substitution.
 The existing center-weighted dominant-color algorithm and artwork selection
 (backdrop, then poster) remain unchanged.
+
+Brazilian classification codes (`BR`, `L`, `6`, `10`, `12`, `14`, `16`, `18`)
+are named constants in `application/letterboxd/classification.go`. Application
+emoji markup is kept separately in `discord/letterboxd/classification.go`;
+the label “Faixa etária” and unknown text “Não informada” live in the pt-BR locale.
+TMDB movie details append `release_dates` alongside credits; TV details append
+`content_ratings`. Country, certification, and movie release type are stored as
+project-owned `ContentRating` entries in the existing nullable JSON
+`letterboxd_titles.content_ratings` column from migration 00011. No new migration
+or record deletion is needed for classification rendering.
+
+The card always includes an inline “Faixa etária” field. It uses the provided
+application emoji plus “Livre” or “N anos” for recognized BR codes. Missing,
+foreign-only, and unknown codes render “Não informada”. When Brazilian release
+variants disagree, the highest recognized age wins regardless of provider order;
+all original entries remain cached, and foreign ratings never substitute for BR.
+
+SQL NULL (nil slice) marks metadata fetched before classification support and
+forces on-demand refresh even within the normal TTL. A successful detail fetch
+stores an empty JSON array when no classifications are available, preventing
+repeated requests for known-empty results. Provider failure retains the stale
+card without inventing a classification. Metadata upserts replace content ratings
+including empty lists; local title readers retain the JSON data.

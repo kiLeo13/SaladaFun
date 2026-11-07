@@ -149,8 +149,9 @@ contains no deletion statements. Apply before deploying the rich title card.
 
 Migration `00011_letterboxd_future_metadata.sql` reserves the first batch of
 future metadata on **`letterboxd_titles` only**. It adds no tables, indexes, or
-JOINs and does not change existing values or expire the metadata cache. The bot
-does not fetch or render these new fields yet.
+JOINs and does not change existing values or expire the metadata cache. Padinho
+now consumes `content_ratings` for the Brazilian age-classification embed field;
+the other columns remain reserved for future features.
 
 | Column | Storage | Intended meaning |
 | --- | --- | --- |
