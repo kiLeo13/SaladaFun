@@ -3,8 +3,8 @@
 ## Startup and shutdown
 
 `cmd/padinho` is the visible composition root. It opens a bounded `*gorm.DB`,
-retrieves `app.token`, `birthday.channel_id`, the Mudae bot ID, and six Mudae
-custom emoji IDs through the `config` repository, constructs the application
+retrieves the Discord/TMDB tokens, birthday/voice-log channels, BetaSpirit URL,
+and Mudae identifiers through the `config` repository, constructs the application
 services and Discord listeners, registers and freezes all Discord routes, and
 starts the gateway plus recurring-job scheduler. Missing, empty, non-numeric,
 or duplicate Mudae identifiers fail before Discord connects.
@@ -359,10 +359,9 @@ lifecycle as Ourochest and never calls an external solver.
 `internal/database.Open()` privately reads the small `DB_*` bootstrap contract
 and returns `*gorm.DB`; credentials are never retained in a general application
 configuration object. `internal/config` maps `config(name, value)`, receives
-GORM directly, and owns the `app.token`, `birthday.channel_id`,
-`birthday.defaultMessage`, `bots.mudae.id`, six `bots.mudae.oc.emoji.*` keys,
-and `bots.mudae.oq.emoji.purple`. Neither layer passes contexts through
-synchronous startup queries.
+GORM directly, and resolves the database config keys listed in
+[README.md](README.md#database-configuration). Neither layer passes contexts
+through synchronous startup queries.
 
 The generic `users_preferences` table uses the Discord user snowflake as its
 primary key. Module columns such as nullable `auto_mudae_oc` and
@@ -402,87 +401,38 @@ Terraform provisioning and manual migrations. GitHub Actions publishes
 Padinho's `latest` image as a public GHCR package, so the VM pulls it
 anonymously and no registry token enters Terraform state.
 
-## Letterboxd foundation
+## Movie tracking
 
-`application/letterboxd` resolves complete title metadata through owned repository,
-provider, and artwork interfaces. `integration/tmdb` isolates the pinned TMDB
-wrapper and bounded CDN downloads; `persistence/mysql` owns title snapshots,
-personal wishlists, serialized watch ratings, and append-only review revisions.
-The four tables are global and arrive through root migration `00009`. Refresh
-is request-driven with a 24-hour TTL; no scheduled work is added. The composition root now loads `tmdb.token`, wires separate search/detail
-clients, and registers the feature through `internal/commands`. Typed autocomplete
-routes share the frozen registry; deferred interaction completion uses the bound
-responder. The application discovery service filters personal interests, while
-MySQL provides cached fallback search and latest-review reads.
+`application/letterboxd` owns metadata freshness, discovery, and activity rules.
+Discord handlers orchestrate requests; `discord/letterboxd/presentation.go` builds
+result pages and title cards without querying repositories or the provider.
+`integration/tmdb` isolates the pinned TMDB wrapper and bounded CDN downloads;
+`persistence/mysql` stores global title snapshots, personal wishlists, one rated
+watch per member/title, and immutable review revisions. `cmd/padinho` loads
+`tmdb.token` and wires separate search/detail clients through the shared routes.
 
+Search never persists partial metadata. Selected titles use a 24-hour full-detail
+TTL and stale fallback on provider failure. Names retain original/localized forms
+and exact-date precision. Search has a 1.5-second HTTP timeout and a two-second
+context budget; details use five seconds after deferral. Automatic retries are
+disabled. Artwork has a three-second timeout, 2 MiB download and two-million-pixel
+limits. A center-weighted RGB histogram supplies the persisted accent; unchanged
+artwork reuses it and failures leave the theme fallback. Images are not stored.
 
-Metadata snapshots preserve original/localized names and exact-date precision.
-Search results never update the full-detail cache. Failed refreshes return stale
-complete metadata; successful full-detail requests advance the 24-hour freshness
-clock. Separate immutable HTTP clients bound search to 1.5 seconds and details to
-five seconds. Autocomplete uses a two-second context budget and no retry sleeps.
+Watch mutations serialize by member/title and reject repeated or older numeric
+interaction IDs. Rating and review changes commit atomically without changing
+the original watch date. Review withdrawal appends NULL; reads select the latest
+revision before interpreting that marker. Ratings belong to watches so revisions
+cannot multiply community votes. Wishlist names come from cached title joins.
 
-Artwork extraction downloads a small TMDB CDN rendition with a three-second
-budget, a 2 MiB limit, and a two-million-pixel decode limit. A deterministic
-center-weighted RGB histogram supplies the stored accent; unchanged artwork
-reuses it. Invalid images fall back to the theme without preventing metadata
-persistence. No image files or local interaction collectors persist.
+Modals use only a bounded local lookup for prefill and write only on submission,
+with ownership derived from the actor. History uses whitelisted date/rating order,
+a watch-ID tie-breaker, and three rows plus one lookahead per page. Random
+selection joins the caller's wishlist and excludes only that caller's watches
+using NOT EXISTS and ORDER BY RAND() LIMIT 1; it never broadens an empty pool.
 
-Watch writes serialize by member/title. Numeric interaction IDs reject stale or
-repeated mutations, and rating/review changes commit together. Reviews are
-immutable revisions: withdrawal appends NULL. Read the latest revision before
-interpreting NULL, so withdrawn text never reappears. Ratings belong to watches;
-revision rows must never multiply community votes. Wishlist names are obtained
-by joining cached titles, and every mutation derives ownership from the actor.
-
-Pagination reconstructs search queries from bot-owned result embed footers and
-validates bounded page/action parameters. Native payload and HTTP fixtures test
-partial autocomplete, deferred errors, selection, ownership, and provider failure.
-Live MySQL tests exercise duplicate imports, concurrent writes, revision
-withdrawal/rollback, local search, and current-review joins. Watch/rating modals, sortable member history, and personal random selection
-are now registered through the same feature.
-
-
-`application/letterboxd.Activity` owns the validation boundary for local watch
-state, required ratings, history ordering, and random eligibility. The Discord
-adapter opens modals immediately after a bounded local lookup; it never contacts
-TMDB to prefill a form. Modal submission derives ownership from the actor and
-uses the submission interaction snowflake as the idempotency key. Cancelling a
-form performs no write. Clearing review text appends a NULL revision atomically
-with the current rating; old review rows remain immutable.
-
-History SQL uses whitelisted date/rating and ascending/descending order fragments
-with a watch-ID tie-breaker. Each page loads three rows plus one lookahead row;
-complete optional reviews fit within bounded Discord embeds. Native controls
-retain member/order/page in validated restart-safe custom IDs. History is global
-and read-only when viewing another member, and replies suppress mentions.
-
-Random selection joins only the caller's wishlist and uses a correlated NOT
-EXISTS watch filter plus ORDER BY RAND() LIMIT 1. Other members' watches and the
-number of review revisions cannot change eligibility. An empty pool produces a
-localized explanation; no broader catalog fallback occurs. Selected metadata may
-refresh on demand, retaining the existing stale-data fallback during outages.
-
-Live MySQL checks cover the unique eligible random candidate, all-watched and
-empty pools, independent users, NULL withdrawal, and history order/page boundaries.
-Application tests cover all activity-service validation/forwarding statements;
-Discord fixtures cover required select values, review limits, modal prefilling,
-cancellation, actor ownership, history choices, and forged component parameters.
-No additional migration or scheduled work is required for step 3.
-
-
-Release validation compiles the feature's complete native command tree and
-serializes representative empty-page and maximum-review payloads. Empty queries
-omit the embed footer instead of emitting an invalid blank footer. Current
-reviews use bounded embeds rather than a truncated message body, and escaped
-review text remains complete. Registry freeze rejects the mutually exclusive
-fixed-choice/autocomplete combination before global command synchronization.
-Choice validation and declaration immutability are covered by regression tests.
-
-The release pass verifies a fresh embedded migration chain and runs the complete
-bot suite with a DML-only MySQL account. Command registry and Letterboxd
-application-service statement coverage are 100%. Local fixtures replace live
-Discord and external API checks, which are explicitly out of scope by request.
-The README owns manual configuration, migration, rollout order, and application
-rollback instructions. Publishing must follow schema/token provisioning because
-Watchtower may automatically deploy `latest` after publication.
+Pagination reconstructs queries from bot-owned embed footers and retains
+member/order/page in validated custom IDs. Component routes survive restarts;
+no in-memory interaction session is required. Shared cards act on the clicking
+member, and personal replies suppress mentions. See [README.md](README.md) for
+commands, configuration, verification, and deployment.
