@@ -1,40 +1,39 @@
 package letterboxd
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-// TestClassificationEmbeds verifies exact application emoji IDs in real title cards.
+// TestClassificationEmbeds ensures classifications stay hidden even when metadata is populated.
 func TestClassificationEmbeds(t *testing.T) {
-	for _, tc := range []struct{ code, want string }{
-		{"L", "<:class_l:1568484877429374997> Livre"},
-		{"6", "<:class_6:1568484865962414120> 6 anos"},
-		{"10", "<:class_10:1568484867866628116> 10 anos"},
-		{"12", "<:class_12:1568484870001393776> 12 anos"},
-		{"14", "<:class_14:1568484871448428604> 14 anos"},
-		{"16", "<:class_16:1568484873033744436> 16 anos"},
-		{"18", "<:class_18:1568484874862592030> 18 anos"},
-		{"", "Não informada"}, {"unknown", "Não informada"},
-	} {
+	for _, code := range []string{"L", "6", "10", "12", "14", "16", "18", "", "unknown"} {
 		for _, kind := range []string{"movie", "tv"} {
-			title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: kind, ReleaseYear: 2020, ContentRatings: []entity.ContentRating{{Country: "BR", Certification: tc.code}}}
+			title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: kind, ReleaseYear: 2020, ContentRatings: []entity.ContentRating{{Country: "BR", Certification: code}}}
 			card := titleCard(title, nil, kind+":1")
 			checkPayload(t, card)
-			value := ""
+			if len(card.Embeds[0].Fields) != 1 {
+				t.Fatal("unexpected extra metadata field")
+			}
 			for _, field := range card.Embeds[0].Fields {
 				if field.Name == ptbr.LetterboxdAgeRating {
-					value = field.Value
+					t.Fatal("classification field still visible")
 				}
 			}
-			if value != tc.want {
-				t.Fatalf("%s/%s field = %q, want %q", kind, tc.code, value, tc.want)
+			payload, err := json.Marshal(card)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(string(payload), "class_") {
+				t.Fatal("classification emoji still visible")
+			}
+			if len(title.ContentRatings) != 1 || title.ContentRatings[0].Certification != code {
+				t.Fatal("presentation mutated cached classifications")
 			}
 		}
-	}
-	if got := classificationText([]entity.ContentRating{{Country: "US", Certification: "18"}}); got != ptbr.LetterboxdAgeUnknown {
-		t.Fatal("foreign classification used as BR")
 	}
 }
