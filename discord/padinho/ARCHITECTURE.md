@@ -536,6 +536,10 @@ bounded heading and derives the footer total from all current member opinions,
 not just the current three-entry page. Each rating is bold, followed by one
 quoted review line or the localized italic “Sem comentário” placeholder.
 Entries are separated by one blank line; this fast view omits dates.
+Show title selections, show search pagination, and review buttons/pagination
+defer publicly so their completed replies are visible to the channel.
+The component helper defaults to private acknowledgements for personal actions;
+wishlist changes and other personal flows retain that default.
 
 `NormalizeReview` collapses whitespace, including CR/LF runs, and trims edges.
 `ReviewText` validates the normalized result; `Activity.Save` forwards that
