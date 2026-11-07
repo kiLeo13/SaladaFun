@@ -163,10 +163,20 @@ button to open a rating/review modal. A rating of
 supplied. Existing opinions are prefilled; leaving the review empty withdraws
 its text while preserving the rating. Cancelling the modal saves nothing.
 
-The **Assisti** and **Editar avaliação** buttons have distinct component IDs;
-both open the same actor-owned, prefilled modal. Result menus filter repeated
-title values and show at most 20 options. Titles, summaries, and autocomplete
-labels are clipped safely for Discord text limits, including emoji.
+The **Assisti** button appears first and opens the member's prefilled rating/review
+modal on every click, including later edits. Cards show release year, creators
+(TV) or directors (movies), genres, and TV season count as embed fields.
+The author links to the official homepage when available, otherwise to the
+TMDB title page. Community ratings come from the database and display as
+?Nota geral: 4,5/5 ? avaliado 2 vezes?; unrated titles show ?Sem avalia??es.?
+Artwork keeps its existing dominant-color extraction and fallback behavior.
+Result menus filter repeated title values and show at most 20 options. Titles,
+summaries, and autocomplete labels respect Discord limits, including emoji.
+Apply migration `00010_letterboxd_metadata.sql` before deploying this version.
+This unreleased migration requires an empty title catalog; see the
+[database instructions](../../database/README.md) for clearing disposable test
+data in foreign-key order. Creators/genres use JSON arrays on the
+title row, with no new tables or JOINs.
 Payload regression checks run with
 `go test ./internal/discord/letterboxd`.
 

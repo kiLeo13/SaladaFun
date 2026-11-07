@@ -439,8 +439,8 @@ commands, configuration, verification, and deployment.
 
 ### Discord payload constraints
 
-Title cards use separate `lb.watch:<id>` and `lb.edit:<id>` routes, both
-registered to the same actor-owned modal handler; `lb.watch-save:<id>` handles
+Title cards place `lb.watch:<id>` first and use it for both initial ratings and
+later edits. The old `lb.edit:<id>` route remains as an alias for existing messages; `lb.watch-save:<id>` handles
 submission. Custom IDs must be unique across the entire message, including
 different rows. Result selects deduplicate identity values and cap at 20 options.
 Text clipping budgets UTF-16 units without splitting Unicode characters.
@@ -457,3 +457,28 @@ exercise show, all four card buttons, wishlist selection, reviews, history,
 random selection, autocomplete, and modal submit/cancel.
 References: [components](https://docs.discord.com/developers/components/reference)
 and [embed limits](https://docs.discord.com/developers/resources/message#embed-object-embed-limits).
+
+### Rich title metadata
+
+Migration `00010_letterboxd_metadata.sql` adds NOT NULL JSON-array creators and
+genres, an official homepage, and a nonnegative season count to the existing title
+row. GORM's JSON serializer maps arrays to project-owned string slices. Writes
+trim names, remove empty/duplicate entries, and preserve punctuation and order;
+empty lists persist as `[]`. No additional tables or JOINs are needed.
+TV details supply `created_by` and `number_of_seasons`; movies request
+`append_to_response=credits` in the same detail call and retain Director crew.
+Genre names use the existing pt-BR request. Refresh/upsert replaces all fields.
+This unreleased migration assumes an empty title catalog and adds required
+columns directly, without defaults, backfill, or cache invalidation. The
+application supplies explicit values on every insert. Clear disposable test
+records in foreign-key order before migrating; see the database README.
+
+Cards use ordinary embed fields for year, creators/directors, genres and TV
+seasons. Exact release dates remain cached but are not rendered. List fields
+are escaped and clipped to 600 UTF-16 units each; the payload checker includes
+field and author text in Discord's aggregate embed budget. Author URLs accept
+absolute HTTP(S) homepages without credentials and otherwise use the TMDB title
+page; the title itself continues linking to TMDB. Ratings average the current
+database opinions, one vote per watch/member, with no TMDB rating substitution.
+The existing center-weighted dominant-color algorithm and artwork selection
+(backdrop, then poster) remain unchanged.
