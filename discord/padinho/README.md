@@ -162,6 +162,15 @@ button to open a rating/review modal. A rating of
 1-5 is required; review text is optional and must contain 2-500 characters when
 supplied. Existing opinions are prefilled; leaving the review empty withdraws
 its text while preserving the rating. Cancelling the modal saves nothing.
+Review submissions collapse whitespace (including CR/LF) to single spaces and
+trim the edges before validation and storage. Existing reviews are normalized
+again for display and modal prefilling.
+
+**Ver avaliações** shows `Avaliações de <título>`, three members per page, and
+the total number of member ratings across all pages. Ratings remain prominent;
+each written review appears on one quoted line, with a blank line between
+members. Ratings without text show `> *Sem comentário*`. Dates remain in
+personal history rather than this quick view.
 
 The **Assisti** button appears first and opens the member's prefilled rating/review
 modal on every click, including later edits. Cards show release year, creators

@@ -514,3 +514,20 @@ stores an empty JSON array when no classifications are available, preventing
 repeated requests for known-empty results. Provider failure retains the stale
 card without inventing a classification. Metadata upserts replace content ratings
 including empty lists; local title readers retain the JSON data.
+
+### Review presentation and whitespace
+
+The reviews handler reads the cached title through `Catalog.TitleByID` for its
+bounded heading and derives the footer total from all current member opinions,
+not just the current three-entry page. Each rating is bold, followed by one
+quoted review line or the localized italic “Sem comentário” placeholder.
+Entries are separated by one blank line; this fast view omits dates.
+
+`NormalizeReview` collapses whitespace, including CR/LF runs, and trims edges.
+`ReviewText` validates the normalized result; `Activity.Save` forwards that
+canonical text and the repository also validates/normalizes direct callers.
+Whitespace-only text remains a review withdrawal. Rendering and modal prefilling
+normalize legacy text without rewriting stored revisions. The shared opinion
+renderer escapes Markdown after normalization, preventing input line breaks from
+breaking quote layout in shared reviews or expanding personal history.
+No schema migration is required.
