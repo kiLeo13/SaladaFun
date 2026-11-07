@@ -90,6 +90,7 @@ func TestRatingFooter(t *testing.T) {
 		{[]int{3, 5}, "Nota geral: 4/5 · avaliado 2 vezes"},
 		{[]int{4, 5}, "Nota geral: 4,5/5 · avaliado 2 vezes"},
 		{[]int{4, 5, 5}, "Nota geral: 4,7/5 · avaliado 3 vezes"},
+		{[]int{5, 5, 5, 4, 4, 4, 4}, "Nota geral: 4,4/5 · avaliado 7 vezes"},
 	} {
 		opinions := make([]app.Opinion, len(tc.ratings))
 		for i, rating := range tc.ratings {
