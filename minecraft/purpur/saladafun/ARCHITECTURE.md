@@ -172,21 +172,9 @@ JDA termination before Purpur unloads the plugin classes.
 Operational setup, security requirements, supported message content, and live
 verification are documented in `docs/discord-chat.md`.
 
-## Build and verification
+## Verification
 
-Use JDK 25. From `minecraft/purpur/saladafun`:
-
-```text
-mvn clean package
-```
-
-The distributable JAR is `target/saladafun-1.0.jar`. Domain merge/range tests,
-real SQLite integration tests, and Purpur adapter tests run in the same Maven
-build. Live multi-player Purpur validation remains required before production
-rollout because mocks cannot reproduce server event ordering.
-
-From the repository root, the equivalent build is:
-
-```text
-mvn -f minecraft/purpur/saladafun/pom.xml clean package
-```
+See [README.md](README.md#build-and-test) for build commands and deployable
+artifacts. Domain, live SQLite, and Purpur adapter tests run in the Maven build.
+Live multi-player checks remain necessary before rollout because mocks cannot
+reproduce server event ordering.
