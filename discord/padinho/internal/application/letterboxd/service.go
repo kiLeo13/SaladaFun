@@ -138,9 +138,14 @@ func DisplayTitle(t *entity.LetterboxdTitle) string {
 	return original
 }
 
-// ReviewText normalizes optional text; nil represents withdrawal.
+// NormalizeReview collapses whitespace, including CR/LF, into single spaces and trims edges.
+func NormalizeReview(text string) string {
+	return strings.Join(strings.Fields(text), " ")
+}
+
+// ReviewText validates normalized optional text; nil represents withdrawal.
 func ReviewText(text string) (*string, error) {
-	text = strings.TrimSpace(text)
+	text = NormalizeReview(text)
 	if text == "" {
 		return nil, nil
 	}

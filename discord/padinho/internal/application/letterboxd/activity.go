@@ -57,8 +57,13 @@ func (a *Activity) Save(ctx context.Context, user, title, interaction uint64, ra
 	if user == 0 || title == 0 || interaction == 0 || rating < 1 || rating > 5 {
 		return ErrInvalid
 	}
-	if _, err := ReviewText(text); err != nil {
+	review, err := ReviewText(text)
+	if err != nil {
 		return err
+	}
+	text = ""
+	if review != nil {
+		text = *review
 	}
 	return a.Store.SaveWatch(ctx, user, title, interaction, rating, text)
 }
