@@ -1,7 +1,6 @@
 # Database migration guidance
 
-- Keep this Go module independently buildable and outside Padinho's container
-  image, Compose lifecycle, and GitHub Actions workflow.
+- Keep migrations outside Padinho's image, Compose lifecycle, and CI.
 - Embed every ordered SQL migration in the Linux migration executable so an
   operator only needs to upload one artifact to the Padinho VM.
 - Apply migrations manually from the Padinho VM, which is the only host allowed

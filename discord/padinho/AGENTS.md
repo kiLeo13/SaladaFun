@@ -1,10 +1,8 @@
 # Padinho contribution guidance
 
-- Keep the Go baseline at 1.26 and preserve static builds with `CGO_ENABLED=0`.
+- Build with `CGO_ENABLED=0`.
 - Keep command declaration, validation, options, and dispatch independent of
-  GORM and OCI types. The interaction-bound responder deliberately accepts a
-  native DiscordGo response; do not duplicate DiscordGo's response/component
-  model in project-owned structs.
+  GORM and OCI types.
 - Register every command through the single composition root in
   `internal/commands`. `discord.Routes` owns separate application-command and
   literal message-command registries because their transport contracts differ;
@@ -63,5 +61,4 @@
   cohesive expressions merely to manufacture abstraction.
 - Bootstrap MySQL directly from the individual `DB_*` environment variables and
   return `*gorm.DB`. Do not introduce a general environment `Config`, a
-  `DBConfig`, or a caller-provided DSN. Schema history and migration execution
-  remain solely owned by the root `database` module.
+  `DBConfig`, or a caller-provided DSN.

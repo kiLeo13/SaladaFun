@@ -3,8 +3,7 @@
 These rules apply to every project under `discord/` and supplement the root
 repository guidance.
 
-- Keep each Discord application in its own direct project directory with an
-  independent build, tests, README, and architecture document.
+- Keep each Discord application in its own direct project directory.
 - Prefer static, strongly typed implementations that fit the 1 GB OCI compute
   budget; the current Go baseline is 1.26.
 - Keep Discord library types inside Discord transport and presentation code.
