@@ -26,7 +26,7 @@ func TestClassificationsAgainstMySQL(t *testing.T) {
 	repo := NewLetterboxdRepository(tx)
 	ctx := context.Background()
 	user := uint64(time.Now().UnixNano())
-	title := &entity.LetterboxdTitle{MediaType: "movie", TMDBID: uint64(time.Now().UnixNano()), OriginalTitle: "Classification fixture", ReleaseYear: 2020}
+	title := &entity.LetterboxdTitle{MediaType: "movie", TMDBID: uint64(time.Now().UnixNano()), OriginalTitle: "Classification fixture", ReleaseYear: new(2020)}
 	if err := repo.SaveTitle(ctx, title); err != nil {
 		t.Fatal(err)
 	}

@@ -30,7 +30,7 @@ func TestCachedSearchTotalsAgainstMySQL(t *testing.T) {
 	stamp := uint64(time.Now().UnixNano())
 	query := fmt.Sprintf("SearchProbe%d", stamp)
 	for i := 0; i < 26; i++ {
-		title := &entity.LetterboxdTitle{TMDBID: stamp + uint64(i), MediaType: "movie", OriginalTitle: fmt.Sprintf("%s %02d", query, i), LocalizedTitle: query, ReleaseYear: 2020}
+		title := &entity.LetterboxdTitle{TMDBID: stamp + uint64(i), MediaType: "movie", OriginalTitle: fmt.Sprintf("%s %02d", query, i), LocalizedTitle: query, ReleaseYear: new(2020)}
 		if err := repo.SaveTitle(ctx, title); err != nil {
 			t.Fatal(err)
 		}

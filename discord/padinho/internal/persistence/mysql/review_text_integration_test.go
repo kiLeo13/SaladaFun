@@ -26,7 +26,7 @@ func TestReviewTextAgainstMySQL(t *testing.T) {
 	t.Cleanup(func() { tx.Rollback() })
 	repo := NewLetterboxdRepository(tx)
 	ctx := context.Background()
-	title := &entity.LetterboxdTitle{TMDBID: uint64(time.Now().UnixNano()), MediaType: "movie", OriginalTitle: "Review title", ReleaseYear: 2020}
+	title := &entity.LetterboxdTitle{TMDBID: uint64(time.Now().UnixNano()), MediaType: "movie", OriginalTitle: "Review title", ReleaseYear: new(2020)}
 	if err := repo.SaveTitle(ctx, title); err != nil {
 		t.Fatal(err)
 	}

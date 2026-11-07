@@ -44,7 +44,19 @@ func (r *LetterboxdRepository) SaveTitle(ctx context.Context, t *entity.Letterbo
 	if err := app.ValidateTitle(t); err != nil {
 		return err
 	}
-	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "media_type"}, {Name: "tmdb_id"}}, DoUpdates: clause.AssignmentColumns([]string{"original_title", "localized_title", "release_year", "release_date", "synopsis", "creators", "genres", "content_ratings", "homepage", "season_count", "poster_path", "backdrop_path", "accent", "accent_source", "metadata_fetched_at", "updated_at"})}).Create(t).Error
+	metadataColumns := []string{
+		"original_title", "localized_title", "release_year", "release_date", "synopsis",
+		"creators", "genres", "content_ratings", "homepage", "season_count",
+		"poster_path", "backdrop_path", "accent", "accent_source",
+		"runtime_minutes", "episode_runtime_minutes", "original_language",
+		"origin_countries", "status", "episode_count", "external_ids",
+		"metadata_fetched_at", "updated_at",
+	}
+	upsert := clause.OnConflict{
+		Columns:   []clause.Column{{Name: "media_type"}, {Name: "tmdb_id"}},
+		DoUpdates: clause.AssignmentColumns(metadataColumns),
+	}
+	err := r.db.WithContext(ctx).Clauses(upsert).Create(t).Error
 	if err != nil {
 		return err
 	}

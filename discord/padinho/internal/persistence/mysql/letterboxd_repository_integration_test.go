@@ -26,7 +26,7 @@ func TestTitleMetadataClearingAgainstMySQL(t *testing.T) {
 	t.Cleanup(func() { tx.Rollback() })
 	r := NewLetterboxdRepository(tx)
 	ctx := context.Background()
-	title := &entity.LetterboxdTitle{TMDBID: uint64(time.Now().UnixNano()), MediaType: "tv", OriginalTitle: "Metadata", ReleaseYear: 2021, Creators: []string{"Creator"}, Genres: []string{"Drama"}, Homepage: "https://example.test", SeasonCount: 3}
+	title := &entity.LetterboxdTitle{TMDBID: uint64(time.Now().UnixNano()), MediaType: "tv", OriginalTitle: "Metadata", ReleaseYear: new(2021), Creators: []string{"Creator"}, Genres: []string{"Drama"}, Homepage: "https://example.test", SeasonCount: 3}
 	if err := r.SaveTitle(ctx, title); err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestLetterboxdAgainstMySQL(t *testing.T) {
 	t.Cleanup(func() { database.Close(db) })
 	ctx := context.Background()
 	r := NewLetterboxdRepository(db)
-	title := &entity.LetterboxdTitle{MediaType: "movie", TMDBID: uint64(time.Now().UnixNano()), OriginalTitle: "Original", ReleaseYear: 2020, MetadataFetchedAt: 1}
+	title := &entity.LetterboxdTitle{MediaType: "movie", TMDBID: uint64(time.Now().UnixNano()), OriginalTitle: "Original", ReleaseYear: new(2020), MetadataFetchedAt: 1}
 	if err := r.SaveTitle(ctx, title); err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func TestActivityQueriesAgainstMySQL(t *testing.T) {
 	base := uint64(time.Now().UnixNano())
 	ratings := []int{2, 5, 1, 5}
 	for i := 0; i < 5; i++ {
-		title := &entity.LetterboxdTitle{TMDBID: base + uint64(i), MediaType: "movie", OriginalTitle: fmt.Sprintf("History %d", i), ReleaseYear: 2020}
+		title := &entity.LetterboxdTitle{TMDBID: base + uint64(i), MediaType: "movie", OriginalTitle: fmt.Sprintf("History %d", i), ReleaseYear: new(2020)}
 		if err := r.SaveTitle(ctx, title); err != nil {
 			t.Fatal(err)
 		}
