@@ -1,0 +1,28 @@
+package ptbr
+
+const (
+	LetterboxdMovie       = "Filme"
+	LetterboxdTV          = "S\u00e9rie"
+	LetterboxdAbsent      = "Este t\u00edtulo j\u00e1 foi removido da sua lista."
+	LetterboxdDescription = "Filmes, s\u00e9ries e listas pessoais."
+	LetterboxdTitleOption = "T\u00edtulo para pesquisar ou selecionar."
+	LetterboxdShow        = "Pesquisar e ver detalhes de um t\u00edtulo."
+	LetterboxdWishlist    = "Gerenciar minha lista."
+	LetterboxdAdd         = "Adicionar \u00e0 minha lista."
+	LetterboxdRemove      = "Remover da minha lista."
+	LetterboxdList        = "Ver minha lista."
+	LetterboxdAbout       = "Sobre os dados e imagens."
+	LetterboxdInvalid     = "Sele\u00e7\u00e3o inv\u00e1lida. Pesquise novamente (at\u00e9 200 caracteres)."
+	LetterboxdGuild       = "Use este comando em um servidor."
+	LetterboxdEmpty       = "Nenhum t\u00edtulo encontrado."
+	LetterboxdChoose      = "Selecione um t\u00edtulo"
+	LetterboxdCached      = "TMDB indispon\u00edvel: exibindo dados locais, possivelmente incompletos."
+	LetterboxdAdded       = "Adicionado \u00e0 sua lista."
+	LetterboxdRemoved     = "Removido da sua lista."
+	LetterboxdReviews     = "Ver avalia\u00e7\u00f5es"
+	LetterboxdNoRatings   = "Sem avalia\u00e7\u00f5es"
+	LetterboxdRating      = "M\u00e9dia: %.1f/5 (%d avalia\u00e7\u00f5es)"
+	LetterboxdNext        = "Pr\u00f3xima"
+	LetterboxdPrevious    = "Anterior"
+	LetterboxdCredit      = "This product uses the TMDB API but is not endorsed or certified by TMDB."
+)
