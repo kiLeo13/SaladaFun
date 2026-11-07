@@ -556,6 +556,10 @@ No schema migration is required.
 
 ### Public member history
 
+History sort/order choice labels are English command metadata from `locale/enus`
+(Date, Rating, Ascending, Descending); wire values, pt-BR descriptions, and
+pt-BR responses are unchanged.
+
 History commands defer publicly; pagination updates that message in place.
 History renders one embed with at most
 three entries. Release years are omitted; titles are escaped and capped at

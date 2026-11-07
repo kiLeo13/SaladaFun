@@ -203,8 +203,9 @@ Payload regression checks run with
 `go test ./internal/discord/letterboxd`.
 
 Random selection uses only the caller's unwatched wishlist. History defaults to
-the caller, watched date, and descending order. Choose Avaliações to sort by
-numeric rating; member, sort, and order persist through pagination. History and
+the caller, watched date, and descending order. The `sort` choices are `Date`
+and `Rating`; `order` choices are `Ascending` and `Descending`. Member, sort,
+and order persist through pagination. History and
 its pagination are public and use one embed with up to three entries. Title
 names omit the release year; each rating has a compact Discord-localized date
 and a quoted review or `Sem comentário`. The author uses the member's global

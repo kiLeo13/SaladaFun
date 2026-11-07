@@ -36,8 +36,10 @@
   pull requests may validate the image without publishing it.
 - Update this project's README and architecture documentation with every runtime,
   command framework, persistence, or deployment change.
-- Keep user-facing text in `internal/locale/ptbr`; command names are the only
-  user-facing identifiers that may remain untranslated.
+- Keep command/parameter descriptions and response text in `internal/locale/ptbr`.
+  Command names, parameter names, and static option choice labels remain English;
+  keep English choice labels in `internal/locale/enus`. Movie/TV search results
+  retain their original/localized title names.
 - Organize growing features through `internal/domain/entity`,
   `internal/application/<feature>`, and concrete adapters such as
   `internal/persistence/mysql`. Discord handlers and jobs consume application
