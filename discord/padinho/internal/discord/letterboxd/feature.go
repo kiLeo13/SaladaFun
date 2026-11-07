@@ -5,16 +5,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
+
 	"github.com/bwmarrin/discordgo"
 	app "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/letterboxd"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
-	"strconv"
-	"strings"
-	"time"
-	"unicode/utf8"
 )
 
 const pageSize = 20
@@ -31,6 +32,11 @@ func Register(routes *discord.Routes, service *app.Discovery) {
 		return command.StringOption("title", ptbr.LetterboxdTitleOption).Required().Autocomplete()
 	}
 	group.Sub("show", ptbr.LetterboxdShow, h.run("show"), option())
+	group.Sub("pick-random", ptbr.LetterboxdRandom, h.pickRandom)
+	memberOption := command.UserOption("member", ptbr.LetterboxdMember)
+	sortOption := command.StringOption("sort", ptbr.LetterboxdSort).Choices(command.OptionChoice{Name: ptbr.LetterboxdDate, Value: "date"}, command.OptionChoice{Name: ptbr.LetterboxdRatings, Value: "rating"})
+	orderOption := command.StringOption("order", ptbr.LetterboxdOrder).Choices(command.OptionChoice{Name: ptbr.LetterboxdAscending, Value: "asc"}, command.OptionChoice{Name: ptbr.LetterboxdDescending, Value: "desc"})
+	group.Sub("history", ptbr.LetterboxdHistory, h.history, memberOption, sortOption, orderOption)
 	group.Sub("about", ptbr.LetterboxdAbout, h.about)
 	wishlist := group.Group("wishlist", ptbr.LetterboxdWishlist)
 	wishlist.Sub("add", ptbr.LetterboxdAdd, h.run("add"), option())
@@ -47,6 +53,9 @@ func Register(routes *discord.Routes, service *app.Discovery) {
 	routes.Component("lb.page", h.changePage)
 	routes.Component("lb.add", h.add)
 	routes.Component("lb.reviews", h.reviews)
+	routes.Component("lb.watch", h.openWatch)
+	routes.Modal("lb.watch-save", h.saveWatch)
+	routes.Component("lb.history", h.historyPage)
 }
 
 // response builds ordinary embeds/components with mention suppression.
@@ -244,6 +253,10 @@ func (h Handler) showSelection(ctx context.Context, r command.Responder, user ui
 	}
 	data.Embeds = []*discordgo.MessageEmbed{embed}
 	data.Components = []discordgo.MessageComponent{discordgo.ActionsRow{Components: []discordgo.MessageComponent{discordgo.Button{Label: ptbr.LetterboxdReviews, Emoji: &discordgo.ComponentEmoji{Name: "\U0001f4ac"}, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.reviews:%d:1", title.ID)}, discordgo.Button{Label: ptbr.LetterboxdAdd, Emoji: &discordgo.ComponentEmoji{Name: "\u2795"}, Style: discordgo.PrimaryButton, CustomID: "lb.add:" + value}}}}
+	data.Components = append(data.Components, discordgo.ActionsRow{Components: []discordgo.MessageComponent{
+		discordgo.Button{Label: ptbr.LetterboxdWatched, Emoji: &discordgo.ComponentEmoji{Name: "\u2705"}, Style: discordgo.SuccessButton, CustomID: fmt.Sprintf("lb.watch:%d", title.ID)},
+		discordgo.Button{Label: ptbr.LetterboxdEdit, Emoji: &discordgo.ComponentEmoji{Name: "\u2b50"}, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.watch:%d", title.ID)},
+	}})
 	return finish(r, data)
 }
 

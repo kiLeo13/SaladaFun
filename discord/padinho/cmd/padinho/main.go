@@ -93,7 +93,8 @@ func main() {
 	}
 	artwork := tmdbadapter.NewArtwork(http.Client{})
 	metadata := appletterboxd.New(letterboxdRepo, tmdbDetails, artwork)
-	discovery := &appletterboxd.Discovery{Metadata: metadata, Catalog: letterboxdRepo, SearchProvider: tmdbSearch}
+	activity := &appletterboxd.Activity{Store: letterboxdRepo}
+	discovery := &appletterboxd.Discovery{Activity: activity, Metadata: metadata, Catalog: letterboxdRepo, SearchProvider: tmdbSearch}
 
 	// Services
 	birthdayService := appbirthday.NewService(birthdayRepo, configRepo)
