@@ -399,13 +399,10 @@ func (h Handler) reviewResponse(ctx context.Context, r *discord.InteractionReque
 	return finish(r.Responder, data)
 }
 
-// about presents provider attribution and approved TMDB branding.
+// about presents localized feature guidance and TMDB attribution.
 func (h Handler) about(_ context.Context, r *command.CommandRequest) error {
 	if r.GuildID == "" {
 		return command.RejectForbidden(ptbr.LetterboxdGuild)
 	}
-	data := response(ptbr.LetterboxdCredit + "\nhttps://www.themoviedb.org")
-	data.Flags = discordgo.MessageFlagsEphemeral
-	data.Embeds = []*discordgo.MessageEmbed{{Image: &discordgo.MessageEmbedImage{URL: "https://www.themoviedb.org/assets/apple-touch-icon-57ed4b3b0450fd5e9a0c20f34e814b82adaa1085c79bdde2f00ca8787b63d2c4.png"}}}
-	return r.Responder.Respond(&discordgo.InteractionResponse{Type: discordgo.InteractionResponseChannelMessageWithSource, Data: data})
+	return r.Responder.Respond(&discordgo.InteractionResponse{Type: discordgo.InteractionResponseChannelMessageWithSource, Data: aboutPage()})
 }

@@ -31,6 +31,10 @@ func (s boundaryHistoryStore) History(context.Context, uint64, string, string, i
 // checkPayload validates the serialized shapes and limits used by Letterboxd.
 func checkPayload(t *testing.T, data *discordgo.InteractionResponseData) {
 	t.Helper()
+	if data.Flags&discordgo.MessageFlagsIsComponentsV2 != 0 {
+		checkAboutPayload(t, data)
+		return
+	}
 	raw, err := json.Marshal(data)
 	if err != nil {
 		t.Fatal(err)
