@@ -27,6 +27,15 @@ func (r *LetterboxdRepository) FindTitle(ctx context.Context, kind string, id ui
 	return &t, err
 }
 
+// TitleByID loads the local title named by restart-safe review buttons.
+func (r *LetterboxdRepository) TitleByID(ctx context.Context, id uint64) (*entity.LetterboxdTitle, error) {
+	var title entity.LetterboxdTitle
+	if err := r.db.WithContext(ctx).First(&title, id).Error; err != nil {
+		return nil, err
+	}
+	return &title, nil
+}
+
 // SaveTitle atomically replaces metadata without changing identity or creation time.
 func (r *LetterboxdRepository) SaveTitle(ctx context.Context, t *entity.LetterboxdTitle) error {
 	t.Creators = app.MetadataNames(t.Creators)

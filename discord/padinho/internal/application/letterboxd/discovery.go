@@ -19,6 +19,7 @@ type Searcher interface {
 
 // Catalog stores local interests and supplies cached fallback suggestions.
 type Catalog interface {
+	TitleByID(context.Context, uint64) (*entity.LetterboxdTitle, error)
 	Wishlist(context.Context, uint64) ([]entity.LetterboxdTitle, error)
 	AddWishlist(context.Context, uint64, uint64) error
 	RemoveWishlist(context.Context, uint64, uint64) (bool, error)

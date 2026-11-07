@@ -20,6 +20,11 @@ type catalog struct {
 	owner    uint64
 }
 
+// TitleByID supplies cached metadata for review headings without TMDB access.
+func (c *catalog) TitleByID(context.Context, uint64) (*entity.LetterboxdTitle, error) {
+	return &entity.LetterboxdTitle{ID: 1, OriginalTitle: "Original"}, nil
+}
+
 // FindTitle supplies the complete local cache.
 func (c *catalog) FindTitle(context.Context, string, uint64) (*entity.LetterboxdTitle, error) {
 	return nil, nil

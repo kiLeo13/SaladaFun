@@ -15,6 +15,11 @@ type interests struct {
 	writes                      int
 }
 
+// TitleByID satisfies the cached review-title lookup contract.
+func (i *interests) TitleByID(context.Context, uint64) (*entity.LetterboxdTitle, error) {
+	return &entity.LetterboxdTitle{ID: 1, OriginalTitle: "Title"}, nil
+}
+
 // Wishlist returns isolated caller interests.
 func (i *interests) Wishlist(context.Context, uint64) ([]entity.LetterboxdTitle, error) {
 	return i.items, i.listErr
