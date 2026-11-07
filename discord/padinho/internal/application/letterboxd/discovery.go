@@ -3,9 +3,10 @@ package letterboxd
 import (
 	"context"
 	"errors"
-	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 	"strconv"
 	"strings"
+
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 )
 
 // ErrWishlistAbsent identifies an idempotent removal of an absent interest.

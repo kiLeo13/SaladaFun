@@ -3,7 +3,6 @@ package discord
 import (
 	"context"
 	"errors"
-	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 	"io"
 	"log/slog"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 

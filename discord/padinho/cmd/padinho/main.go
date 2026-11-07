@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	appletterboxd "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/letterboxd"
-	tmdbadapter "github.com/kiLeo13/SaladaFun/discord/padinho/internal/integration/tmdb"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +12,7 @@ import (
 
 	appaccounttree "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/accounttree"
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
+	appletterboxd "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/letterboxd"
 	apppreferences "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/preferences"
 	appquote "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/quote"
 	appvoiceactivity "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/voiceactivity"
@@ -25,6 +24,7 @@ import (
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
 	discordouroquest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroquest"
 	discordvoiceactivity "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/voiceactivity"
+	tmdbadapter "github.com/kiLeo13/SaladaFun/discord/padinho/internal/integration/tmdb"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/job"
 	birthdayjob "github.com/kiLeo13/SaladaFun/discord/padinho/internal/job/birthday"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/persistence/mysql"

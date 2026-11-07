@@ -2,8 +2,9 @@ package discord
 
 import (
 	"context"
-	"github.com/bwmarrin/discordgo"
 	"testing"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // TestAutocompleteDispatch verifies partial grouped options bypass full validation.

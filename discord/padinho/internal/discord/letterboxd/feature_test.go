@@ -3,12 +3,13 @@ package letterboxd
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/bwmarrin/discordgo"
 	app "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/letterboxd"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
-	"testing"
 )
 
 type catalog struct {
