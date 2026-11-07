@@ -133,7 +133,5 @@ required `tmdb.token` config value before publishing the dependent bot image.
 Watchtower follows `latest` automatically. The API Read Access Token is entered
 through a trusted private SQL session; do not store it in this directory or in
 command history. Padinho still requires only the four existing DML grants.
-Fresh-schema migration tests use an isolated maintenance account; application
-repository tests are also verified using a separate DML-only test account.
 Application rollback retains these additive tables and the immutable review
 ledger rather than executing destructive Down migrations.
