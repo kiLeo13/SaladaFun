@@ -1,8 +1,11 @@
 package discord
 
 import (
+	"context"
 	"errors"
+	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/command"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
@@ -76,4 +79,94 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (function roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
 	return function(request)
+}
+
+// TestDeferredCompletion verifies transport editing and one initial response.
+func TestDeferredCompletion(t *testing.T) {
+	session, _ := discordgo.New("Bot token")
+	edits := 0
+	session.Client = &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		body := ""
+		status := 204
+		if r.Method == "PATCH" {
+			edits++
+			body = `{"id":"1","content":"done"}`
+			status = 200
+		}
+		return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header), Request: r}, nil
+	})}
+	responder := newInteractionResponder(session, &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{ID: "1", Token: "token", AppID: "app"}})
+	if err := responder.Complete(nil); err == nil {
+		t.Fatal("unexpected completion")
+	}
+	if err := responder.Respond(&discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredChannelMessageWithSource}); err != nil {
+		t.Fatal(err)
+	}
+	if err := responder.Complete(&discordgo.InteractionResponseData{Content: "done"}); err != nil || edits != 1 || responder.deferred {
+		t.Fatal("completion")
+	}
+	if err := responder.Respond(ephemeralTextResponse("again")); err == nil {
+		t.Fatal("second acknowledgment")
+	}
+}
+
+// TestInteractionFailures verifies error recovery before and after acknowledgment.
+func TestInteractionFailures(t *testing.T) {
+	for _, mode := range []string{"ignored", "success", "responded", "reject", "deferred", "autocomplete", "transport"} {
+		t.Run(mode, func(t *testing.T) {
+			routes := NewRoutes()
+			calls := 0
+			routes.Commands().Slash("test", "Test", func(_ context.Context, r *command.CommandRequest) error {
+				switch mode {
+				case "success":
+					return nil
+				case "responded":
+					r.Responder.Respond(ephemeralTextResponse("done"))
+					return errors.New("late")
+				case "deferred":
+					r.Responder.Respond(&discordgo.InteractionResponse{Type: discordgo.InteractionResponseDeferredChannelMessageWithSource})
+					return errors.New("after defer")
+				case "reject":
+					return command.RejectForbidden("rejected")
+				default:
+					return errors.New("failure")
+				}
+			})
+			routes.Freeze()
+			session, _ := discordgo.New("Bot token")
+			session.Client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+				calls++
+				if mode == "transport" {
+					return nil, errors.New("offline")
+				}
+				status := 204
+				body := ""
+				if req.Method == "PATCH" {
+					status = 200
+					body = `{"id":"1"}`
+				}
+				return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header), Request: req}, nil
+			})}
+			kind := discordgo.InteractionApplicationCommand
+			if mode == "ignored" {
+				kind = discordgo.InteractionPing
+			}
+			if mode == "autocomplete" {
+				kind = discordgo.InteractionApplicationCommandAutocomplete
+			}
+			interaction := &discordgo.InteractionCreate{Interaction: &discordgo.Interaction{Type: kind, ID: "1", AppID: "app", Token: "token", Data: discordgo.ApplicationCommandInteractionData{Name: "test"}}}
+			handler := interactionHandler{routes: routes, ctx: context.Background(), logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
+			handler.handle(session, interaction)
+			expected := 1
+			if mode == "success" || mode == "ignored" {
+				expected = 0
+			}
+			if mode == "deferred" {
+				expected = 2
+			}
+			if calls != expected {
+				t.Fatalf("REST calls %d want %d", calls, expected)
+			}
+		})
+	}
 }

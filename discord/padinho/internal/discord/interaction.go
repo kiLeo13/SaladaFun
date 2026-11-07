@@ -25,7 +25,7 @@ func (h *interactionHandler) handle(session *discordgo.Session, interaction *dis
 	if !handled {
 		return
 	}
-	if err == nil || responder.responded() {
+	if err == nil || (responder.responded() && !responder.deferred) {
 		return
 	}
 	response := ptbr.GenericInteractionError
@@ -34,7 +34,16 @@ func (h *interactionHandler) handle(session *discordgo.Session, interaction *dis
 	} else {
 		h.logger.Error("command execution failed", "request_id", interaction.ID, "error", err)
 	}
-	if responseErr := responder.Respond(ephemeralTextResponse(response)); responseErr != nil {
+	reply := ephemeralTextResponse(response)
+	var responseErr error
+	if responder.deferred {
+		responseErr = responder.Complete(&discordgo.InteractionResponseData{Content: response})
+	} else if interaction.Type == discordgo.InteractionApplicationCommandAutocomplete {
+		responseErr = responder.Respond(&discordgo.InteractionResponse{Type: discordgo.InteractionApplicationCommandAutocompleteResult})
+	} else {
+		responseErr = responder.Respond(reply)
+	}
+	if responseErr != nil {
 		h.logger.Error("command error response failed", "request_id", interaction.ID, "error", responseErr)
 	}
 }
@@ -89,6 +98,7 @@ type interactionResponder struct {
 	interaction *discordgo.InteractionCreate
 	mu          sync.Mutex
 	didRespond  bool
+	deferred    bool
 }
 
 func newInteractionResponder(session *discordgo.Session, interaction *discordgo.InteractionCreate) *interactionResponder {
@@ -108,6 +118,7 @@ func (r *interactionResponder) Respond(response *discordgo.InteractionResponse) 
 		return fmt.Errorf("respond to Discord interaction: %w", err)
 	}
 	r.didRespond = true
+	r.deferred = response.Type == discordgo.InteractionResponseDeferredChannelMessageWithSource
 	return nil
 }
 
@@ -125,4 +136,19 @@ func (r *interactionResponder) responded() bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.didRespond
+}
+
+// Complete edits a deferred initial response without sending a second acknowledgment.
+func (r *interactionResponder) Complete(data *discordgo.InteractionResponseData) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.deferred || data == nil {
+		return errors.New("interaction is not deferred")
+	}
+	components := data.Components
+	_, err := r.session.InteractionResponseEdit(r.interaction.Interaction, &discordgo.WebhookEdit{Content: &data.Content, Embeds: &data.Embeds, Components: &components, AllowedMentions: &discordgo.MessageAllowedMentions{}})
+	if err == nil {
+		r.deferred = false
+	}
+	return err
 }
