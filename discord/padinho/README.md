@@ -165,7 +165,10 @@ its text while preserving the rating. Cancelling the modal saves nothing.
 
 The **Assisti** button appears first and opens the member's prefilled rating/review
 modal on every click, including later edits. Cards show release year, creators
-(TV) or directors (movies), genres, and TV season count as embed fields.
+(TV) or directors (movies), and genres as embed fields. For TV, Lançamento
+combines the first-air year and known season count: `2018 - 8 temporadas`
+(`2018 - 1 temporada` for one). Movies and TV with unknown/zero seasons show
+only the year. Season counts follow cached TMDB metadata as new seasons appear.
 The author links to the official homepage when available, otherwise to the
 TMDB title page. Community ratings come from the database and display as
 “Nota geral: 4,5/5 · avaliado 2 vezes”; unrated titles show “Sem avaliações.”

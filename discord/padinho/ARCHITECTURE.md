@@ -473,8 +473,12 @@ columns directly, without defaults, backfill, or cache invalidation. The
 application supplies explicit values on every insert. Clear disposable test
 records in foreign-key order before migrating; see the database README.
 
-Cards use ordinary embed fields for year, creators/directors, genres and TV
-seasons. Exact release dates remain cached but are not rendered. List fields
+Cards use ordinary embed fields for release, creators/directors and genres.
+The release field combines TV first-air year and a positive season count
+(`2018 - 8 temporadas`, or `2018 - 1 temporada`); movies and TV with zero/unknown
+seasons show only the year. There is no separate season field. Season counts
+refresh with normal TMDB metadata. Exact release dates remain cached but are not
+rendered. List fields
 are escaped and clipped to 600 UTF-16 units each; the payload checker includes
 field and author text in Discord's aggregate embed budget. Author URLs accept
 absolute HTTP(S) homepages without credentials and otherwise use the TMDB title
