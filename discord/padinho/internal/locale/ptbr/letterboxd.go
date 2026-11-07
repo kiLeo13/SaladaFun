@@ -53,13 +53,14 @@ const (
 const LetterboxdRatings = "Avalia\u00e7\u00f5es"
 
 const (
-	LetterboxdReleaseYear = "Lan\u00e7amento"
-	LetterboxdCreators    = "Criadores"
-	LetterboxdDirectors   = "Dire\u00e7\u00e3o"
-	LetterboxdGenres      = "G\u00eaneros"
-	LetterboxdSeasons     = "Temporadas"
-	LetterboxdAgeRating   = "Faixa et\u00e1ria"
-	LetterboxdAgeUnknown  = "N\u00e3o informada"
-	LetterboxdAgeLivre    = "Livre"
-	LetterboxdAgeYears    = "%s anos"
+	LetterboxdReleaseYear    = "Lan\u00e7amento"
+	LetterboxdCreators       = "Criadores"
+	LetterboxdDirectors      = "Dire\u00e7\u00e3o"
+	LetterboxdGenres         = "G\u00eaneros"
+	LetterboxdReleaseSeason  = "%d - 1 temporada"
+	LetterboxdReleaseSeasons = "%d - %d temporadas"
+	LetterboxdAgeRating      = "Faixa et\u00e1ria"
+	LetterboxdAgeUnknown     = "N\u00e3o informada"
+	LetterboxdAgeLivre       = "Livre"
+	LetterboxdAgeYears       = "%s anos"
 )

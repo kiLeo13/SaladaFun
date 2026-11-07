@@ -34,15 +34,12 @@ func TestTitleCardMetadata(t *testing.T) {
 				fields[field.Name] = field.Value
 			}
 			name := ptbr.LetterboxdDirectors
+			release := "2021"
 			if kind == "tv" {
 				name = ptbr.LetterboxdCreators
-				if fields[ptbr.LetterboxdSeasons] != "5" {
-					t.Fatal("seasons")
-				}
-			} else if _, exists := fields[ptbr.LetterboxdSeasons]; exists {
-				t.Fatal("movie has seasons")
+				release = "2021 - 5 temporadas"
 			}
-			if fields[name] != "Ross Duffer, Matt Duffer" || fields[ptbr.LetterboxdGenres] != "Drama, Mystery" || fields[ptbr.LetterboxdReleaseYear] != "2021" {
+			if fields[name] != "Ross Duffer, Matt Duffer" || fields[ptbr.LetterboxdGenres] != "Drama, Mystery" || fields[ptbr.LetterboxdReleaseYear] != release {
 				t.Fatalf("metadata fields %#v", fields)
 			}
 			if embed.Color != int(accent) || embed.Image.URL != "https://image.tmdb.org/t/p/w780/back.jpg" || embed.Thumbnail != nil {
@@ -75,7 +72,32 @@ func TestTitleCardFieldBudgets(t *testing.T) {
 	title.Genres = nil
 	card := titleCard(title, nil, "tv:1")
 	checkPayload(t, card)
-	if len(card.Embeds[0].Fields) != 3 {
+	if len(card.Embeds[0].Fields) != 2 {
 		t.Fatal("empty optional fields rendered")
+	}
+}
+
+// TestReleaseFieldSeasons verifies media-specific formatting and missing season counts.
+func TestReleaseFieldSeasons(t *testing.T) {
+	for _, tc := range []struct {
+		kind    string
+		seasons int
+		want    string
+	}{
+		{"movie", 0, "2018"}, {"movie", 8, "2018"},
+		{"tv", 0, "2018"}, {"tv", 1, "2018 - 1 temporada"},
+		{"tv", 8, "2018 - 8 temporadas"},
+	} {
+		title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, MediaType: tc.kind, OriginalTitle: "Title", ReleaseYear: 2018, SeasonCount: tc.seasons}
+		card := titleCard(title, nil, tc.kind+":1")
+		checkPayload(t, card)
+		if got := card.Embeds[0].Fields[0]; got.Name != ptbr.LetterboxdReleaseYear || got.Value != tc.want {
+			t.Fatalf("%s/%d release = %#v, want %q", tc.kind, tc.seasons, got, tc.want)
+		}
+		for _, field := range card.Embeds[0].Fields {
+			if field.Name == "Temporadas" {
+				t.Fatal("separate season field still rendered")
+			}
+		}
 	}
 }

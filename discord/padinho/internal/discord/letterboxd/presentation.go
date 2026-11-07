@@ -86,12 +86,19 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		kind = ptbr.LetterboxdTV
 	}
 	embed.Author = &discordgo.MessageEmbedAuthor{Name: kind, URL: homepage}
-	embed.Fields = []*discordgo.MessageEmbedField{{Name: ptbr.LetterboxdReleaseYear, Value: strconv.Itoa(title.ReleaseYear), Inline: true}}
+	release := strconv.Itoa(title.ReleaseYear)
+	if title.MediaType == "tv" && title.SeasonCount > 0 {
+		if title.SeasonCount == 1 {
+			release = fmt.Sprintf(ptbr.LetterboxdReleaseSeason, title.ReleaseYear)
+		} else {
+			release = fmt.Sprintf(ptbr.LetterboxdReleaseSeasons, title.ReleaseYear, title.SeasonCount)
+		}
+	}
+	embed.Fields = []*discordgo.MessageEmbedField{{Name: ptbr.LetterboxdReleaseYear, Value: release, Inline: true}}
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: ptbr.LetterboxdAgeRating, Value: classificationText(title.ContentRatings), Inline: true})
 	creatorLabel := ptbr.LetterboxdDirectors
 	if title.MediaType == "tv" {
 		creatorLabel = ptbr.LetterboxdCreators
-		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: ptbr.LetterboxdSeasons, Value: strconv.Itoa(title.SeasonCount), Inline: true})
 	}
 	for _, field := range []struct {
 		name   string
