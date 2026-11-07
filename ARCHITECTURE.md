@@ -23,9 +23,8 @@ evolution.
 Terraform owns OCI resources; Ansible configures the resulting VM and
 reconciles Docker Compose. GitHub Actions tests and publishes Padinho's image to
 the public GitHub Container Registry package used by Compose.
-The private MySQL subnet admits TCP/3306 from the bot subnet through a subnet
-security list. MySQL deliberately has no NSG attachment because OCI requires
-separate `mysqldbsystem` resource-principal IAM policies to provision one.
+Networking and provisioning requirements are documented in
+[Terraform's runbook](infrastructure/terraform/README.md).
 
 ## Projects
 
@@ -43,11 +42,7 @@ Discord utility mod. Its first feature is the optional bidirectional chat bridge
 ### Discord: Padinho
 
 Padinho, under `discord/padinho`, is a Go 1.26 application designed for a 1 GB
-`VM.Standard.E2.1.Micro`. A frozen route composition owns slash commands,
-stateless message components, and modal submissions. Command declarations stay
-typed while responders deliberately accept native DiscordGo payloads so Salada
-does not maintain a second copy of the evolving Discord component model.
-Application data lives in typed requests rather than context values.
+`VM.Standard.E2.1.Micro`.
 
 Birthday scheduling, movie tracking, and other feature boundaries are documented
 in [Padinho architecture](discord/padinho/ARCHITECTURE.md).

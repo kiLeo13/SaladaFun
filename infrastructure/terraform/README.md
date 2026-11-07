@@ -47,11 +47,8 @@ operations. Both backend files select API-key authentication and
 key path stay in the standard OCI configuration and are never copied into HCL.
 Terraform caches backend settings under `.terraform`, which is also ignored.
 
-The similarly named files serve different purposes: `terraform.tfvars` is the
-real, automatically loaded input file and stays ignored;
-`terraform.tfvars.example` is its committed template. `.terraform.lock.hcl` is
-the committed provider dependency lock. The transient state lock is the
-`<key>.lock` object in OCI Object Storage, not a local file checked into Git.
+Commit `.terraform.lock.hcl` as the provider dependency lock; keep copied
+configuration files, state and `.terraform/` ignored.
 
 ## Production
 
