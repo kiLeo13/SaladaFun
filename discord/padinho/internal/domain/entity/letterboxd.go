@@ -11,6 +11,10 @@ type LetterboxdTitle struct {
 	LocalizedTitle    string
 	ReleaseYear       int
 	ReleaseDate       *time.Time
+	Creators          []string `gorm:"serializer:json;type:json;not null"`
+	Genres            []string `gorm:"serializer:json;type:json;not null"`
+	Homepage          string
+	SeasonCount       int
 	Synopsis          string
 	PosterPath        string
 	BackdropPath      string

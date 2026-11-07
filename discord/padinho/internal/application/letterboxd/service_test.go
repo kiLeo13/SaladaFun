@@ -3,12 +3,42 @@ package letterboxd
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/domain/entity"
 )
+
+// TestMetadataHelpers preserves names and rejects unsuitable homepage URLs.
+func TestMetadataHelpers(t *testing.T) {
+	if got := MetadataNames([]string{" Ross Duffer ", "", "Matt Duffer", "Ross Duffer", "Name, Jr."}); !reflect.DeepEqual(got, []string{"Ross Duffer", "Matt Duffer", "Name, Jr."}) {
+		t.Fatalf("names: %#v", got)
+	}
+	if got := MetadataNames(nil); got == nil || len(got) != 0 {
+		t.Fatal("nil must become empty JSON array")
+	}
+	for _, raw := range []string{"", "/relative", "//example.test", "javascript:alert(1)", "https://user:pass@example.test", "https://", "https://example.test/\npath", "https://example.test/" + strings.Repeat("x", 2048)} {
+		if HomepageURL(raw) != "" {
+			t.Fatalf("invalid homepage accepted: %q", raw)
+		}
+	}
+	for _, raw := range []string{"http://example.test/", "https://example.test/path?q=1"} {
+		if HomepageURL(" "+raw+" ") != raw {
+			t.Fatal("valid homepage")
+		}
+	}
+	title := &entity.LetterboxdTitle{MediaType: "tv", TMDBID: 1, OriginalTitle: "TV", ReleaseYear: 2020, SeasonCount: -1}
+	if ValidateTitle(title) == nil {
+		t.Fatal("negative seasons")
+	}
+	title.SeasonCount = 0
+	title.Homepage = strings.Repeat("x", 2049)
+	if ValidateTitle(title) == nil {
+		t.Fatal("oversized homepage")
+	}
+}
 
 type memory struct {
 	title   *entity.LetterboxdTitle
@@ -41,12 +71,17 @@ func (p *provider) Details(k string, id uint64) (*entity.LetterboxdTitle, error)
 }
 
 type artwork struct {
+	path  string
 	calls int
 	err   error
 }
 
 // Accent captures extraction attempts.
-func (a *artwork) Accent(context.Context, string) (uint32, error) { a.calls++; return 0x112233, a.err }
+func (a *artwork) Accent(_ context.Context, path string) (uint32, error) {
+	a.path = path
+	a.calls++
+	return 0x112233, a.err
+}
 
 // TestCacheLifecycle covers freshness, expiration, accent reuse, and stale fallback.
 func TestCacheLifecycle(t *testing.T) {
@@ -58,7 +93,7 @@ func TestCacheLifecycle(t *testing.T) {
 	now := time.Unix(100000, 0)
 	s.now = func() time.Time { return now }
 	title, stale, err := s.Title(ctx, "movie", 1)
-	if err != nil || stale || title.Accent == nil || m.saves != 1 {
+	if err != nil || stale || title.Accent == nil || m.saves != 1 || a.path != title.BackdropPath {
 		t.Fatalf("first: %#v %v %v", title, stale, err)
 	}
 	s.Title(ctx, "movie", 1)
@@ -140,7 +175,7 @@ func TestCacheFailurePaths(t *testing.T) {
 	a := &artwork{err: errors.New("image")}
 	s = New(m, fixture, a)
 	title, _, err := s.Title(ctx, "tv", 1)
-	if err != nil || title.Accent != nil || a.calls != 1 {
+	if err != nil || title.Accent != nil || a.calls != 1 || a.path != title.PosterPath {
 		t.Fatal("image failure")
 	}
 }

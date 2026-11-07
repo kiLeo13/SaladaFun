@@ -4,6 +4,7 @@ package letterboxd
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -94,10 +95,38 @@ func ValidIdentity(kind string, id uint64) bool { return id > 0 && (kind == "mov
 
 // ValidateTitle prevents incomplete or oversized snapshots from entering cache.
 func ValidateTitle(t *entity.LetterboxdTitle) error {
+	if t.SeasonCount < 0 || utf8.RuneCountInString(t.Homepage) > 2048 {
+		return ErrInvalid
+	}
 	if !ValidIdentity(t.MediaType, t.TMDBID) || strings.TrimSpace(t.OriginalTitle) == "" || utf8.RuneCountInString(t.OriginalTitle) > 500 || utf8.RuneCountInString(t.LocalizedTitle) > 500 || t.ReleaseYear < 1 || t.ReleaseYear > 9999 {
 		return ErrInvalid
 	}
 	return nil
+}
+
+// MetadataNames trims and deduplicates names while preserving punctuation and order.
+// A non-nil empty slice serializes to a JSON array rather than JSON null.
+func MetadataNames(names []string) []string {
+	result := make([]string, 0, len(names))
+	seen := map[string]bool{}
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name != "" && !seen[name] {
+			result = append(result, name)
+			seen[name] = true
+		}
+	}
+	return result
+}
+
+// HomepageURL accepts only absolute HTTP(S) links suitable for Discord authors.
+func HomepageURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	u, err := url.Parse(raw)
+	if err != nil || u.Hostname() == "" || u.User != nil || (u.Scheme != "https" && u.Scheme != "http") || utf8.RuneCountInString(raw) > 2048 {
+		return ""
+	}
+	return raw
 }
 
 // DisplayTitle includes the localized name only when different and available.
