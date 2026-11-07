@@ -54,6 +54,7 @@ func Register(routes *discord.Routes, service *app.Discovery) {
 	routes.Component("lb.add", h.add)
 	routes.Component("lb.reviews", h.reviews)
 	routes.Component("lb.watch", h.openWatch)
+	routes.Component("lb.edit", h.openWatch)
 	routes.Modal("lb.watch-save", h.saveWatch)
 	routes.Component("lb.history", h.historyPage)
 }

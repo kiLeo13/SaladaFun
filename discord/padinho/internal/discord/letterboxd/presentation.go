@@ -81,7 +81,7 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 	reviewButton := discordgo.Button{Label: ptbr.LetterboxdReviews, Emoji: &discordgo.ComponentEmoji{Name: "\U0001f4ac"}, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.reviews:%d:1", title.ID)}
 	wishlistButton := discordgo.Button{Label: ptbr.LetterboxdAdd, Emoji: &discordgo.ComponentEmoji{Name: "\u2795"}, Style: discordgo.PrimaryButton, CustomID: "lb.add:" + value}
 	watchedButton := discordgo.Button{Label: ptbr.LetterboxdWatched, Emoji: &discordgo.ComponentEmoji{Name: "\u2705"}, Style: discordgo.SuccessButton, CustomID: fmt.Sprintf("lb.watch:%d", title.ID)}
-	editButton := discordgo.Button{Label: ptbr.LetterboxdEdit, Emoji: &discordgo.ComponentEmoji{Name: "\u2b50"}, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.watch:%d", title.ID)}
+	editButton := discordgo.Button{Label: ptbr.LetterboxdEdit, Emoji: &discordgo.ComponentEmoji{Name: "\u2b50"}, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.edit:%d", title.ID)}
 	data.Components = []discordgo.MessageComponent{
 		discordgo.ActionsRow{Components: []discordgo.MessageComponent{reviewButton, wishlistButton}},
 		discordgo.ActionsRow{Components: []discordgo.MessageComponent{watchedButton, editButton}},
