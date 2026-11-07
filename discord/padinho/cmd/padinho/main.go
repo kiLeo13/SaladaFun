@@ -3,10 +3,14 @@ package main
 import (
 	"context"
 	"errors"
+	appletterboxd "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/letterboxd"
+	tmdbadapter "github.com/kiLeo13/SaladaFun/discord/padinho/internal/integration/tmdb"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	appaccounttree "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/accounttree"
 	appbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/birthday"
@@ -77,6 +81,20 @@ func main() {
 		fail(logger, err)
 	}
 
+	// Movie metadata and personal catalog
+	letterboxdRepo := mysql.NewLetterboxdRepository(db)
+	tmdbDetails, err := tmdbadapter.FromConfig(configRepo, http.Client{Timeout: 5 * time.Second})
+	if err != nil {
+		fail(logger, err)
+	}
+	tmdbSearch, err := tmdbadapter.FromConfig(configRepo, http.Client{Timeout: 1500 * time.Millisecond})
+	if err != nil {
+		fail(logger, err)
+	}
+	artwork := tmdbadapter.NewArtwork(http.Client{})
+	metadata := appletterboxd.New(letterboxdRepo, tmdbDetails, artwork)
+	discovery := &appletterboxd.Discovery{Metadata: metadata, Catalog: letterboxdRepo, SearchProvider: tmdbSearch}
+
 	// Services
 	birthdayService := appbirthday.NewService(birthdayRepo, configRepo)
 	preferencesService := apppreferences.NewService(preferencesRepo)
@@ -133,7 +151,7 @@ func main() {
 	}
 	commands.Register(
 		routes, birthdayService, quoteService, accountTreeService, betaSpiritURL,
-		gateway, ouroChestListener, ouroQuestListener,
+		gateway, ouroChestListener, ouroQuestListener, discovery,
 	)
 	if err := routes.Freeze(); err != nil {
 		fail(logger, err)

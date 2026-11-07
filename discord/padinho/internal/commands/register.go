@@ -4,10 +4,12 @@
 package commands
 
 import (
+	appletterboxd "github.com/kiLeo13/SaladaFun/discord/padinho/internal/application/letterboxd"
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord"
 	discordaccounttree "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/accounttree"
 	discordbetaspirit "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/betaspirit"
 	discordbirthday "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/birthday"
+	discordletterboxd "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/letterboxd"
 	discordmove "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/move"
 	discordourochest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ourochest"
 	discordouroquest "github.com/kiLeo13/SaladaFun/discord/padinho/internal/discord/ouroquest"
@@ -31,7 +33,9 @@ func Register(
 	gateway Gateway,
 	ouroChest *discordourochest.Listener,
 	ouroQuest *discordouroquest.Listener,
+	letterboxd *appletterboxd.Discovery,
 ) {
+	discordletterboxd.Register(routes, letterboxd)
 	discordbirthday.Register(routes, birthdays, gateway)
 	discordmove.Register(routes, gateway)
 	discordquote.Register(routes.Messages(), quotes)
