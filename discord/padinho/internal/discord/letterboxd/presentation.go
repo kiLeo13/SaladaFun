@@ -11,7 +11,18 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-const synopsisLimit = 2000
+const (
+	synopsisLimit          = 2000
+	resultOptionLabelLimit = 100
+	resultDescriptionLimit = 3500
+	maximumResultPage      = 500
+	titleCardTitleLimit    = 256
+	metadataFieldLimit     = 600
+	titleCardDefaultColor  = 0x5865F2
+	tmdbTitleURLFormat     = "https://www.themoviedb.org/%s/%d"
+	tmdbBackdropURLPrefix  = "https://image.tmdb.org/t/p/w780"
+	tmdbPosterURLPrefix    = "https://image.tmdb.org/t/p/w185"
+)
 
 // resultPage renders already selected results without querying storage or TMDB.
 func resultPage(action, query string, page int, items []entity.LetterboxdTitle, cached, more bool, total int) *discordgo.InteractionResponseData {
@@ -30,9 +41,9 @@ func resultPage(action, query string, page int, items []entity.LetterboxdTitle, 
 			}
 			seen[value] = true
 			lines = append(lines, label(t))
-			options = append(options, discordgo.SelectMenuOption{Label: Ellipsis(label(t), 100), Value: app.Identity(t.MediaType, t.TMDBID)})
+			options = append(options, discordgo.SelectMenuOption{Label: Ellipsis(label(t), resultOptionLabelLimit), Value: app.Identity(t.MediaType, t.TMDBID)})
 		}
-		data.Embeds = []*discordgo.MessageEmbed{{Description: Ellipsis(strings.Join(lines, "\n"), 3500)}}
+		data.Embeds = []*discordgo.MessageEmbed{{Description: Ellipsis(strings.Join(lines, "\n"), resultDescriptionLimit)}}
 		target := action
 		if action == "list" {
 			target = "show"
@@ -56,7 +67,7 @@ func resultPage(action, query string, page int, items []entity.LetterboxdTitle, 
 		label    string
 		page     int
 		disabled bool
-	}{{ptbr.LetterboxdPrevious, page - 1, page == 1}, {ptbr.LetterboxdNext, page + 1, !more || page >= 500}} {
+	}{{ptbr.LetterboxdPrevious, page - 1, page == 1}, {ptbr.LetterboxdNext, page + 1, !more || page >= maximumResultPage}} {
 		buttons = append(buttons, discordgo.Button{Label: nav.label, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.page:%s:%d", action, nav.page), Disabled: nav.disabled})
 	}
 	data.Components = append(data.Components, discordgo.ActionsRow{Components: buttons})
@@ -80,10 +91,10 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		}
 	}
 	embed := &discordgo.MessageEmbed{
-		Title:       Ellipsis(app.DisplayTitle(title), 256),
+		Title:       Ellipsis(app.DisplayTitle(title), titleCardTitleLimit),
 		Description: Ellipsis(title.Synopsis, synopsisLimit),
-		Color:       0x5865F2,
-		URL:         fmt.Sprintf("https://www.themoviedb.org/%s/%d", title.MediaType, title.TMDBID),
+		Color:       titleCardDefaultColor,
+		URL:         fmt.Sprintf(tmdbTitleURLFormat, title.MediaType, title.TMDBID),
 		Footer:      &discordgo.MessageEmbedFooter{Text: rating},
 	}
 	homepage := app.HomepageURL(title.Homepage)
@@ -107,16 +118,16 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		{creatorLabel, title.Creators}, {ptbr.LetterboxdGenres, title.Genres},
 	} {
 		if names := app.MetadataNames(field.values); len(names) > 0 {
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: field.name, Value: Ellipsis(plainOpinion(strings.Join(names, ", ")), 600), Inline: true})
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: field.name, Value: Ellipsis(plainOpinion(strings.Join(names, ", ")), metadataFieldLimit), Inline: true})
 		}
 	}
 	if title.Accent != nil {
 		embed.Color = int(*title.Accent)
 	}
 	if title.BackdropPath != "" {
-		embed.Image = &discordgo.MessageEmbedImage{URL: "https://image.tmdb.org/t/p/w780" + title.BackdropPath}
+		embed.Image = &discordgo.MessageEmbedImage{URL: tmdbBackdropURLPrefix + title.BackdropPath}
 	} else if title.PosterPath != "" {
-		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://image.tmdb.org/t/p/w185" + title.PosterPath}
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: tmdbPosterURLPrefix + title.PosterPath}
 	}
 	data.Embeds = []*discordgo.MessageEmbed{embed}
 	reviewButton := discordgo.Button{Label: ptbr.LetterboxdReviews, Emoji: &discordgo.ComponentEmoji{Name: "\U0001f4ac"}, Style: discordgo.SecondaryButton, CustomID: fmt.Sprintf("lb.reviews:%d:1", title.ID)}
