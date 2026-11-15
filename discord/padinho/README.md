@@ -167,7 +167,8 @@ Cards show release information, directors/creators, genres, artwork, and communi
 ratings. TV release text includes known season counts. Upcoming titles without
 a date show `Previsão de Lançamento: Sem data anunciada`; missing historical
 dates show `Lançamento: Desconhecido`. Canceled titles without a year show
-`Cancelado`. Age classifications are cached but not displayed.
+`Cancelado`. When a recognized Brazilian age classification is available, its
+custom emoji prefixes the community-rating text in the card footer.
 
 Letterboxd headings capitalize their main words: `Previsão de Lançamento`,
 `Nota Geral`, and `Modo Local`. The reserved age label follows the same style:

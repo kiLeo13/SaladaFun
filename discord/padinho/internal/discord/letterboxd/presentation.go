@@ -95,7 +95,7 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		Description: Ellipsis(title.Synopsis, synopsisLimit),
 		Color:       titleCardDefaultColor,
 		URL:         fmt.Sprintf(tmdbTitleURLFormat, title.MediaType, title.TMDBID),
-		Footer:      &discordgo.MessageEmbedFooter{Text: rating},
+		Footer:      &discordgo.MessageEmbedFooter{Text: footerText(title, rating)},
 	}
 	homepage := app.HomepageURL(title.Homepage)
 	if homepage == "" {
@@ -137,6 +137,16 @@ func titleCard(title *entity.LetterboxdTitle, opinions []app.Opinion, value stri
 		discordgo.ActionsRow{Components: []discordgo.MessageComponent{watchedButton, reviewButton, wishlistButton}},
 	}
 	return data
+}
+
+// footerText prepends a recognized Brazilian age-classification emoji to a card rating.
+func footerText(title *entity.LetterboxdTitle, rating string) string {
+	classCode := app.BrazilianClassification(title.ContentRatings)
+	classification := classificationEmoji(classCode)
+	if classification == "" {
+		return rating
+	}
+	return classification + " " + rating
 }
 
 // releaseField distinguishes announced premieres from missing historical dates.
