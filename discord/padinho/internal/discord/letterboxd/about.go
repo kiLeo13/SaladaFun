@@ -6,7 +6,6 @@ import (
 )
 
 const tmdbLogoURL = "https://www.themoviedb.org/assets/apple-touch-icon-57ed4b3b0450fd5e9a0c20f34e814b82adaa1085c79bdde2f00ca8787b63d2c4.png"
-const tmdbWebsiteURL = "https://www.themoviedb.org"
 
 // aboutPage presents feature guidance and provider attribution entirely through Components V2.
 func aboutPage() *discordgo.InteractionResponseData {
