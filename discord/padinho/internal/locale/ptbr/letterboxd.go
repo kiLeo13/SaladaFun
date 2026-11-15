@@ -27,8 +27,8 @@ const (
 	LetterboxdRemoved      = "Removido da sua lista."
 	LetterboxdReviews      = "Ver avaliações"
 	LetterboxdNoRatings    = "Sem avaliações."
-	LetterboxdRating       = "Nota Geral: %s/5 \u00b7 avaliado %d vezes"
-	LetterboxdRatingSingle = "Nota Geral: %s/5 \u00b7 avaliado 1 vez"
+	LetterboxdRating       = "Nota Geral: %s/5 · avaliado %d vezes"
+	LetterboxdRatingSingle = "Nota Geral: %s/5 · avaliado 1 vez"
 	LetterboxdNext         = "Próxima"
 	LetterboxdPrevious     = "Anterior"
 	LetterboxdCredit       = "Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB."
@@ -64,7 +64,7 @@ const (
 	LetterboxdNoRandom      = "Sua lista não tem títulos não assistidos. Adicione novos títulos para sortear."
 )
 
-const LetterboxdRatings = "Avalia\u00e7\u00f5es"
+const LetterboxdRatings = "Avaliações"
 
 const (
 	LetterboxdReviewTitle       = "Avaliações de %s"
@@ -75,18 +75,18 @@ const (
 )
 
 const (
-	LetterboxdReleaseYear        = "Lan\u00e7amento"
+	LetterboxdReleaseYear        = "Lançamento"
 	LetterboxdCreators           = "Criadores"
-	LetterboxdDirectors          = "Dire\u00e7\u00e3o"
-	LetterboxdGenres             = "G\u00eaneros"
+	LetterboxdDirectors          = "Direção"
+	LetterboxdGenres             = "Gêneros"
 	LetterboxdReleaseSeason      = "%s - 1 temporada"
 	LetterboxdReleaseSeasons     = "%s - %d temporadas"
 	LetterboxdReleaseUnknown     = "Desconhecido"
-	LetterboxdReleaseExpected    = "Previs\u00e3o de Lan\u00e7amento"
+	LetterboxdReleaseExpected    = "Previsão de Lançamento"
 	LetterboxdReleaseUnannounced = "Sem data anunciada"
 	LetterboxdReleaseCanceled    = "Cancelado"
-	LetterboxdAgeRating          = "Faixa Et\u00e1ria"
-	LetterboxdAgeUnknown         = "N\u00e3o informada"
+	LetterboxdAgeRating          = "Faixa Etária"
+	LetterboxdAgeUnknown         = "Não informada"
 	LetterboxdAgeLivre           = "Livre"
 	LetterboxdAgeYears           = "%s anos"
 )
