@@ -157,9 +157,10 @@ func releaseField(title *entity.LetterboxdTitle) *discordgo.MessageEmbedField {
 		status = *title.Status
 	}
 	upcoming := status == "Planned" || status == "In Production"
-	if title.MediaType == "movie" {
+	switch title.MediaType {
+	case "movie":
 		upcoming = upcoming || status == "Rumored" || status == "Post Production"
-	} else if title.MediaType == "tv" {
+	case "tv":
 		upcoming = upcoming || status == "Pilot"
 	}
 	if upcoming {
