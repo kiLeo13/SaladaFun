@@ -168,11 +168,11 @@ ratings. TV release text includes known season counts. Upcoming titles without
 a date show `Previsão de Lançamento: Sem data anunciada`; missing historical
 dates show `Lançamento: Desconhecido`. Canceled titles without a year show
 `Cancelado`. When a recognized Brazilian age classification is available, its
-custom emoji prefixes the community-rating text in the card footer.
+custom emoji prefixes the release text in the card's release field. The footer
+contains only the community rating.
 
 Letterboxd headings capitalize their main words: `Previsão de Lançamento`,
-`Nota Geral`, and `Modo Local`. The reserved age label follows the same style:
-`Faixa Etária`.
+`Nota Geral`, and `Modo Local`.
 
 Selected titles cache TMDB metadata for 24 hours. To refresh existing gaps,
 manually set `metadata_fetched_at` to zero; search/autocomplete alone never

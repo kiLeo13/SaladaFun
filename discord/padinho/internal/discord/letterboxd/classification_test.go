@@ -11,7 +11,7 @@ import (
 	"github.com/kiLeo13/SaladaFun/discord/padinho/internal/locale/ptbr"
 )
 
-// TestClassificationEmbeds ensures recognized Brazilian classifications prefix card ratings.
+// TestClassificationEmbeds ensures recognized Brazilian classifications prefix release information.
 func TestClassificationEmbeds(t *testing.T) {
 	for _, tc := range []struct {
 		code, emoji string
@@ -30,12 +30,15 @@ func TestClassificationEmbeds(t *testing.T) {
 			title := &entity.LetterboxdTitle{ID: 1, TMDBID: 1, OriginalTitle: "Title", MediaType: kind, ReleaseYear: new(2020), ContentRatings: []entity.ContentRating{{Country: "BR", Certification: tc.code}}}
 			card := titleCard(title, nil, kind+":1")
 			checkPayload(t, card)
-			wantFooter := ptbr.LetterboxdNoRatings
-			if tc.emoji != "" {
-				wantFooter = tc.emoji + " " + wantFooter
+			if got := card.Embeds[0].Footer.Text; got != ptbr.LetterboxdNoRatings {
+				t.Fatalf("%s %s footer: got %q, want %q", kind, tc.code, got, ptbr.LetterboxdNoRatings)
 			}
-			if got := card.Embeds[0].Footer.Text; got != wantFooter {
-				t.Fatalf("%s %s footer: got %q, want %q", kind, tc.code, got, wantFooter)
+			wantRelease := "2020"
+			if tc.emoji != "" {
+				wantRelease = tc.emoji + " " + wantRelease
+			}
+			if got := card.Embeds[0].Fields[0].Value; got != wantRelease {
+				t.Fatalf("%s %s release: got %q, want %q", kind, tc.code, got, wantRelease)
 			}
 			if len(card.Embeds[0].Fields) != 1 {
 				t.Fatal("unexpected extra metadata field")
@@ -59,8 +62,8 @@ func TestClassificationEmbeds(t *testing.T) {
 	}
 }
 
-// TestClassificationFooterRating keeps the classification and calculated rating separated by one space.
-func TestClassificationFooterRating(t *testing.T) {
+// TestClassificationReleaseValue keeps the classification and release information separated by one space.
+func TestClassificationReleaseValue(t *testing.T) {
 	title := &entity.LetterboxdTitle{
 		ID:            1,
 		TMDBID:        1,
@@ -74,7 +77,10 @@ func TestClassificationFooterRating(t *testing.T) {
 	}
 
 	card := titleCard(title, []app.Opinion{{Rating: 5}}, "movie:1")
-	if got, want := card.Embeds[0].Footer.Text, classification12Emoji+" "+fmt.Sprintf(ptbr.LetterboxdRatingSingle, "5"); got != want {
+	if got, want := card.Embeds[0].Footer.Text, fmt.Sprintf(ptbr.LetterboxdRatingSingle, "5"); got != want {
 		t.Fatalf("footer: got %q, want %q", got, want)
+	}
+	if got, want := card.Embeds[0].Fields[0].Value, classification12Emoji+" 2020"; got != want {
+		t.Fatalf("release: got %q, want %q", got, want)
 	}
 }

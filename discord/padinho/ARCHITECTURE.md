@@ -505,9 +505,9 @@ backdrop, then poster. Ratings average one current opinion per watch/member.
 
 Classifications retain country, certification, and movie release type. The
 application selects the highest recognized Brazilian age when variants disagree;
-foreign entries never substitute. Cards prefix their rating footer with the
+foreign entries never substitute. Cards prefix their release value with the
 matching presentation-layer custom emoji when that Brazilian classification is
-recognized.
+recognized; the footer contains only the community rating.
 SQL NULL content ratings trigger refresh even within the TTL; a successful fetch
 stores `[]` when none are available. Provider failure retains stale metadata.
 
